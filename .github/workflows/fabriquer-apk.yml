@@ -272,6 +272,11 @@ jobs:
 
       - name: Fabriquer la version Windows
         shell: bash
+        env:
+          # Connexion Google sur PC (étape A6) : valeurs passées par
+          # l'environnement, jamais écrites dans le journal.
+          ZP_GOOGLE_PC_ID: ${{ vars.ZP_GOOGLE_PC_ID }}
+          ZP_GOOGLE_PC_SECRET: ${{ secrets.ZP_GOOGLE_PC_SECRET }}
         run: |
           flutter config --enable-windows-desktop
           flutter build windows --release \
@@ -283,8 +288,32 @@ jobs:
             --dart-define=ZP_FIREBASE_APPLI=${{ vars.ZP_FIREBASE_APPLI }} \
             --dart-define=ZP_FIREBASE_PROJET=${{ vars.ZP_FIREBASE_PROJET }} \
             --dart-define=ZP_FIREBASE_EXPEDITEUR=${{ vars.ZP_FIREBASE_EXPEDITEUR }} \
-            --dart-define=ZP_GOOGLE_PC_ID=${{ vars.ZP_GOOGLE_PC_ID }} \
-            --dart-define=ZP_GOOGLE_PC_SECRET=${{ secrets.ZP_GOOGLE_PC_SECRET }}
+            --dart-define=ZP_GOOGLE_PC_ID="$ZP_GOOGLE_PC_ID" \
+            --dart-define=ZP_GOOGLE_PC_SECRET="$ZP_GOOGLE_PC_SECRET"
+
+      - name: Vérifier la connexion Google sur PC (sans afficher les valeurs)
+        shell: bash
+        env:
+          ZP_GOOGLE_PC_ID: ${{ vars.ZP_GOOGLE_PC_ID }}
+          ZP_GOOGLE_PC_SECRET: ${{ secrets.ZP_GOOGLE_PC_SECRET }}
+        run: |
+          APP=build/windows/x64/runner/Release/data/app.so
+          if [ -z "$ZP_GOOGLE_PC_ID" ] || [ -z "$ZP_GOOGLE_PC_SECRET" ]; then
+            echo "::warning::ZP_GOOGLE_PC_ID ou ZP_GOOGLE_PC_SECRET absent : la version PC n'aura pas la connexion Google."
+            echo "- Connexion Google sur PC : **absente** (étape A6)." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          case "$ZP_GOOGLE_PC_ID" in
+            *.apps.googleusercontent.com) echo "ZP_GOOGLE_PC_ID : présent, format correct." ;;
+            *) echo "::error::ZP_GOOGLE_PC_ID ne se termine pas par .apps.googleusercontent.com."; exit 1 ;;
+          esac
+          echo "ZP_GOOGLE_PC_SECRET : présent."
+          # Les deux valeurs doivent être gravées dans l'application (on compte
+          # seulement, sans jamais les afficher).
+          [ "$(grep -c -a -F "$ZP_GOOGLE_PC_ID" "$APP")" -gt 0 ] || { echo "::error::Identifiant absent de l'application."; exit 1; }
+          [ "$(grep -c -a -F "$ZP_GOOGLE_PC_SECRET" "$APP")" -gt 0 ] || { echo "::error::Code secret absent de l'application."; exit 1; }
+          echo "Identifiant et code secret bien présents dans l'application Windows."
+          echo "- Connexion Google sur PC : **activée** (identifiant et code secret présents dans l'application)." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Mettre en ZIP
         shell: pwsh
