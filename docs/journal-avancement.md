@@ -774,3 +774,5 @@ ce jeton. Aucun secret ni code affiché (masqués). La ligne de test reste dans 
   est ignoré par l'action 2, et le commit qui ajoute l'action porte `[skip ci]`.
 - **À faire par le propriétaire** : Settings → Pages → Source « GitHub Actions » (partie G de
   `docs/etapes-proprietaire.md`) : Claude n'a pas le droit de l'activer.
+- Adresse e-mail **principale** de contact ajoutée aux 3 pages : `contact@talkami.net` (l'adresse Gmail reste
+  en seconde adresse). Pied de page : `contact@talkami.net`.
