@@ -14,7 +14,16 @@ class AccueilVendeur extends StatelessWidget {
     required this.nomVendeur,
     required this.pied,
     this.maintenant,
+    this.onEspacePatron,
+    this.actions = const {},
   });
+
+  /// Ouvre l'espace du patron (après son code secret).
+  final VoidCallback? onEspacePatron;
+
+  /// Actions des gros boutons ('vendre', 'credit', 'depense', 'fermer') ;
+  /// un bouton sans action affiche « arrive bientôt ».
+  final Map<String, VoidCallback> actions;
 
   /// Configuration de la boutique (nom, logo, couleur).
   final ConfigBoutique config;
@@ -67,6 +76,7 @@ class AccueilVendeur extends StatelessWidget {
                       nomVendeur: nomVendeur,
                       date: maintenant ?? DateTime.now(),
                       compact: bas,
+                      onEspacePatron: onEspacePatron,
                     ),
                   ),
                   SizedBox(height: bas ? 10 : 16),
@@ -80,7 +90,9 @@ class AccueilVendeur extends StatelessWidget {
                       couleur: CouleursZp.argentEntre,
                       couleurClaire: CouleursZp.argentEntreClair,
                       principal: true,
-                      onTap: () => _bientot(context, 'Vendre'),
+                      onTap:
+                          actions['vendre'] ??
+                          () => _bientot(context, 'Vendre'),
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -97,7 +109,9 @@ class AccueilVendeur extends StatelessWidget {
                             couleur: CouleursZp.credit,
                             couleurClaire: CouleursZp.creditClair,
                             couleurTexte: CouleursZp.texteSurCredit,
-                            onTap: () => _bientot(context, 'Crédit'),
+                            onTap:
+                                actions['credit'] ??
+                                () => _bientot(context, 'Crédit'),
                           ),
                         ),
                         const SizedBox(width: 14),
@@ -108,7 +122,9 @@ class AccueilVendeur extends StatelessWidget {
                             icone: Icons.payments_rounded,
                             couleur: CouleursZp.argentSort,
                             couleurClaire: CouleursZp.argentSortClair,
-                            onTap: () => _bientot(context, 'Dépense'),
+                            onTap:
+                                actions['depense'] ??
+                                () => _bientot(context, 'Dépense'),
                           ),
                         ),
                       ],
@@ -124,7 +140,9 @@ class AccueilVendeur extends StatelessWidget {
                       couleur: CouleursZp.marque,
                       couleurClaire: const Color(0xFF2E4A72),
                       horizontal: true,
-                      onTap: () => _bientot(context, 'Fermer la caisse'),
+                      onTap:
+                          actions['fermer'] ??
+                          () => _bientot(context, 'Fermer la caisse'),
                     ),
                   ),
                   SizedBox(height: bas ? 6 : 10),
@@ -148,7 +166,10 @@ class _EnTete extends StatelessWidget {
     required this.nomVendeur,
     required this.date,
     this.compact = false,
+    this.onEspacePatron,
   });
+
+  final VoidCallback? onEspacePatron;
 
   final ConfigBoutique config;
   final String nomVendeur;
@@ -176,44 +197,63 @@ class _EnTete extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 2),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.person_rounded,
-                    size: 20,
-                    color: CouleursZp.texteDoux,
-                  ),
-                  const SizedBox(width: 4),
-                  Flexible(
-                    child: Text(
-                      nomVendeur,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.person_rounded,
+                      size: 20,
+                      color: CouleursZp.texteDoux,
+                    ),
+                    const SizedBox(width: 4),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 160),
+                      child: Text(
+                        nomVendeur,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 17,
+                          color: CouleursZp.texteDoux,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Icon(
+                      Icons.calendar_today_rounded,
+                      size: 17,
+                      color: CouleursZp.texteDoux,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      dateCourte(date),
                       maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      softWrap: false,
                       style: const TextStyle(
                         fontSize: 17,
                         color: CouleursZp.texteDoux,
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Icon(
-                    Icons.calendar_today_rounded,
-                    size: 17,
-                    color: CouleursZp.texteDoux,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    dateCourte(date),
-                    style: const TextStyle(
-                      fontSize: 17,
-                      color: CouleursZp.texteDoux,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
         ),
+        if (onEspacePatron != null) ...[
+          const SizedBox(width: 8),
+          IconButton.filledTonal(
+            key: const Key('bouton-espace-patron'),
+            onPressed: onEspacePatron,
+            tooltip: 'Espace patron',
+            iconSize: 28,
+            style: IconButton.styleFrom(minimumSize: const Size(52, 52)),
+            icon: const Icon(Icons.key_rounded),
+          ),
+        ],
       ],
     );
   }

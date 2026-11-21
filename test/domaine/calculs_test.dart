@@ -189,4 +189,29 @@ void main() {
       expect(numerosManquants([1, 2, 3]), isEmpty);
     });
   });
+
+  group('Stock lisible', () {
+    const sac = Conditionnement.unites(
+      id: 's',
+      nom: 'sac de 50 kg',
+      unites: 50,
+      prixVente: 28000,
+    );
+    test('85 kg avec des sacs de 50 kg → « 1 sac de 50 kg + 35 kg »', () {
+      expect(decrireStock(85000, 'kg', [sac]), '1 sac de 50 kg + 35 kg');
+    });
+    test('pluriels : 2 sacs, 3 bols, 1 bol, 0,6 bol, 2 casiers, 2 bureaux', () {
+      expect(decrireStock(100000, 'kg', [sac]), '2 sacs de 50 kg');
+      expect(decrireUnites(3000, 'bol'), '3 bols');
+      expect(decrireUnites(1000, 'bol'), '1 bol');
+      expect(decrireUnites(571, 'bol'), '0,6 bol');
+      expect(decrireUnites(34846, 'bol'), '34,8 bols');
+      expect(pluriel('casier', 2), 'casiers');
+      expect(pluriel('bureau', 2), 'bureaux');
+    });
+    test('stock nul ou négatif', () {
+      expect(decrireStock(0, 'bol', [sac]), '0 bol');
+      expect(decrireStock(-2000, 'bol', [sac]), '-2 bols');
+    });
+  });
 }

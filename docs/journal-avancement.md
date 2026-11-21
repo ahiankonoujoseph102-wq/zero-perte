@@ -9,9 +9,9 @@ Il est mis à jour **à la fin de chaque étape**.
 
 | | |
 |---|---|
-| **Dernière étape terminée** | **B3 + B4** — Personnalisation et catalogues |
-| **Version publiée** | 0.5.0 (voir les Releases GitHub) |
-| **Prochaine étape** | **B5** — Arrivages |
+| **Dernière étape terminée** | **B5** — Arrivages (espace patron) |
+| **Version publiée** | 0.6.0 (voir les Releases GitHub) |
+| **Prochaine étape** | **B6** — Vendre |
 | **Méthode** | Enchaîner les étapes de `docs/plan-v1.md` sans validation intermédiaire : B1→B13, puis C1, D, C2→C4, E. Rapport au chef de projet **à la fin de chaque bloc**, ou si une décision appartient au propriétaire, ou si on est bloqué. |
 | **Ordre des blocs** | A ✅ → **B (en cours)** → C1 → D → C2–C4 → E |
 
@@ -113,3 +113,18 @@ Police Atkinson Hyperlegible, marque bleu nuit, écran d'accueil vendeur à 4 gr
 - Mise à niveau : une base créée par la version 0.2.0 est ouverte par la 0.5.0 sans perte, puis accepte un produit avec emoji.
 
 **Problèmes restants :** les emoji n'apparaissent pas dans les captures d'écran de test (pas de police emoji dans l'outil), ils s'affichent sur Android. Le raccourci d'écran d'accueil dépend du lanceur du téléphone (certains refusent : un message le dit).
+
+### B5 — Arrivages ✅ (version 0.6.0)
+**Fait :**
+- **Espace patron** : bouton « clé » en haut de l'accueil → **code secret du patron** → menu en grandes tuiles (les étapes suivantes y ajoutent leurs entrées : `entreesPatron` dans `lib/ecrans/patron/espace_patron.dart`).
+- **Code secret** : 5 erreurs → **bloqué 5 minutes** (mémorisé, même si l'application est fermée) ; un compte bloqué par le patron est refusé.
+- **Arrivages** : liste des produits avec leur **stock en mots** (« 2 sacs de 50 kg + 5 kg ») ; formulaire : unité (le plus grand conditionnement par défaut), **compteur géant − / +**, **prix payé au total** (avec le prix pour 1 sac calculé), enregistrement comme opération du journal.
+- Outils communs : page standard, gros bouton, image produit (photo ou pictogramme), messages vert/rouge, demande de code secret (`lib/ecrans/communs.dart`).
+- APK universel de la version 0.5.0 : **30,9 Mo** (bibliothèques photo et signature ajoutées).
+
+**Tests (140 au total, tous réussis)**, par exemple :
+- Arrivage de **2 sacs de 50 kg** de riz payés **50 000 F** → affiche « Soit 25 000 F pour 1 sac de 50 kg », stock **100 kg** = « 2 sacs de 50 kg ».
+- Stock lisible : 85 kg avec des sacs de 50 kg → **« 1 sac de 50 kg + 35 kg »** ; « donne pour 100 F » de riz → **0,6 bol**.
+- **5 codes faux** → « Trop d'erreurs » ; le bon code est refusé ; **6 minutes plus tard**, il est accepté.
+
+**Problèmes restants :** aucun.

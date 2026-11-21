@@ -703,6 +703,14 @@ class JournalLocal implements ReglagesLocaux {
     return stockDepuisMouvements(r.map((l) => l['q'] as int));
   }
 
+  /// Stock de tous les produits (millièmes d'unité de base), en une requête.
+  Future<Map<String, int>> stocks() async {
+    final r = await _db.rawQuery(
+      'SELECT produit_id AS p, SUM(quantite_milliemes) AS s FROM mouvements_stock GROUP BY produit_id',
+    );
+    return {for (final l in r) l['p'] as String: (l['s'] as int?) ?? 0};
+  }
+
   static Future<int> _versMilliemes(
     DatabaseExecutor t,
     String produitId,

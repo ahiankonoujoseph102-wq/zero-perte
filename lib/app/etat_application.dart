@@ -95,7 +95,7 @@ class EtatApplication extends ChangeNotifier {
     } catch (_) {
       catalogue = const Catalogue([]);
     }
-    return EtatApplication._(
+    final etat = EtatApplication._(
       journal,
       services,
       etape,
@@ -105,6 +105,8 @@ class EtatApplication extends ChangeNotifier {
       catalogue,
       await journal.produits(),
     );
+    etat._stocks = await journal.stocks();
+    return etat;
   }
 
   final JournalLocal journal;
@@ -191,7 +193,8 @@ class EtatApplication extends ChangeNotifier {
       _utilisateurs.where((u) => u.role == Role.patron).firstOrNull;
 
   /// Auteur des opérations faites pendant l'installation (le patron, s'il existe).
-  String get auteurActuel => patron?.id ?? 'installation';
+  String get auteurActuel =>
+      _utilisateurActuel?.id ?? patron?.id ?? 'installation';
 
   /// Crée le patron avec son code secret (ou le remplace).
   Future<Utilisateur> definirPatron({
@@ -215,15 +218,108 @@ class EtatApplication extends ChangeNotifier {
   }
 
   // ---------------------------------------------------------------------------
+  // Session : qui utilise le téléphone
+  // ---------------------------------------------------------------------------
+
+  Utilisateur? _utilisateurActuel;
+
+  /// Personne connectée (patron ou vendeur), nulle si personne.
+  Utilisateur? get utilisateurActuel => _utilisateurActuel;
+
+  /// Nombre d'erreurs de PIN autorisées avant blocage.
+  static const int essaisPin = 5;
+
+  /// Durée du blocage après trop d'erreurs.
+  static const Duration dureeBlocagePin = Duration(minutes: 5);
+
+  final Map<String, int> _erreursPin = {};
+
+  /// Heure jusqu'à laquelle le PIN de [u] est bloqué (nulle si pas bloqué).
+  Future<DateTime?> pinBloqueJusqua(Utilisateur u) async {
+    final t = int.tryParse(
+      await journal.lireParametre('pin.blocage.${u.id}') ?? '',
+    );
+    if (t == null) return null;
+    final fin = DateTime.fromMillisecondsSinceEpoch(t);
+    return fin.isAfter(maintenant()) ? fin : null;
+  }
+
+  /// Horloge (remplaçable dans les tests).
+  DateTime Function() maintenant = DateTime.now;
+
+  /// Vérifie le PIN de [u]. Après [essaisPin] erreurs, bloque [dureeBlocagePin].
+  /// Renvoie vrai si le PIN est bon (et connecte l'utilisateur si [connecter]).
+  Future<bool> verifierPin(
+    Utilisateur u,
+    String pin, {
+    bool connecter = true,
+  }) async {
+    if (!u.actif) return false;
+    if (await pinBloqueJusqua(u) != null) return false;
+    if (await pinCorrect(u, pin)) {
+      _erreursPin.remove(u.id);
+      if (connecter) {
+        _utilisateurActuel = u;
+        notifyListeners();
+      }
+      return true;
+    }
+    final n = (_erreursPin[u.id] ?? 0) + 1;
+    _erreursPin[u.id] = n;
+    if (n >= essaisPin) {
+      _erreursPin.remove(u.id);
+      await journal.ecrireParametre(
+        'pin.blocage.${u.id}',
+        '${maintenant().add(dureeBlocagePin).millisecondsSinceEpoch}',
+      );
+    }
+    return false;
+  }
+
+  Duration get dureeBlocage => dureeBlocagePin;
+
+  /// Erreurs restantes avant blocage.
+  int essaisRestants(Utilisateur u) => essaisPin - (_erreursPin[u.id] ?? 0);
+
+  /// Déconnecte la personne actuelle (changement d'utilisateur).
+  void deconnecter() {
+    _utilisateurActuel = null;
+    notifyListeners();
+  }
+
+  // ---------------------------------------------------------------------------
   // Produits
   // ---------------------------------------------------------------------------
 
   List<Produit> _produits;
   List<Produit> get produits => List.unmodifiable(_produits);
 
+  Map<String, int> _stocks = {};
+
+  /// Stock d'un produit (millièmes d'unité de base).
+  int stock(String produitId) => _stocks[produitId] ?? 0;
+
   Future<void> rechargerProduits() async {
     _produits = await journal.produits();
+    _stocks = await journal.stocks();
     notifyListeners();
+  }
+
+  /// Arrivage de marchandise (patron seulement).
+  Future<void> enregistrerArrivage({
+    required Produit produit,
+    Conditionnement? conditionnement,
+    required int nombre,
+    required int coutTotal,
+  }) async {
+    await journal.enregistrerArrivage(
+      produitId: produit.id,
+      conditionnementId: conditionnement?.id,
+      nombre: nombre,
+      coutTotal: coutTotal,
+      auteurId: auteurActuel,
+    );
+    await rechargerProduits();
   }
 
   /// Ajoute à la boutique les produits choisis dans le catalogue (sans prix :

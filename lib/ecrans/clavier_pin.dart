@@ -53,7 +53,12 @@ class _SaisiePinState extends State<SaisiePin> {
     return LayoutBuilder(
       builder: (context, c) {
         // Taille des touches adaptée à la place disponible.
-        final touche = ((c.maxHeight - 110) / 4 - 10).clamp(40.0, 76.0);
+        final parHauteur = (c.maxHeight - 110) / 4 - 10;
+        final parLargeur = c.maxWidth.isFinite
+            ? (c.maxWidth / 3 - 22) / 1.25
+            : 76.0;
+        final touche = (parHauteur < parLargeur ? parHauteur : parLargeur)
+            .clamp(40.0, 76.0);
         // Sécurité : si la place manque encore (très petit écran), tout rétrécit
         // un peu plutôt que de déborder.
         return FittedBox(

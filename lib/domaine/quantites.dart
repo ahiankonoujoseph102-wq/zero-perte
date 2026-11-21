@@ -120,3 +120,44 @@ int coutPourQuantite({
   if (milliemesAchetes <= 0) throw ArgumentError('Quantité achetée nulle.');
   return diviserArrondi(milliemes * coutAchat, milliemesAchetes);
 }
+
+/// Met une unité au pluriel (« sac de 50 kg » → « sacs de 50 kg », « bol » → « bols »).
+String pluriel(String unite, num nombre) {
+  if (nombre.abs() <= 1 || unite.isEmpty) return unite;
+  final mots = unite.split(' ');
+  final premier = mots.first;
+  if (RegExp(r'[sxz]$').hasMatch(premier) ||
+      premier == 'kg' ||
+      premier == 'L') {
+    return unite;
+  }
+  final pluriel = premier.endsWith('au') ? '${premier}x' : '${premier}s';
+  return [pluriel, ...mots.skip(1)].join(' ');
+}
+
+/// Quantité en unités de base, lisible : « 5 bols », « 0,6 bol », « 34,8 bols ».
+/// Une décimale au plus (virgule française) ; les entiers sans virgule.
+String decrireUnites(int milliemes, String unite) {
+  final dixiemes = diviserArrondi(milliemes, 100);
+  final entier = dixiemes ~/ 10;
+  final reste = (dixiemes % 10).abs();
+  final texte = reste == 0 ? '$entier' : '$entier,$reste';
+  return '$texte ${pluriel(unite, dixiemes / 10)}';
+}
+
+/// Stock lisible avec les conditionnements : « 2 sacs de 50 kg + 5 kg ».
+String decrireStock(
+  int milliemes,
+  String unite,
+  List<Conditionnement> conditionnements,
+) {
+  if (milliemes <= 0) return decrireUnites(milliemes, unite);
+  final r = repartirStock(milliemes, conditionnements);
+  final parts = [
+    for (final p in r.parts)
+      '${p.nombre} ${pluriel(p.conditionnement.nom, p.nombre)}',
+    if (r.resteMilliemes > 0 || r.parts.isEmpty)
+      decrireUnites(r.resteMilliemes, unite),
+  ];
+  return parts.join(' + ');
+}

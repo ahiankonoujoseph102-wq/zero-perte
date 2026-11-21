@@ -9,6 +9,8 @@ import 'domaine/licence.dart';
 import 'donnees/journal_local.dart';
 import 'ecrans/accueil_vendeur.dart';
 import 'ecrans/assistant/assistant_installation.dart';
+import 'ecrans/communs.dart';
+import 'ecrans/patron/espace_patron.dart';
 import 'services/aide.dart';
 import 'services/photos.dart';
 import 'services/raccourci.dart';
@@ -142,6 +144,23 @@ class ZeroPerteApp extends StatelessWidget {
         listenable: etat,
         builder: (context, _) => etat.installationTerminee
             ? AccueilVendeur(
+                onEspacePatron: etat.patron == null
+                    ? null
+                    : () async {
+                        if (await demanderPin(
+                              context,
+                              etat,
+                              etat.patron!,
+                              titre: 'Espace patron',
+                            ) &&
+                            context.mounted) {
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => EspacePatron(etat: etat),
+                            ),
+                          );
+                        }
+                      },
                 config: etat.config,
                 nomVendeur: etat.patron?.nom ?? 'Vendeur',
                 maintenant: maintenant,
