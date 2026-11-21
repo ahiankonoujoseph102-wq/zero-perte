@@ -3,8 +3,13 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as chemins;
 import 'package:sqflite/sqflite.dart';
 
+import 'app/etat_application.dart';
 import 'donnees/journal_local.dart';
 import 'ecrans/accueil_vendeur.dart';
+import 'ecrans/assistant/assistant_installation.dart';
+import 'services/aide.dart';
+import 'services/telephone.dart';
+import 'services/voix.dart';
 import 'theme/couleurs.dart';
 import 'theme/theme_zp.dart';
 
@@ -20,7 +25,7 @@ bool get estVersionOfficielle => canalFabrication == 'officiel';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(ZeroPerteApp(journal: ouvrirJournalDuTelephone()));
+  runApp(Demarrage(etat: chargerEtatDuTelephone()));
 }
 
 /// Ouvre (ou crée) la base locale du téléphone.
@@ -32,17 +37,70 @@ Future<JournalLocal> ouvrirJournalDuTelephone() async {
   );
 }
 
+/// Charge l'état complet de l'application sur le téléphone.
+Future<EtatApplication> chargerEtatDuTelephone() async {
+  final journal = await ouvrirJournalDuTelephone();
+  return EtatApplication.charger(
+    reglages: journal,
+    journal: journal,
+    services: ServicesZp(
+      telephone: ServiceTelephoneAndroid(),
+      voix: VoixAndroid(),
+      ouvrirLien: ouvrirLienExterne,
+    ),
+  );
+}
+
+/// Écran de démarrage : attend l'ouverture de la base, puis lance l'application.
+class Demarrage extends StatelessWidget {
+  const Demarrage({super.key, required this.etat});
+
+  final Future<EtatApplication> etat;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<EtatApplication>(
+      future: etat,
+      builder: (context, r) {
+        if (r.hasData) return ZeroPerteApp(etat: r.data!);
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: themeZeroPerte(),
+          home: Scaffold(
+            body: Center(
+              child: r.hasError
+                  ? Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(
+                        'Zéro Perte ne peut pas démarrer.\n${r.error}',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          color: CouleursZp.argentSort,
+                        ),
+                      ),
+                    )
+                  : const LogoZp(taille: 120),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class ZeroPerteApp extends StatelessWidget {
   const ZeroPerteApp({
     super.key,
+    required this.etat,
     this.infosPaquet,
-    this.journal,
     this.maintenant,
   });
 
-  /// Permettent aux tests de fournir la version, la base et la date.
+  final EtatApplication etat;
+
+  /// Permettent aux tests de fournir la version et la date.
   final Future<PackageInfo>? infosPaquet;
-  final Future<JournalLocal>? journal;
   final DateTime? maintenant;
 
   @override
@@ -68,14 +126,19 @@ class ZeroPerteApp extends StatelessWidget {
           ],
         );
       },
-      home: AccueilVendeur(
-        nomBoutique: 'Ma boutique',
-        nomVendeur: 'Vendeur',
-        maintenant: maintenant,
-        pied: PiedDePage(
-          infosPaquet: infosPaquet ?? PackageInfo.fromPlatform(),
-          journal: journal,
-        ),
+      home: ListenableBuilder(
+        listenable: etat,
+        builder: (context, _) => etat.installationTerminee
+            ? AccueilVendeur(
+                nomBoutique: 'Ma boutique',
+                nomVendeur: 'Vendeur',
+                maintenant: maintenant,
+                pied: PiedDePage(
+                  infosPaquet: infosPaquet ?? PackageInfo.fromPlatform(),
+                  baseOuverte: etat.journal != null,
+                ),
+              )
+            : AssistantInstallation(etat: etat),
       ),
     );
   }
@@ -83,10 +146,16 @@ class ZeroPerteApp extends StatelessWidget {
 
 /// Ligne du bas : version de l'application et état de la base locale.
 class PiedDePage extends StatelessWidget {
-  const PiedDePage({super.key, required this.infosPaquet, this.journal});
+  const PiedDePage({
+    super.key,
+    required this.infosPaquet,
+    this.baseOuverte = false,
+  });
 
   final Future<PackageInfo> infosPaquet;
-  final Future<JournalLocal>? journal;
+
+  /// Vrai si la base locale du téléphone est ouverte (point vert).
+  final bool baseOuverte;
 
   @override
   Widget build(BuildContext context) {
@@ -94,31 +163,16 @@ class PiedDePage extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        if (journal != null)
-          FutureBuilder<JournalLocal>(
-            future: journal,
-            builder: (context, etat) {
-              final pret = etat.hasData;
-              final erreur = etat.hasError;
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: Icon(
-                  Icons.circle,
-                  size: 10,
-                  key: Key(
-                    erreur
-                        ? 'base-erreur'
-                        : (pret ? 'base-prete' : 'base-ouverture'),
-                  ),
-                  color: erreur
-                      ? CouleursZp.argentSort
-                      : (pret ? CouleursZp.argentEntre : CouleursZp.ligne),
-                  semanticLabel: erreur
-                      ? 'Base de données en erreur'
-                      : 'Base de données prête',
-                ),
-              );
-            },
+        if (baseOuverte)
+          const Padding(
+            padding: EdgeInsets.only(right: 8),
+            child: Icon(
+              Icons.circle,
+              size: 10,
+              key: Key('base-prete'),
+              color: CouleursZp.argentEntre,
+              semanticLabel: 'Base de données prête',
+            ),
           ),
         FutureBuilder<PackageInfo>(
           future: infosPaquet,

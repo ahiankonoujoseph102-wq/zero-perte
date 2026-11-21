@@ -41,5 +41,18 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <!-- Zéro Perte : vérifier la présence des services Google (synchronisation Drive). -->
+        <package android:name="com.google.android.gms"/>
+        <!-- Zéro Perte : ouvrir WhatsApp / un lien (bouton « J'ai besoin d'aide »). -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
+        </intent>
+        <package android:name="com.whatsapp"/>
+        <package android:name="com.whatsapp.w4b"/>
+        <!-- Zéro Perte : lecture à voix haute (synthèse vocale d'Android). -->
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE"/>
+        </intent>
     </queries>
 </manifest>

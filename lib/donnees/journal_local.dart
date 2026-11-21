@@ -19,6 +19,7 @@ import '../domaine/calculs.dart';
 import '../domaine/operation.dart';
 import '../domaine/quantites.dart';
 import '../domaine/recu.dart';
+import 'reglages.dart';
 import 'schema.dart';
 
 /// Moyens de paiement. Chacun a sa propre caisse (espèces et Mobile Money séparés).
@@ -122,7 +123,7 @@ class ResumeBenefice {
   int get benefice => ventes - couts;
 }
 
-class JournalLocal {
+class JournalLocal implements ReglagesLocaux {
   JournalLocal._(this._db, this.telephoneId, this.prefixeRecu, this._horloge);
 
   final Database _db;
@@ -177,6 +178,15 @@ class JournalLocal {
   }
 
   Future<void> fermer() => _db.close();
+
+  /// Réglage local du téléphone (seule table modifiable).
+  @override
+  Future<String?> lireParametre(String cle) => _lireParametre(_db, cle);
+
+  /// Écrit un réglage local du téléphone.
+  @override
+  Future<void> ecrireParametre(String cle, String valeur) =>
+      _ecrireParametre(_db, cle, valeur);
 
   static Future<String?> _lireParametre(DatabaseExecutor db, String cle) async {
     final r = await db.query('parametres', where: 'cle = ?', whereArgs: [cle]);

@@ -8,8 +8,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:package_info_plus/package_info_plus.dart';
-import 'package:zero_perte/main.dart';
+import 'package:zero_perte/services/telephone.dart';
+import 'package:zero_perte/app/etat_application.dart';
+
+import '../test/support/outils.dart';
 
 Future<void> _chargerPolices() async {
   final manifeste =
@@ -32,30 +34,43 @@ void main() {
     '4pouces_320x568': (Size(320, 568), 2.0),
   };
 
+  final scenes = <String, (EtapeAssistant, bool)>{
+    'accueil': (EtapeAssistant.termine, true),
+    'assistant_bienvenue': (EtapeAssistant.bienvenue, true),
+    'assistant_verification_ok': (EtapeAssistant.verification, true),
+    'assistant_verification_bloquee': (EtapeAssistant.verification, false),
+  };
+
   for (final e in ecrans.entries) {
-    testWidgets('capture ${e.key}', (tester) async {
-      final (taille, densite) = e.value;
-      tester.view.physicalSize = taille * 2;
-      tester.view.devicePixelRatio = 2;
-      addTearDown(tester.view.reset);
-      await tester.pumpWidget(
-        ZeroPerteApp(
-          infosPaquet: Future.value(
-            PackageInfo(
-              appName: 'Zéro Perte',
-              packageName: 'tg.zeroperte.app',
-              version: '0.2.0',
-              buildNumber: '12',
-            ),
-          ),
-          maintenant: DateTime(2026, 11, 21),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await expectLater(
-        find.byType(MaterialApp),
-        matchesGoldenFile('captures/${e.key}.png'),
-      );
-    });
+    for (final scene in scenes.entries) {
+      testWidgets('capture ${scene.key} ${e.key}', (tester) async {
+        final (taille, _) = e.value;
+        final (etape, google) = scene.value;
+        final env = await environnementDeTest(
+          etape: etape,
+          voixFrancaise: false,
+          telephone: google
+              ? telephoneCompatible
+              : const InfosTelephoneSansGoogle(),
+        );
+        await afficherApp(tester, env.etat, taille: taille, densite: 2);
+        await expectLater(
+          find.byType(MaterialApp),
+          matchesGoldenFile('captures/${scene.key}_${e.key}.png'),
+        );
+      });
+    }
   }
+}
+
+class InfosTelephoneSansGoogle extends InfosTelephone {
+  const InfosTelephoneSansGoogle()
+    : super(
+        androidSdk: 29,
+        androidVersion: '10',
+        fabricant: 'HUAWEI',
+        modele: 'P40 lite',
+        servicesGoogle: false,
+        espaceLibreMo: 250,
+      );
 }
