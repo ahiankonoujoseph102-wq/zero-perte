@@ -27,8 +27,53 @@ class ClavierMontant extends StatelessWidget {
     if (nouveau <= maximum) onChange(nouveau);
   }
 
+  static final Map<LogicalKeyboardKey, String> _chiffres = {
+    LogicalKeyboardKey.digit0: '0',
+    LogicalKeyboardKey.digit1: '1',
+    LogicalKeyboardKey.digit2: '2',
+    LogicalKeyboardKey.digit3: '3',
+    LogicalKeyboardKey.digit4: '4',
+    LogicalKeyboardKey.digit5: '5',
+    LogicalKeyboardKey.digit6: '6',
+    LogicalKeyboardKey.digit7: '7',
+    LogicalKeyboardKey.digit8: '8',
+    LogicalKeyboardKey.digit9: '9',
+    LogicalKeyboardKey.numpad0: '0',
+    LogicalKeyboardKey.numpad1: '1',
+    LogicalKeyboardKey.numpad2: '2',
+    LogicalKeyboardKey.numpad3: '3',
+    LogicalKeyboardKey.numpad4: '4',
+    LogicalKeyboardKey.numpad5: '5',
+    LogicalKeyboardKey.numpad6: '6',
+    LogicalKeyboardKey.numpad7: '7',
+    LogicalKeyboardKey.numpad8: '8',
+    LogicalKeyboardKey.numpad9: '9',
+  };
+
+  /// Clavier physique (PC) : chiffres et effacement.
+  KeyEventResult _touche(FocusNode _, KeyEvent e) {
+    if (e is! KeyDownEvent && e is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+    final k = e.logicalKey;
+    if (k == LogicalKeyboardKey.backspace || k == LogicalKeyboardKey.delete) {
+      _toucher('<');
+      return KeyEventResult.handled;
+    }
+    final chiffre = _chiffres[k];
+    if (chiffre != null) {
+      _toucher(chiffre);
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
   @override
   Widget build(BuildContext context) {
+    return Focus(autofocus: true, onKeyEvent: _touche, child: _clavier());
+  }
+
+  Widget _clavier() {
     return LayoutBuilder(
       builder: (context, c) {
         final hauteur = ((c.maxHeight.isFinite ? c.maxHeight : 300) / 4 - 8)

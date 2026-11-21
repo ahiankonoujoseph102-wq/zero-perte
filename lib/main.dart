@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as chemins;
+import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart'
+    show sqfliteFfiInit, databaseFactoryFfi;
 
 import 'app/demo.dart';
 import 'app/etat_application.dart';
@@ -27,6 +30,7 @@ import 'services/photos.dart';
 import 'services/raccourci.dart';
 import 'services/telephone.dart';
 import 'services/voix.dart';
+import 'services/windows.dart';
 import 'theme/couleurs.dart';
 import 'theme/theme_zp.dart';
 
@@ -45,21 +49,33 @@ void main() {
   runApp(Demarrage(etat: chargerEtatDuTelephone()));
 }
 
+/// Base de données : celle d'Android sur téléphone ; sur PC Windows, SQLite
+/// fourni avec l'application, dans le dossier de données de l'utilisateur.
+DatabaseFactory get fabriqueBase {
+  if (surWindows) {
+    sqfliteFfiInit();
+    return databaseFactoryFfi;
+  }
+  return databaseFactory;
+}
+
+Future<String> dossierBase() async => surWindows
+    ? (await getApplicationSupportDirectory()).path
+    : await getDatabasesPath();
+
 /// Ouvre (ou crée) la base locale du téléphone.
 Future<JournalLocal> ouvrirJournalDuTelephone() async {
-  final dossier = await getDatabasesPath();
   return JournalLocal.ouvrir(
-    fabrique: databaseFactory,
-    chemin: chemins.join(dossier, 'zero_perte.db'),
+    fabrique: fabriqueBase,
+    chemin: chemins.join(await dossierBase(), 'zero_perte.db'),
   );
 }
 
 /// Démonstration : base à part, effacée à chaque ouverture.
 Future<EtatApplication> creerDemoTelephone(ServicesZp services) async {
-  final dossier = await getDatabasesPath();
   return preparerDemo(
-    fabrique: databaseFactory,
-    chemin: chemins.join(dossier, 'zero_perte_demo.db'),
+    fabrique: fabriqueBase,
+    chemin: chemins.join(await dossierBase(), 'zero_perte_demo.db'),
     services: services,
   );
 }
@@ -70,7 +86,9 @@ Future<EtatApplication> chargerEtatDuTelephone() async {
   final etat = await EtatApplication.charger(
     journal: journal,
     services: ServicesZp(
-      telephone: ServiceTelephoneAndroid(),
+      telephone: surWindows
+          ? ServiceTelephoneWindows()
+          : ServiceTelephoneAndroid(),
       voix: VoixAndroid(),
       ouvrirLien: ouvrirLienExterne,
       lirePressePapiers: () async =>
@@ -80,11 +98,17 @@ Future<EtatApplication> chargerEtatDuTelephone() async {
       ),
       lireCatalogue: () =>
           rootBundle.loadString('assets/catalogues/catalogues.json'),
-      prendrePhoto: prendrePhotoAndroid,
-      creerRaccourci: creerRaccourciAndroid,
-      partagerImage: partagerImageAndroid,
-      partagerFichier: partagerFichierAndroid,
-      connecterDrive: connecterDriveAndroid,
+      prendrePhoto: surWindows ? prendrePhotoWindows : prendrePhotoAndroid,
+      creerRaccourci: surWindows
+          ? (_, _) async => false
+          : creerRaccourciAndroid,
+      partagerImage: surWindows ? partagerImageWindows : partagerImageAndroid,
+      partagerFichier: surWindows
+          ? partagerFichierWindows
+          : partagerFichierAndroid,
+      // Windows : connexion Google par le navigateur, pas encore branchée
+      // (identifiant « Application de bureau » à créer : etapes-proprietaire A6).
+      connecterDrive: surWindows ? null : connecterDriveAndroid,
       choisirFichier: choisirFichierSauvegarde,
     ),
   );
@@ -171,7 +195,16 @@ class ZeroPerteApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: themeZeroPerte(couleurMarque: Color(etat.config.couleur)),
       builder: (context, enfant) {
-        final page = enfant ?? const SizedBox.shrink();
+        // PC : Échap = revenir en arrière.
+        final page = CallbackShortcuts(
+          bindings: {
+            const SingleActivator(LogicalKeyboardKey.escape): () {
+              final ctx = FocusManager.instance.primaryFocus?.context;
+              if (ctx != null) Navigator.maybeOf(ctx)?.maybePop();
+            },
+          },
+          child: enfant ?? const SizedBox.shrink(),
+        );
         // Alertes graves (écart de caisse, grosse annulation…) : bandeau rouge
         // en haut, sur l'appareil du patron.
         final contenu = ListenableBuilder(

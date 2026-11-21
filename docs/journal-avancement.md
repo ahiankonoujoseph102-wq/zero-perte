@@ -10,7 +10,7 @@ Il est mis à jour **à la fin de chaque étape**.
 | | |
 |---|---|
 | **Dernière étape terminée** | **B13** — Sauvegarde chiffrée → **bloc B terminé** |
-| **Version publiée** | 0.20.0 (voir les Releases GitHub) |
+| **Version publiée** | 0.21.0 (Android et Windows, voir les Releases GitHub) |
 | **Dernière étape terminée (bis)** | **C1** — Crédit client |
 | **Prochaine étape** | Rapport de fin de bloc C1, puis bloc **D** (synchronisation) |
 | **Méthode** | Enchaîner les étapes de `docs/plan-v1.md` sans validation intermédiaire : B1→B13, puis C1, D, C2→C4, E. Rapport au chef de projet **à la fin de chaque bloc**, ou si une décision appartient au propriétaire, ou si on est bloqué. |
@@ -415,3 +415,36 @@ application ouverte (notifications application fermée : plus tard, avec Firebas
 
 **Problèmes restants :** rien n'a pu être essayé avec un vrai compte Google (il faut d'abord les étapes A de
 `docs/etapes-proprietaire.md`) ; la relève en arrière-plan (application fermée) n'est pas faite.
+
+### Étape 5 — Version PC Windows (version 0.21.0)
+**Fait :**
+- Dossier `windows/` (application « Zéro Perte », fichier `ZeroPerte.exe`, icône de la boutique Zéro Perte).
+- **Fabrication par GitHub Actions** (même action « 2 - Fabriquer l'APK », tâche `windows` sur une machine
+  Windows) : `ZeroPerte-Windows.zip` est ajouté à la **même Release** que l'APK. Lien fixe :
+  `…/releases/latest/download/ZeroPerte-Windows.zip`.
+- Remplacements des fonctions Android :
+  - base de données : SQLite fourni avec l'application, dans le dossier de données de l'utilisateur ;
+  - reçu : image enregistrée dans `Documents\Zero Perte\Recus`, texte copié, WhatsApp (application PC)
+    ouvert ; sinon le dossier s'ouvre ;
+  - sauvegarde et export des clients : fenêtre « Enregistrer sous » (dossier `Documents\Zero Perte\Sauvegardes`) ;
+  - photo : choix d'une image existante (pas d'appareil photo) ; pas de raccourci d'écran d'accueil ;
+  - vérification de l'appareil : un PC est déclaré compatible.
+- **Clavier physique** : chiffres (rangée du haut et pavé numérique) et Retour arrière dans tous les claviers
+  de montant ; **Échap** = revenir en arrière.
+- **Licence** : le code d'activation est vérifié de la même façon (aucun code propre à Android). Un PC compte
+  comme un des appareils de la licence dès qu'il est relié au Drive de la boutique.
+
+**Tests (326 au total, tous réussis)**, par exemple :
+- PC 1366×768 : taper 5 0 0 0 0 au clavier puis Retour arrière → « le client donne 5 000 F » ; Échap → retour
+  au panier.
+- Tous les écrans vérifiés sans débordement à 1366×768 (étape 3).
+
+**Pas encore fait (Windows) :**
+- **Connexion Google sur PC** (synchronisation par Drive) : il faut un identifiant « Application de bureau »
+  (étape A6 de `docs/etapes-proprietaire.md`) puis une connexion par le navigateur. En attendant, le PC
+  fonctionne seul (sans synchronisation), et ne peut donc pas encore être compté dans la licence.
+- **Avertissement de Windows** à la première ouverture (« Windows a protégé votre ordinateur », éditeur
+  inconnu) : l'application n'est pas signée. Pour le supprimer : un certificat de signature de code
+  (environ 100 à 400 dollars par an ; un certificat « EV » fait disparaître l'avertissement tout de suite,
+  un certificat simple après un certain nombre de téléchargements), ou la publication dans le
+  Microsoft Store (compte développeur, environ 19 dollars une fois).

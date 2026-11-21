@@ -109,6 +109,12 @@ class _RecuPartageableState extends State<RecuPartageable> {
       );
       if (r == ResultatPartage.echec && mounted) {
         annoncer(context, 'Impossible d\'envoyer le reçu.', erreur: true);
+      } else if (r == ResultatPartage.enregistre && mounted) {
+        annoncer(
+          context,
+          'Reçu enregistré dans Documents › Zero Perte › Recus. '
+          'Joignez-le dans WhatsApp (le texte est déjà copié).',
+        );
       }
     } finally {
       if (mounted) setState(() => _enCours = false);

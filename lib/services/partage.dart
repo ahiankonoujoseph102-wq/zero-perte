@@ -3,7 +3,8 @@ import 'package:flutter/services.dart';
 const _canal = MethodChannel('tg.zeroperte/telephone');
 
 /// Résultat d'un partage de reçu.
-enum ResultatPartage { whatsapp, autre, echec }
+/// `enregistre` : sur PC, le fichier a été enregistré (Documents\Zero Perte).
+enum ResultatPartage { whatsapp, autre, enregistre, echec }
 
 /// Envoie une image PNG (le reçu) : directement dans WhatsApp s'il est
 /// installé, sinon par le menu de partage d'Android.
