@@ -222,6 +222,16 @@ Limites vérifiées : **100 000 requêtes/jour**, 10 ms de calcul par requête. 
 - **Les trois APK ont le même `versionCode`**, grâce à `force-version-code-ignoring-abi=true` dans `android/gradle.properties`. Sans cela, un téléphone mis à jour par un APK par processeur refuserait ensuite un APK universel plus récent reçu par WhatsApp. Le workflow vérifie cette égalité et échoue sinon.
 - Pas de version x86 (ordinateurs et émulateurs) : elle n'existe pas sur les téléphones visés.
 
+**Tailles réelles mesurées (étape A1, version 0.1.0, écran d'accueil seul) :**
+
+| Fichier | Taille |
+|---|---|
+| `ZeroPerte.apk` (universel, WhatsApp) | **27 061 322 octets ≈ 25,8 Mo** |
+| `ZeroPerte-arm64.apk` (mise à jour 64 bits) | 15 125 604 octets ≈ 14,4 Mo |
+| `ZeroPerte-armv7.apk` (mise à jour 32 bits) | 12 331 964 octets ≈ 11,8 Mo |
+
+L'APK universel **dépasse déjà la limite de 25 Mo de Cloudflare Pages** : le passage aux Releases GitHub était nécessaire. Les APK par processeur font gagner 11 à 14 Mo de données à chaque mise à jour. Ces tailles augmenteront avec les fonctions et les catalogues, il faudra les surveiller.
+
 **Limites honnêtes :**
 - GitHub ne publie pas de limite de bande passante pour les Releases. Il s'agit d'un usage « raisonnable », largement suffisant pour des APK d'environ 10 à 20 Mo.
 - On **dépend de GitHub** : si le compte était suspendu, plus de mise à jour. Le **plan B** est déjà connu : Cloudflare Pages (APK par processeur, moins de 25 Mo) ou le Google Drive du propriétaire. L'application aura une **adresse de secours** dans sa configuration.
