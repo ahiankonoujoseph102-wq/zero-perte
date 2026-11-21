@@ -71,7 +71,7 @@ void main() {
   testWidgets('perte : 3 kg de riz mouillé → stock 97 kg', (tester) async {
     final env = await environnementDeTest(tester, preparer: boutiqueAvecStock);
     await afficherApp(tester, env.etat);
-    await toucher(tester, find.byKey(const Key('bouton-depense')));
+    await toucherDansMaCaisse(tester, 'bouton-depense');
     await toucher(tester, find.byKey(const Key('choix-perte')));
     await toucher(tester, find.byKey(const Key('perte-alimentation.riz')));
     await toucher(tester, find.byKey(const Key('plus')));

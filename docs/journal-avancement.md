@@ -10,7 +10,7 @@ Il est mis à jour **à la fin de chaque étape**.
 | | |
 |---|---|
 | **Dernière étape terminée** | **B13** — Sauvegarde chiffrée → **bloc B terminé** |
-| **Version publiée** | 0.25.0 (Android et Windows, voir les Releases GitHub) |
+| **Version publiée** | 0.26.0 (Android et Windows, voir les Releases GitHub) |
 | **Dernière étape terminée (bis)** | **C1** — Crédit client |
 | **Prochaine étape** | Rapport de fin de bloc C1, puis bloc **D** (synchronisation) |
 | **Méthode** | Enchaîner les étapes de `docs/plan-v1.md` sans validation intermédiaire : B1→B13, puis C1, D, C2→C4, E. Rapport au chef de projet **à la fin de chaque bloc**, ou si une décision appartient au propriétaire, ou si on est bloqué. |
@@ -554,3 +554,43 @@ PC — sans reprendre son nom, son logo ni ses écrans à l'identique (propriét
 - Écran d'entrée : « 4827 » (code de personne) → « Code faux » ; « 5913 » → Kossi entre directement.
 - Ajouter Afi avec le code de Kossi → refusé ; 5 codes faux → même le bon code est refusé 5 minutes.
 - Canal des alertes : même nom calculé par l'application et par le relais (`zp-` + SHA-256).
+
+**Publiée :** v0.25.0-n39 — APK universel 17,5 Mo (arm64 9,5 Mo, armv7 8,9 Mo), Windows 13,2 Mo ; paquet
+Microsoft Store fabriqué sans erreur.
+
+### Étape 3a — Nouvelle allure professionnelle, menus selon le rôle, Ma caisse, tableau de bord ✅ (version 0.26.0)
+**Fait :**
+- **Thème bleu nuit** : fond bleu nuit, cartes nettes à bord fin, textes clairs à fort contraste, gros chiffres.
+  La couleur de la boutique colore les boutons principaux (éclaircie automatiquement si elle est trop
+  sombre pour se voir). **Les reçus restent blancs** (images WhatsApp lisibles partout).
+- **Menu selon le rôle** : le vendeur ne voit que **Vendre, Ma caisse, Clients** ; le patron voit tout
+  (Tableau, Arrivages, Inventaire, Fournisseurs, Vendeurs, Gestion). Le patron étant entré avec son code,
+  « Gestion » ne redemande plus le code. L'accord du patron par code reste disponible (servira aux retours).
+- **Téléphone** : même allure, gros boutons à grandes icônes ; « Vendre » reste le plus gros.
+- **Tablette et PC** : **menu fixe à gauche** (icônes + mots courts, élément actif en surbrillance, la personne
+  connectée en bas) ; les pages s'ouvrent à droite, le menu reste visible.
+- **Tableau de bord** (accueil du patron sur tablette et PC) : ventes, bénéfice, dépenses et crédits du jour en
+  gros chiffres, **courbe des ventes des 7 derniers jours**, **les 5 produits qui rapportent le plus sur 30
+  jours**, stock bas. La page « Tableau » utilise aussi la courbe.
+- **Ma caisse** : état (ouverte depuis quelle heure, par qui), **fond initial**, boutons Ouvrir / Dépense /
+  Fermer (+ « Argent pris » pour le patron), **historique des sessions**. Le patron voit ce qui doit être
+  dans la caisse et l'écart de chaque session ; **le vendeur ne voit aucun de ces chiffres** (fermeture
+  aveugle conservée). « Dépense » et « Fermer la caisse » ont quitté l'accueil pour « Ma caisse ».
+- **Encaissement en grande fenêtre** (tablette, PC) : sous-total, à encaisser, montant reçu, monnaie à rendre,
+  mode de paiement, billets reçus (+500 … +10 000, compte exact), billets à rendre, clavier ; boutons
+  « Annuler (Échap) » et « Valider (Entrée) ». Sur téléphone, l'écran d'encaissement ne change pas.
+
+**Choix pris seul (le plus simple) :** les boutons « Fournisseurs » et « Vendeurs » sont dans le menu de gauche
+sur PC/tablette, et dans « Gestion » sur téléphone (pour garder des boutons assez gros sur un 4 pouces).
+
+**Tests (359 au total, tous réussis)**, par exemple :
+- Vendeur Kossi (téléphone et PC) : voit Vendre, Ma caisse, Clients ; pas Tableau ni Gestion ; dans Ma caisse,
+  pas de « Doit être dans la caisse » ni « Argent pris ».
+- PC : « Clients » s'ouvre à droite du menu, qui reste visible ; « Accueil » ramène au tableau de bord.
+- 6 tailles d'écran × texte normal et agrandi ×1,5 : rien ne déborde, chaque bouton fait au moins 72 points.
+
+**Captures vérifiées une à une** (4", grand téléphone, tablette 10" paysage, PC 1366×768) : entrée par le code,
+accueil patron, accueil vendeur, vente, encaissement, Ma caisse (patron et vendeur), tableau, clients,
+gestion. Corrigé après vérification : logo de la boutique peu visible sur le fond sombre (liseré clair
+ajouté) ; « Vendre » trop petit sur 4" (icône à côté du mot) ; carte « Rendre » coupée dans la fenêtre
+d'encaissement (remplacée par les billets à rendre).

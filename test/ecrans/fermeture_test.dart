@@ -23,7 +23,7 @@ Future<void> journeeEspeces(EtatApplication etat) async {
 }
 
 Future<void> fermerAvec(WidgetTester tester, List<String> montants) async {
-  await toucher(tester, find.byKey(const Key('bouton-fermer-caisse')));
+  await toucherDansMaCaisse(tester, 'bouton-fermer-caisse');
   await attendre(tester, tours: 8);
   for (final m in montants) {
     await taperMontant(tester, m);
@@ -99,7 +99,7 @@ void main() {
       );
       await afficherApp(tester, env.etat);
       // Espèces : 5 000 + 1 200 − 300 = 5 900. Flooz reçu : 600.
-      await toucher(tester, find.byKey(const Key('bouton-fermer-caisse')));
+      await toucherDansMaCaisse(tester, 'bouton-fermer-caisse');
       await attendre(tester, tours: 8);
       expect(find.text('Étape 1 sur 2'), findsOneWidget);
       await taperMontant(tester, '5900');
@@ -162,7 +162,7 @@ void main() {
   ) async {
     final env = await environnementDeTest(tester, preparer: boutiqueAvecStock);
     await afficherApp(tester, env.etat);
-    await toucher(tester, find.byKey(const Key('bouton-fermer-caisse')));
+    await toucherDansMaCaisse(tester, 'bouton-fermer-caisse');
     await attendre(tester, tours: 8);
     expect(find.text('La caisse n\'est pas ouverte.'), findsOneWidget);
     expect(find.byType(PageFermerCaisse), findsNothing);
@@ -185,7 +185,7 @@ void main() {
         },
       );
       await afficherApp(tester, env.etat, taille: taille, densite: densite);
-      await toucher(tester, find.byKey(const Key('bouton-fermer-caisse')));
+      await toucherDansMaCaisse(tester, 'bouton-fermer-caisse');
       await attendre(tester, tours: 8);
       expect(tester.takeException(), isNull);
       await taperMontant(tester, '1234000');

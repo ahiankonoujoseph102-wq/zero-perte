@@ -120,7 +120,6 @@ void main() {
     final d = (await tester.runAsync(() => demo(env, cheminDemo())))!;
     await afficherApp(tester, d);
     await toucher(tester, find.byKey(const Key('bouton-espace-patron')));
-    await taperPin(tester, codePatronDemo);
     expect(find.byKey(const Key('patron-tableau')), findsOneWidget);
     expect(find.byKey(const Key('patron-sauvegarde')), findsNothing);
   });

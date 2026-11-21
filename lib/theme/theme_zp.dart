@@ -9,16 +9,24 @@ const String policeZp = 'AtkinsonHyperlegible';
 
 /// Thème de Zéro Perte : grands textes, contrastes forts, coins arrondis.
 ThemeData themeZeroPerte({Color couleurMarque = CouleursZp.marque}) {
+  final principal = couleurBouton(couleurMarque);
   final schema = ColorScheme.fromSeed(
-    seedColor: couleurMarque,
-    primary: couleurMarque,
+    seedColor: principal,
+    brightness: Brightness.dark,
+    primary: principal,
+    onPrimary: Colors.white,
     surface: CouleursZp.surface,
+    onSurface: CouleursZp.texte,
     error: CouleursZp.argentSort,
+    outline: CouleursZp.ligne,
   );
   final base = ThemeData(
     useMaterial3: true,
+    brightness: Brightness.dark,
     colorScheme: schema,
     scaffoldBackgroundColor: CouleursZp.fond,
+    canvasColor: CouleursZp.fond,
+    dividerColor: CouleursZp.ligne,
     fontFamily: policeZp,
   );
   return base.copyWith(
@@ -48,6 +56,28 @@ ThemeData themeZeroPerte({Color couleurMarque = CouleursZp.marque}) {
           bodyColor: CouleursZp.texte,
           displayColor: CouleursZp.texte,
         ),
+    appBarTheme: const AppBarTheme(
+      backgroundColor: CouleursZp.fond,
+      foregroundColor: CouleursZp.texte,
+      surfaceTintColor: Colors.transparent,
+    ),
+    cardTheme: const CardThemeData(color: CouleursZp.surface),
+    dialogTheme: const DialogThemeData(backgroundColor: CouleursZp.surface),
+    bottomSheetTheme: const BottomSheetThemeData(
+      backgroundColor: CouleursZp.surface,
+    ),
+    chipTheme: const ChipThemeData(
+      backgroundColor: CouleursZp.surface,
+      selectedColor: CouleursZp.marqueFoncee,
+      side: BorderSide(color: CouleursZp.ligne),
+      labelStyle: TextStyle(fontFamily: policeZp, color: CouleursZp.texte),
+    ),
+    inputDecorationTheme: const InputDecorationTheme(
+      filled: true,
+      fillColor: CouleursZp.surface,
+      labelStyle: TextStyle(color: CouleursZp.texteDoux),
+      hintStyle: TextStyle(color: CouleursZp.texteDoux),
+    ),
     snackBarTheme: const SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
       backgroundColor: CouleursZp.marqueFoncee,

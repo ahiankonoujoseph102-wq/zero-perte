@@ -240,7 +240,7 @@ Color couleurEcart(EtatCaisse e) => switch (e) {
   EtatCaisse.juste => CouleursZp.argentEntre,
   EtatCaisse.manque => CouleursZp.argentSort,
   // Ambre foncé : lisible sur fond blanc.
-  EtatCaisse.surplus => const Color(0xFF8A5300),
+  EtatCaisse.surplus => CouleursZp.creditTexte,
 };
 
 String dateEtHeure(int ms) {

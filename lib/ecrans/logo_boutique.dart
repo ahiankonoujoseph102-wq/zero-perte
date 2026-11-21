@@ -20,6 +20,12 @@ class LogoBoutique extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: couleur,
+        // Liseré clair : le logo se voit sur le fond bleu nuit comme sur l'en-tête
+        // coloré du reçu.
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.9),
+          width: taille >= 40 ? 2 : 1.5,
+        ),
         boxShadow: [
           BoxShadow(
             color: couleur.withValues(alpha: 0.25),

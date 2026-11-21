@@ -48,7 +48,7 @@ Widget texteSolde(Client c, {double taille = 17, Key? key}) => Text(
   style: TextStyle(
     fontSize: taille,
     fontWeight: FontWeight.w700,
-    color: c.solde > 0 ? const Color(0xFF8A5300) : CouleursZp.argentEntre,
+    color: c.solde > 0 ? CouleursZp.creditTexte : CouleursZp.argentEntre,
   ),
 );
 
@@ -199,7 +199,7 @@ class _PageClientsState extends State<PageClients> {
                         style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w700,
-                          color: CouleursZp.texteSurCredit,
+                          color: CouleursZp.creditTexte,
                         ),
                       ),
                     ],
@@ -804,7 +804,7 @@ class _PageClientState extends State<PageClient> {
                             ? Icons.shopping_basket_rounded
                             : Icons.savings_rounded,
                         color: m.montant > 0
-                            ? const Color(0xFF8A5300)
+                            ? CouleursZp.creditTexte
                             : CouleursZp.argentEntre,
                       ),
                       const SizedBox(width: 8),
@@ -824,7 +824,7 @@ class _PageClientState extends State<PageClient> {
                           fontSize: 17,
                           fontWeight: FontWeight.w700,
                           color: m.montant > 0
-                              ? const Color(0xFF8A5300)
+                              ? CouleursZp.creditTexte
                               : CouleursZp.argentEntre,
                         ),
                       ),
@@ -919,97 +919,100 @@ class _PageRemboursementFaitState extends State<PageRemboursementFait> {
           const SizedBox(height: 12),
           RepaintBoundary(
             key: _cadre,
-            child: ColoredBox(
-              color: CouleursZp.fond,
-              child: Padding(
-                padding: const EdgeInsets.all(10),
-                child: Container(
-                  key: const Key('recu-remboursement'),
-                  decoration: BoxDecoration(
-                    color: CouleursZp.surface,
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Container(
-                        color: Color(config.couleur),
-                        padding: const EdgeInsets.all(14),
-                        child: Row(
-                          children: [
-                            LogoBoutique(config: config, taille: 44),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                config.nom,
+            child: DefaultTextStyle.merge(
+              style: const TextStyle(color: CouleursRecu.texte),
+              child: ColoredBox(
+                color: CouleursRecu.cadre,
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Container(
+                    key: const Key('recu-remboursement'),
+                    decoration: BoxDecoration(
+                      color: CouleursRecu.fond,
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Container(
+                          color: Color(config.couleur),
+                          padding: const EdgeInsets.all(14),
+                          child: Row(
+                            children: [
+                              LogoBoutique(config: config, taille: 44),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  config.nom,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 19,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(14),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                'Remboursement · ${dateEtHeure(m.heure)}',
                                 style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 19,
+                                  fontSize: 15,
+                                  color: CouleursRecu.texteDoux,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                widget.client.nom,
+                                style: const TextStyle(
+                                  fontSize: 20,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(14),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Text(
-                              'Remboursement · ${dateEtHeure(m.heure)}',
-                              style: const TextStyle(
-                                fontSize: 15,
-                                color: CouleursZp.texteDoux,
+                              const Divider(height: 20),
+                              _ligne(
+                                'A payé',
+                                formatFrancs(-m.montant),
+                                CouleursRecu.vert,
                               ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              widget.client.nom,
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w700,
+                              _ligne(
+                                'Reste à payer',
+                                formatFrancs(widget.client.solde),
+                                widget.client.solde > 0
+                                    ? CouleursRecu.ambre
+                                    : CouleursRecu.vert,
+                                cle: 'reste-a-payer',
                               ),
-                            ),
-                            const Divider(height: 20),
-                            _ligne(
-                              'A payé',
-                              formatFrancs(-m.montant),
-                              CouleursZp.argentEntre,
-                            ),
-                            _ligne(
-                              'Reste à payer',
-                              formatFrancs(widget.client.solde),
-                              widget.client.solde > 0
-                                  ? const Color(0xFF8A5300)
-                                  : CouleursZp.argentEntre,
-                              cle: 'reste-a-payer',
-                            ),
-                            if (widget.etat.estDemo)
-                              const Text(
-                                'DÉMONSTRATION — SANS VALEUR',
+                              if (widget.etat.estDemo)
+                                const Text(
+                                  'DÉMONSTRATION — SANS VALEUR',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w700,
+                                    color: CouleursRecu.rouge,
+                                  ),
+                                ),
+                              const SizedBox(height: 8),
+                              Text(
+                                config.messageRecu,
                                 textAlign: TextAlign.center,
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 17,
-                                  fontWeight: FontWeight.w700,
-                                  color: CouleursZp.argentSort,
+                                  fontStyle: FontStyle.italic,
                                 ),
                               ),
-                            const SizedBox(height: 8),
-                            Text(
-                              config.messageRecu,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 17,
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),

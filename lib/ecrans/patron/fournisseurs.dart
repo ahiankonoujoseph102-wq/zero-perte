@@ -9,7 +9,7 @@ import '../caisse/fermeture.dart' show dateEtHeure;
 import '../caisse/saisie_montant.dart';
 import '../communs.dart';
 
-const _ambre = Color(0xFF8A5300);
+const _ambre = CouleursZp.creditTexte;
 
 /// Espace patron → « Fournisseurs » : ce que la boutique doit à chacun.
 class PageFournisseurs extends StatefulWidget {
@@ -102,7 +102,7 @@ class _PageFournisseursState extends State<PageFournisseurs> {
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
-                        color: CouleursZp.texteSurCredit,
+                        color: CouleursZp.creditTexte,
                       ),
                     ),
                   ],

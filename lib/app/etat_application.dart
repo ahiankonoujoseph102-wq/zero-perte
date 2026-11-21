@@ -340,6 +340,11 @@ class EtatApplication extends ChangeNotifier {
   /// Personne connectée (patron ou vendeur), nulle si personne.
   Utilisateur? get utilisateurActuel => _utilisateurActuel;
 
+  /// Le menu complet (patron) : le patron connecté, ou personne n'est encore
+  /// enregistré (boutique en cours d'installation). Le vendeur ne voit que
+  /// Vendre, Ma caisse et Clients.
+  bool get voitTout => estPatron || _utilisateurs.isEmpty;
+
   /// Nombre d'erreurs de PIN autorisées avant blocage.
   static const int essaisPin = 5;
 
@@ -581,6 +586,27 @@ class EtatApplication extends ChangeNotifier {
   Future<bool> caisseOuverte() async =>
       await journal.dernierEvenementCaisse() == TypeOperation.fondsDeCaisse;
 
+  /// Page « Ma caisse » : ouverte ou non, fond initial, sessions passées.
+  Future<EtatCaisseJour> etatCaisse() async {
+    final ouverte = await caisseOuverte();
+    final ouverture = ouverte ? await journal.derniereOuverture() : null;
+    final enCours = await journal.caisseEnCours();
+    return EtatCaisseJour(
+      ouverte: ouverte,
+      heureOuverture: ouverture?.heure,
+      ouvertPar: ouverture == null ? null : nomDe(ouverture.auteurId),
+      fonds: ouverte ? enCours[ModePaiement.especes]!.fondsDeCaisse : 0,
+      // L'attendu n'est donné qu'au patron (fermeture aveugle du vendeur).
+      attendus: voitTout
+          ? {
+              for (final e in enCours.entries)
+                e.key: attenduAFermeture(e.key, e.value),
+            }
+          : const {},
+      sessions: await journal.fermetures(limite: 15),
+    );
+  }
+
   /// Ouvre la caisse avec l'argent laissé pour rendre la monnaie (0 accepté).
   Future<void> ouvrirCaisse(int fonds) async {
     await journal.enregistrerFondsDeCaisse(fonds, auteurId: auteurActuel);
@@ -663,9 +689,27 @@ class EtatApplication extends ChangeNotifier {
     final recus = await journal.produitsDejaRecus();
     final stocks = await journal.stocks();
 
-    final meilleurs =
-        parProduit.entries.where((e) => e.value.montant > 0).toList()
-          ..sort((a, b) => b.value.montant.compareTo(a.value.montant));
+    final ilYa30Jours = DateTime(
+      m.year,
+      m.month,
+      m.day - 29,
+    ).millisecondsSinceEpoch;
+    List<(String, int)> classer(
+      Map<String, ({int milliemes, int montant})> parId,
+      int n,
+    ) {
+      final l = parId.entries.where((e) => e.value.montant > 0).toList()
+        ..sort((a, b) => b.value.montant.compareTo(a.value.montant));
+      return [
+        for (final e in l.take(n))
+          (
+            _produits.where((p) => p.id == e.key).firstOrNull?.nom ?? 'Produit',
+            e.value.montant,
+          ),
+      ];
+    }
+
+    final trenteJours = await journal.ventesParProduit(depuis: ilYa30Jours);
     final bas = <(Produit, int, RaisonStockBas)>[];
     for (final p in _produits) {
       final stock = stocks[p.id] ?? 0;
@@ -686,13 +730,8 @@ class EtatApplication extends ChangeNotifier {
       depenses: depenses,
       credits: await journal.totalCredits(),
       septJours: await ventesSeptJours(),
-      meilleurs: [
-        for (final e in meilleurs.take(3))
-          (
-            _produits.where((p) => p.id == e.key).firstOrNull?.nom ?? 'Produit',
-            e.value.montant,
-          ),
-      ],
+      meilleurs: classer(parProduit, 3),
+      meilleurs30Jours: classer(trenteJours, 5),
       stockBas: bas,
     );
   }
@@ -1288,6 +1327,7 @@ class TableauPatron {
     this.credits = 0,
     this.septJours = const [],
     required this.meilleurs,
+    this.meilleurs30Jours = const [],
     required this.stockBas,
   });
 
@@ -1308,6 +1348,34 @@ class TableauPatron {
   /// Les 3 produits qui ont rapporté le plus : (nom, montant).
   final List<(String, int)> meilleurs;
 
+  /// Les 5 produits qui ont rapporté le plus sur les 30 derniers jours.
+  final List<(String, int)> meilleurs30Jours;
+
   /// Produits à racheter : (produit, stock en millièmes, raison).
   final List<(Produit, int, RaisonStockBas)> stockBas;
+}
+
+/// Ce que montre la page « Ma caisse ».
+class EtatCaisseJour {
+  const EtatCaisseJour({
+    required this.ouverte,
+    required this.fonds,
+    required this.attendus,
+    required this.sessions,
+    this.heureOuverture,
+    this.ouvertPar,
+  });
+
+  final bool ouverte;
+  final int? heureOuverture;
+  final String? ouvertPar;
+
+  /// Fond initial (espèces laissées pour rendre la monnaie).
+  final int fonds;
+
+  /// Ce qui doit être dans chaque caisse (vide pour un vendeur).
+  final Map<ModePaiement, int> attendus;
+
+  /// Dernières caisses fermées (la plus récente d'abord).
+  final List<FermetureCaisse> sessions;
 }

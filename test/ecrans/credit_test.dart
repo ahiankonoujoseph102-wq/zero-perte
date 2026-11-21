@@ -261,10 +261,7 @@ void main() {
       await attendre(tester, tours: 8);
       await toucher(tester, find.byKey(const Key('client-Kofi')));
       expect(tester.takeException(), isNull);
-      await tester.pageBack();
-      await attendre(tester);
-      await tester.pageBack();
-      await attendre(tester);
+      await revenirAccueil(tester);
       await toucher(tester, find.byKey(const Key('bouton-credit')));
       await attendre(tester, tours: 8);
       await toucher(tester, find.byKey(const Key('client-Kofi')));

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zero_perte/ecrans/patron/espace_patron.dart';
 
+import 'package:zero_perte/ecrans/communs.dart' show demanderPin;
+
 import '../support/outils.dart';
 
 void main() {
@@ -14,9 +16,8 @@ void main() {
       );
       await afficherApp(tester, env.etat);
 
+      // Le patron est entré avec son code : « Gestion » s'ouvre directement.
       await toucher(tester, find.byKey(const Key('bouton-espace-patron')));
-      expect(find.textContaining('Code secret de Ama'), findsOneWidget);
-      await taperPin(tester, '482713');
       expect(find.byType(EspacePatron), findsOneWidget);
 
       await toucher(tester, find.byKey(const Key('patron-arrivages')));
@@ -49,26 +50,61 @@ void main() {
     },
   );
 
-  testWidgets('5 codes faux : bloqué 5 minutes, même le bon code est refusé', (
-    tester,
-  ) async {
-    final env = await environnementDeTest(tester, preparer: boutiqueInstallee);
-    await afficherApp(tester, env.etat);
-    await toucher(tester, find.byKey(const Key('bouton-espace-patron')));
-    for (var i = 0; i < 4; i++) {
+  testWidgets(
+    'accord du patron : 5 codes faux → bloqué 5 minutes, même le bon code est refusé',
+    (tester) async {
+      final env = await environnementDeTest(
+        tester,
+        preparer: boutiqueInstallee,
+      );
+      await afficherApp(tester, env.etat);
+      // L'accord du patron (code demandé) sert aux retours et aux gros montants.
+      final nav = tester.state<NavigatorState>(find.byType(Navigator).first);
+      nav.push(
+        MaterialPageRoute(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: FilledButton(
+                key: const Key('demander-accord'),
+                onPressed: () async {
+                  if (await demanderPin(
+                        context,
+                        env.etat,
+                        env.etat.patron!,
+                        titre: 'Accord du patron',
+                      ) &&
+                      context.mounted) {
+                    await Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => EspacePatron(etat: env.etat),
+                      ),
+                    );
+                  }
+                },
+                child: const Text('Accord'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await attendre(tester);
+      await toucher(tester, find.byKey(const Key('demander-accord')));
+      for (var i = 0; i < 4; i++) {
+        await taperPin(tester, '111111');
+      }
+      expect(find.textContaining('Encore 1 essai'), findsOneWidget);
       await taperPin(tester, '111111');
-    }
-    expect(find.textContaining('Encore 1 essai'), findsOneWidget);
-    await taperPin(tester, '111111');
-    expect(find.textContaining('Trop d\'erreurs'), findsOneWidget);
-    await taperPin(tester, '482713'); // bon code, mais bloqué
-    expect(find.byType(EspacePatron), findsNothing);
+      expect(find.textContaining('Trop d\'erreurs'), findsOneWidget);
+      await taperPin(tester, '482713'); // bon code, mais bloqué
+      expect(find.byType(EspacePatron), findsNothing);
 
-    // 6 minutes plus tard : débloqué.
-    env.etat.maintenant = () => DateTime.now().add(const Duration(minutes: 6));
-    await taperPin(tester, '482713');
-    expect(find.byType(EspacePatron), findsOneWidget);
-  });
+      // 6 minutes plus tard : débloqué.
+      env.etat.maintenant = () =>
+          DateTime.now().add(const Duration(minutes: 6));
+      await taperPin(tester, '482713');
+      expect(find.byType(EspacePatron), findsOneWidget);
+    },
+  );
 
   for (final e in ecransDeTest.entries) {
     final (taille, densite) = e.value;

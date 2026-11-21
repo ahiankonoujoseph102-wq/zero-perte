@@ -88,11 +88,34 @@ class _PageVendreState extends State<PageVendre> {
   );
 
   Future<void> _encaisser() async {
-    final fini = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) => PageEncaisser(etat: etat, panier: _panier),
-      ),
-    );
+    final taille = MediaQuery.sizeOf(context);
+    // Tablette et PC : grande fenêtre par-dessus la vente.
+    final fini = estGrandEcran(context)
+        ? await showDialog<bool>(
+            context: context,
+            builder: (_) => Dialog(
+              insetPadding: const EdgeInsets.all(24),
+              clipBehavior: Clip.antiAlias,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+                side: const BorderSide(color: CouleursZp.ligne, width: 1.5),
+              ),
+              child: SizedBox(
+                width: (taille.width - 48).clamp(0, 1040),
+                height: (taille.height - 48).clamp(0, 720),
+                child: PageEncaisser(
+                  etat: etat,
+                  panier: _panier,
+                  fenetre: true,
+                ),
+              ),
+            ),
+          )
+        : await Navigator.of(context).push<bool>(
+            MaterialPageRoute(
+              builder: (_) => PageEncaisser(etat: etat, panier: _panier),
+            ),
+          );
     if (fini == true) setState(_panier.vider);
   }
 

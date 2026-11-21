@@ -55,10 +55,7 @@ void main() {
         find.byType(MaterialApp),
         matchesGoldenFile('captures/ge_encaisser_${e.key}.png'),
       );
-      await tester.pageBack();
-      await attendre(tester);
-      await tester.pageBack();
-      await attendre(tester);
+      await revenirAccueil(tester);
       await ouvrirEspacePatron(tester);
       await expectLater(
         find.byType(MaterialApp),

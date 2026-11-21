@@ -1889,6 +1889,23 @@ class JournalLocal implements ReglagesLocaux {
     return r.isEmpty ? null : r.first['type'] as String;
   }
 
+  /// Dernière ouverture de caisse (fonds de caisse) : heure et auteur.
+  Future<({int heure, String auteurId})?> derniereOuverture() async {
+    final r = await _db.query(
+      'operations',
+      columns: ['heure_telephone', 'auteur_id'],
+      where: 'type = ?',
+      whereArgs: [TypeOperation.fondsDeCaisse],
+      orderBy: 'heure_telephone DESC, numero DESC',
+      limit: 1,
+    );
+    if (r.isEmpty) return null;
+    return (
+      heure: r.first['heure_telephone'] as int,
+      auteurId: r.first['auteur_id'] as String,
+    );
+  }
+
   /// Heure de la dernière fermeture de caisse (0 s'il n'y en a jamais eu).
   Future<int> derniereFermeture() async {
     final r = await _db.rawQuery(

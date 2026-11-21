@@ -43,7 +43,7 @@ void main() {
       await attendre(tester);
 
       // Dépense de transport 1 500 F.
-      await toucher(tester, find.byKey(const Key('bouton-depense')));
+      await toucherDansMaCaisse(tester, 'bouton-depense');
       await toucher(tester, find.byKey(const Key('choix-depense-argent')));
       await taperMontant(tester, '1500');
       final bouton = tester.widget<FilledButton>(
@@ -83,7 +83,7 @@ void main() {
   ) async {
     final env = await environnementDeTest(tester, preparer: boutiqueAvecStock);
     await afficherApp(tester, env.etat);
-    await toucher(tester, find.byKey(const Key('bouton-depense')));
+    await toucherDansMaCaisse(tester, 'bouton-depense');
     await toucher(tester, find.byKey(const Key('choix-depense-argent')));
     await toucher(tester, find.byKey(const Key('motif-Autre')));
     await tester.enterText(
@@ -144,7 +144,7 @@ void main() {
         );
         await tester.pageBack();
         await attendre(tester);
-        await toucher(tester, find.byKey(const Key('bouton-depense')));
+        await toucherDansMaCaisse(tester, 'bouton-depense');
         await toucher(tester, find.byKey(const Key('choix-depense-argent')));
         await toucher(tester, find.byKey(const Key('motif-Autre')));
         expect(tester.takeException(), isNull);

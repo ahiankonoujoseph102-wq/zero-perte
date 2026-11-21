@@ -11,8 +11,16 @@ import '../support/outils.dart';
 import 'vente_test.dart' show boutiqueAvecStock, ouvrirLaCaisseSiDemande;
 
 Future<void> ouvrirEspacePatron(WidgetTester tester) async {
+  // Le patron est entré avec son code : « Gestion » s'ouvre sans le redemander.
+  // (On revient d'abord à l'accueil si une page est ouverte.)
+  if (find.byKey(const Key('bouton-espace-patron')).evaluate().isEmpty) {
+    tester
+        .state<NavigatorState>(find.byType(Navigator).first)
+        .popUntil((r) => r.isFirst);
+    await attendre(tester, tours: 4);
+  }
   await toucher(tester, find.byKey(const Key('bouton-espace-patron')));
-  await taperPin(tester, '482713');
+  await attendre(tester, tours: 4);
   expect(find.byType(EspacePatron), findsOneWidget);
 }
 

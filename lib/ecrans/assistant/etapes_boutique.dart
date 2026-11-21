@@ -999,7 +999,7 @@ class _ChampPrix extends StatelessWidget {
       suffixStyle: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
       helperStyle: TextStyle(
         fontSize: 15,
-        color: aVerifier ? CouleursZp.texteSurCredit : CouleursZp.texteDoux,
+        color: aVerifier ? CouleursZp.creditTexte : CouleursZp.texteDoux,
       ),
     ),
   );

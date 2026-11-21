@@ -28,10 +28,19 @@ IconData iconePaiement(ModePaiement m) => switch (m) {
 
 /// Encaissement : moyen de paiement, argent reçu, monnaie à rendre.
 class PageEncaisser extends StatefulWidget {
-  const PageEncaisser({super.key, required this.etat, required this.panier});
+  const PageEncaisser({
+    super.key,
+    required this.etat,
+    required this.panier,
+    this.fenetre = false,
+  });
 
   final EtatApplication etat;
   final Panier panier;
+
+  /// Tablette et PC : grande fenêtre (montants à gauche, clavier à droite,
+  /// « Annuler (Échap) » et « Valider (Entrée) » en bas).
+  final bool fenetre;
 
   @override
   State<PageEncaisser> createState() => _PageEncaisserState();
@@ -114,8 +123,344 @@ class _PageEncaisserState extends State<PageEncaisser> {
     }
   }
 
+  Widget _ligneMontant(
+    String libelle,
+    int montant, {
+    Key? cle,
+    Color? couleur,
+    double taille = 24,
+    bool gras = false,
+  }) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 5),
+    child: Row(
+      children: [
+        Expanded(
+          child: Text(
+            libelle,
+            style: TextStyle(
+              fontSize: gras ? 20 : 18,
+              fontWeight: gras ? FontWeight.w700 : FontWeight.w400,
+              color: gras ? CouleursZp.texte : CouleursZp.texteDoux,
+            ),
+          ),
+        ),
+        MontantGeant(
+          montant,
+          key: cle,
+          couleur: couleur ?? CouleursZp.texte,
+          taille: taille,
+        ),
+      ],
+    ),
+  );
+
+  /// Grande fenêtre d'encaissement (tablette, PC).
+  Widget _fenetre(BuildContext context) {
+    final monnaie = calculerMonnaie(total: _total, recu: _recu);
+    final especes = _mode == ModePaiement.especes;
+    final articles = widget.panier.lignes.length;
+    final gauche = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          decoration: BoxDecoration(
+            color: CouleursZp.fond,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: CouleursZp.ligne),
+          ),
+          child: Column(
+            children: [
+              _ligneMontant(
+                'Sous-total ($articles ${articles > 1 ? 'articles' : 'article'})',
+                _total,
+                taille: 20,
+              ),
+              const Divider(color: CouleursZp.ligne),
+              _ligneMontant(
+                'À encaisser',
+                _total,
+                cle: const Key('a-payer'),
+                couleur: CouleursZp.argentEntreClair,
+                taille: 38,
+                gras: true,
+              ),
+              if (especes) ...[
+                _ligneMontant(
+                  'Montant reçu',
+                  _recu,
+                  cle: const Key('montant-recu'),
+                  taille: 30,
+                  gras: true,
+                ),
+                _ligneMontant(
+                  monnaie.suffisant ? 'Monnaie à rendre' : 'Il manque',
+                  monnaie.suffisant ? monnaie.aRendre : monnaie.manque,
+                  cle: const Key('fenetre-monnaie'),
+                  couleur: monnaie.suffisant
+                      ? CouleursZp.creditTexte
+                      : CouleursZp.argentSortClair,
+                  taille: 30,
+                  gras: true,
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        const Text(
+          'Mode de paiement',
+          style: TextStyle(fontSize: 16, color: CouleursZp.texteDoux),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            for (final m in ModePaiement.values)
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: _BoutonMode(
+                    mode: m,
+                    choisi: m == _mode,
+                    onTap: () => setState(() => _mode = m),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (especes) ...[
+          const Text(
+            'Billets reçus',
+            style: TextStyle(fontSize: 16, color: CouleursZp.texteDoux),
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ActionChip(
+                key: const Key('rapide-exact'),
+                avatar: const Icon(Icons.done_all_rounded),
+                label: const Text(
+                  'Compte exact',
+                  style: TextStyle(fontSize: 17),
+                ),
+                onPressed: () => setState(() => _recu = _total),
+              ),
+              for (final b in const [500, 1000, 2000, 5000, 10000])
+                ActionChip(
+                  key: Key('rapide-$b'),
+                  label: Text(
+                    '+ ${formatFrancs(b)}',
+                    style: const TextStyle(fontSize: 17),
+                  ),
+                  onPressed: () => setState(() => _recu += b),
+                ),
+            ],
+          ),
+          if (_recu > 0 && monnaie.suffisant && monnaie.aRendre > 0) ...[
+            const SizedBox(height: 12),
+            const Text(
+              'À rendre en',
+              style: TextStyle(fontSize: 16, color: CouleursZp.texteDoux),
+            ),
+            const SizedBox(height: 6),
+            Wrap(
+              key: const Key('a-rendre'),
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final e in decomposerEnCoupures(
+                  monnaie.aRendre,
+                ).coupures.entries)
+                  Chip(
+                    avatar: Icon(
+                      e.key > 500 ? Icons.money_rounded : Icons.circle,
+                      size: 18,
+                    ),
+                    label: Text(
+                      '${e.value} × ${formatFrancs(e.key)}',
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ] else if (_mode == ModePaiement.credit)
+          _ChoixClientCredit(
+            client: _client,
+            total: _total,
+            onChoisir: _choisirClient,
+          )
+        else
+          _paiementMobile(),
+      ],
+    );
+    final valider = _peutValider && !_enCours ? _valider : null;
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.enter): () => valider?.call(),
+        const SingleActivator(LogicalKeyboardKey.numpadEnter): () =>
+            valider?.call(),
+      },
+      child: Material(
+        color: CouleursZp.surface,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.payments_rounded,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 30,
+                  ),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'Encaissement',
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    key: const Key('bouton-ecouter-total'),
+                    tooltip: 'Écouter',
+                    onPressed: () => widget.etat.services.voix.dire(
+                      'À payer : ${montantPourVoix(_total)}',
+                    ),
+                    icon: const Icon(Icons.volume_up_rounded),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      flex: 6,
+                      child: SingleChildScrollView(child: gauche),
+                    ),
+                    const SizedBox(width: 20),
+                    Expanded(
+                      flex: 5,
+                      child: especes
+                          ? ClavierMontant(
+                              valeur: _recu,
+                              onChange: (v) => setState(() => _recu = v),
+                            )
+                          : Center(
+                              child: Icon(
+                                iconePaiement(_mode),
+                                size: 120,
+                                color: CouleursZp.ligne,
+                              ),
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      key: const Key('bouton-annuler-encaissement'),
+                      onPressed: () => Navigator.of(context).pop(false),
+                      icon: const Icon(Icons.close_rounded),
+                      label: const Text(
+                        'Annuler (Échap)',
+                        style: TextStyle(fontSize: 18),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(0, 64),
+                        foregroundColor: CouleursZp.texte,
+                        side: const BorderSide(
+                          color: CouleursZp.ligne,
+                          width: 2,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    flex: 2,
+                    child: GrosBouton(
+                      key: const Key('bouton-valider-vente'),
+                      texte: 'Valider (Entrée)',
+                      icone: Icons.check_rounded,
+                      couleur: CouleursZp.argentEntre,
+                      onPressed: valider,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _paiementMobile() => Column(
+    children: [
+      Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: CouleursZp.credit.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.sms_rounded,
+              size: 32,
+              color: CouleursZp.creditTexte,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Vérifiez le message ${nomPaiement(_mode)} reçu : montant ${formatFrancs(_total)}.',
+                style: const TextStyle(fontSize: 18),
+              ),
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 16),
+      TextField(
+        key: const Key('champ-reference'),
+        controller: _reference,
+        keyboardType: TextInputType.number,
+        inputFormatters: [
+          FilteringTextInputFormatter.digitsOnly,
+          LengthLimitingTextInputFormatter(12),
+        ],
+        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+        decoration: decorationChamp(
+          '4 derniers chiffres de la transaction',
+          icone: Icons.tag_rounded,
+          aide: 'Facultatif, mais aide le patron à vérifier.',
+        ),
+      ),
+    ],
+  );
+
   @override
   Widget build(BuildContext context) {
+    if (widget.fenetre) return _fenetre(context);
     final monnaie = calculerMonnaie(total: _total, recu: _recu);
     return PageZp(
       titre: 'Encaisser',
@@ -275,54 +620,7 @@ class _PageEncaisserState extends State<PageEncaisser> {
                     onChoisir: _choisirClient,
                   )
                 else
-                  SizedBox(
-                    child: Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: CouleursZp.credit.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.sms_rounded,
-                                size: 32,
-                                color: CouleursZp.texteSurCredit,
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  'Vérifiez le message ${nomPaiement(_mode)} reçu : montant ${formatFrancs(_total)}.',
-                                  style: const TextStyle(fontSize: 18),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        TextField(
-                          key: const Key('champ-reference'),
-                          controller: _reference,
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                            LengthLimitingTextInputFormatter(12),
-                          ],
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          decoration: decorationChamp(
-                            '4 derniers chiffres de la transaction',
-                            icone: Icons.tag_rounded,
-                            aide: 'Facultatif, mais aide le patron à vérifier.',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  _paiementMobile(),
               ],
             ),
           );
@@ -401,7 +699,7 @@ class _ChoixClientCredit extends StatelessWidget {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: trop ? CouleursZp.argentSort : CouleursZp.texteSurCredit,
+              color: trop ? CouleursZp.argentSort : CouleursZp.creditTexte,
             ),
           ),
         ],

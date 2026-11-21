@@ -156,7 +156,7 @@ class _RecuPartageableState extends State<RecuPartageable> {
             RepaintBoundary(
               key: _cadre,
               child: ColoredBox(
-                color: CouleursZp.fond,
+                color: CouleursRecu.cadre,
                 child: Padding(
                   padding: const EdgeInsets.all(10),
                   child: ApercuRecu(

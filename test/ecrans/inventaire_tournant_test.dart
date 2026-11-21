@@ -54,7 +54,7 @@ void main() {
         },
       );
       await afficherApp(tester, env.etat);
-      await toucher(tester, find.byKey(const Key('bouton-fermer-caisse')));
+      await toucherDansMaCaisse(tester, 'bouton-fermer-caisse');
       await attendre(tester, tours: 8);
       await toucher(tester, find.byKey(const Key('bouton-suivant-fermeture')));
       await attendre(tester, tours: 10);

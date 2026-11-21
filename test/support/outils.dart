@@ -170,6 +170,7 @@ Future<Environnement> environnementDeTest(
   String clePublique = clePubliqueDeTest,
   Future<void> Function(EtatApplication etat)? preparer,
   StockageMemoire? drive,
+  int Function()? horloge,
 }) async {
   final leDrive = drive ?? StockageMemoire();
   final fichiers = <Uint8List>[];
@@ -185,6 +186,7 @@ Future<Environnement> environnementDeTest(
     final journal = await JournalLocal.ouvrir(
       fabrique: databaseFactoryFfi,
       chemin: 'file:zp${_compteurBases++}?mode=memory&cache=private',
+      horloge: horloge,
     );
     if (etape != null) {
       await journal.ecrireParametre('assistant.etape', etape.name);
@@ -357,4 +359,26 @@ Future<void> taperPin(WidgetTester tester, String pin) async {
     await tester.pump();
   }
   await attendre(tester, tours: 8);
+}
+
+/// « Dépense » et « Fermer la caisse » sont dans « Ma caisse » : on l'ouvre
+/// d'abord si besoin.
+Future<void> toucherDansMaCaisse(WidgetTester tester, String cle) async {
+  if (find.byKey(Key(cle)).evaluate().isEmpty) {
+    await toucher(tester, find.byKey(const Key('bouton-ma-caisse')));
+    await attendre(tester, tours: 6);
+  }
+  await toucher(tester, find.byKey(Key(cle)));
+}
+
+/// Ferme toutes les pages ouvertes (et la fenêtre d'encaissement sur grand
+/// écran) : retour à l'accueil.
+Future<void> revenirAccueil(WidgetTester tester) async {
+  final navs = tester
+      .stateList<NavigatorState>(find.byType(Navigator, skipOffstage: false))
+      .toList();
+  for (final n in navs.reversed) {
+    n.popUntil((r) => r.isFirst);
+  }
+  await attendre(tester, tours: 4);
 }

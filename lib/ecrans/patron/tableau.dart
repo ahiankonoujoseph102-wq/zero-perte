@@ -6,6 +6,7 @@ import '../../domaine/quantites.dart';
 import '../../domaine/tableau.dart';
 import '../../theme/couleurs.dart';
 import '../communs.dart';
+import 'graphiques.dart';
 
 String texteRaison(RaisonStockBas r) => switch (r) {
   RaisonStockBas.epuise => 'Épuisé',
@@ -119,14 +120,14 @@ class _Contenu extends StatelessWidget {
         icone: Icons.menu_book_rounded,
         titre: 'Les clients doivent (crédit)',
         montant: t.credits,
-        couleur: const Color(0xFF8A5300),
+        couleur: CouleursZp.creditTexte,
       ),
     ];
     final suite = <Widget>[
       if (t.septJours.isNotEmpty) ...[
         const SizedBox(height: 8),
         const _Titre('Ventes des 7 derniers jours'),
-        _BarresSeptJours(jours: t.septJours),
+        CarteZp(child: CourbeSeptJours(jours: t.septJours)),
       ],
       const SizedBox(height: 8),
       const _Titre('Les plus vendus'),
@@ -326,75 +327,4 @@ class _Chiffre extends StatelessWidget {
       ],
     ),
   );
-}
-
-/// Petit graphique en barres : une barre par jour, le montant au-dessus.
-class _BarresSeptJours extends StatelessWidget {
-  const _BarresSeptJours({required this.jours});
-
-  final List<(DateTime, int)> jours;
-
-  static const _noms = ['lun', 'mar', 'mer', 'jeu', 'ven', 'sam', 'dim'];
-
-  String _court(int f) => f >= 1000000
-      ? '${(f / 1000000).toStringAsFixed(1).replaceAll('.', ',')} M'
-      : f >= 1000
-      ? '${f ~/ 1000} k'
-      : '$f';
-
-  @override
-  Widget build(BuildContext context) {
-    final max = jours.fold<int>(1, (m, j) => j.$2 > m ? j.$2 : m);
-    return Container(
-      key: const Key('barres-sept-jours'),
-      height: 170,
-      padding: const EdgeInsets.fromLTRB(8, 10, 8, 8),
-      decoration: BoxDecoration(
-        color: CouleursZp.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: CouleursZp.ligne),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          for (final (i, (jour, total)) in jours.indexed)
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  FittedBox(
-                    child: Text(
-                      _court(total),
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Container(
-                    height: 4 + 80 * total / max,
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    decoration: BoxDecoration(
-                      color: i == jours.length - 1
-                          ? CouleursZp.argentEntre
-                          : CouleursZp.argentEntre.withValues(alpha: 0.45),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    i == jours.length - 1 ? 'auj.' : _noms[jour.weekday - 1],
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: CouleursZp.texteDoux,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
-  }
 }

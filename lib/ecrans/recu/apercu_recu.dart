@@ -47,180 +47,183 @@ class ApercuRecu extends StatelessWidget {
   Widget build(BuildContext context) {
     final total = lignes.fold<int>(0, (s, l) => s + l.montant);
     final couleur = Color(config.couleur);
-    const petit = TextStyle(fontSize: 15, color: CouleursZp.texteDoux);
-    return Container(
-      key: const Key('apercu-recu'),
-      decoration: BoxDecoration(
-        color: CouleursZp.surface,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1A000000),
-            blurRadius: 12,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: couleur,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(18),
+    const petit = TextStyle(fontSize: 15, color: CouleursRecu.texteDoux);
+    return DefaultTextStyle.merge(
+      style: const TextStyle(color: CouleursRecu.texte),
+      child: Container(
+        key: const Key('apercu-recu'),
+        decoration: BoxDecoration(
+          color: CouleursRecu.fond,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x1A000000),
+              blurRadius: 12,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: couleur,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(18),
+                ),
+              ),
+              child: Row(
+                children: [
+                  LogoBoutique(config: config, taille: 48),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          config.nom,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        if (config.telephone.isNotEmpty)
+                          Text(
+                            config.telephone,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                            ),
+                          ),
+                        if (config.adresse.isNotEmpty)
+                          Text(
+                            config.adresse,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-            child: Row(
-              children: [
-                LogoBoutique(config: config, taille: 48),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    spacing: 12,
                     children: [
-                      Text(
-                        config.nom,
-                        style: const TextStyle(
-                          color: Colors.white,
+                      Text('Reçu n° $numero', style: petit),
+                      Text(date, style: petit),
+                    ],
+                  ),
+                  const Divider(height: 20),
+                  for (final l in lignes)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              l.libelle,
+                              style: const TextStyle(fontSize: 17),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            formatFrancs(l.montant),
+                            style: const TextStyle(fontSize: 17),
+                          ),
+                        ],
+                      ),
+                    ),
+                  const Divider(height: 20),
+                  Row(
+                    children: [
+                      const Text(
+                        'TOTAL',
+                        style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      if (config.telephone.isNotEmpty)
-                        Text(
-                          config.telephone,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            formatFrancs(total),
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w700,
+                              color: CouleursRecu.vert,
+                            ),
                           ),
                         ),
-                      if (config.adresse.isNotEmpty)
-                        Text(
-                          config.adresse,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 14,
-                          ),
-                        ),
+                      ),
                     ],
                   ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Wrap(
-                  alignment: WrapAlignment.spaceBetween,
-                  spacing: 12,
-                  children: [
-                    Text('Reçu n° $numero', style: petit),
-                    Text(date, style: petit),
-                  ],
-                ),
-                const Divider(height: 20),
-                for (final l in lignes)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            l.libelle,
-                            style: const TextStyle(fontSize: 17),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          formatFrancs(l.montant),
-                          style: const TextStyle(fontSize: 17),
-                        ),
-                      ],
-                    ),
-                  ),
-                const Divider(height: 20),
-                Row(
-                  children: [
-                    const Text(
-                      'TOTAL',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          formatFrancs(total),
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w700,
-                            color: CouleursZp.argentEntre,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                Text(
-                  paiement == 'Crédit' ? 'À crédit' : 'Payé : $paiement',
-                  style: petit,
-                ),
-                if (credit != null)
                   Text(
-                    credit!,
-                    key: const Key('recu-credit'),
-                    style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF8A5300),
-                    ),
+                    paiement == 'Crédit' ? 'À crédit' : 'Payé : $paiement',
+                    style: petit,
                   ),
-                const SizedBox(height: 10),
-                Text(
-                  config.messageRecu,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-                if (demo)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 6),
-                    child: Text(
-                      'DÉMONSTRATION — SANS VALEUR',
-                      key: Key('recu-demo'),
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
+                  if (credit != null)
+                    Text(
+                      credit!,
+                      key: const Key('recu-credit'),
+                      style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w700,
-                        color: CouleursZp.argentSort,
+                        color: CouleursRecu.ambre,
                       ),
                     ),
-                  ),
-                if (exemple)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 6),
-                    child: Text(
-                      '(exemple)',
-                      textAlign: TextAlign.center,
-                      style: petit,
+                  const SizedBox(height: 10),
+                  Text(
+                    config.messageRecu,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontStyle: FontStyle.italic,
                     ),
                   ),
-              ],
+                  if (demo)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 6),
+                      child: Text(
+                        'DÉMONSTRATION — SANS VALEUR',
+                        key: Key('recu-demo'),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: CouleursRecu.rouge,
+                        ),
+                      ),
+                    ),
+                  if (exemple)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 6),
+                      child: Text(
+                        '(exemple)',
+                        textAlign: TextAlign.center,
+                        style: petit,
+                      ),
+                    ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

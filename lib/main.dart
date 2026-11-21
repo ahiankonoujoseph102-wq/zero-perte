@@ -13,15 +13,8 @@ import 'domaine/licence.dart';
 import 'donnees/journal_local.dart';
 import 'ecrans/accueil_vendeur.dart';
 import 'ecrans/assistant/assistant_installation.dart';
-import 'ecrans/caisse/fermeture.dart';
-import 'ecrans/caisse/saisie_montant.dart';
 import 'ecrans/code_patron.dart';
-import 'ecrans/communs.dart';
 import 'ecrans/connexion.dart';
-import 'ecrans/credit/clients.dart';
-import 'ecrans/depense/page_depense.dart';
-import 'ecrans/patron/espace_patron.dart';
-import 'ecrans/vente/page_vendre.dart';
 import 'services/aide.dart';
 import 'services/google.dart';
 import 'services/google_pc.dart' show connexionPcConfiguree;
@@ -283,76 +276,7 @@ class ZeroPerteApp extends StatelessWidget {
             : (etat.utilisateurActuel == null && etat.utilisateurs.isNotEmpty)
             ? PageConnexion(etat: etat)
             : AccueilVendeur(
-                onChangerUtilisateur: etat.utilisateurs.isEmpty
-                    ? null
-                    : etat.deconnecter,
-                onEspacePatron: etat.patron == null
-                    ? null
-                    : () async {
-                        if (await demanderPin(
-                              context,
-                              etat,
-                              etat.patron!,
-                              titre: 'Espace patron',
-                            ) &&
-                            context.mounted) {
-                          await Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => EspacePatron(etat: etat),
-                            ),
-                          );
-                        }
-                      },
-                actions: {
-                  'depense': () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => PageChoixDepense(
-                        etat: etat,
-                        ouvrirDepenseArgent: (_) => pageDepenseArgent(etat),
-                      ),
-                    ),
-                  ),
-                  'credit': () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => PageClients(etat: etat)),
-                  ),
-                  'fermer': () async {
-                    if (!await etat.caisseOuverte()) {
-                      if (context.mounted) {
-                        annoncer(context, 'La caisse n\'est pas ouverte.');
-                      }
-                      return;
-                    }
-                    final modes = await etat.modesAFermer();
-                    if (!context.mounted) return;
-                    await Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            PageFermerCaisse(etat: etat, modes: modes),
-                      ),
-                    );
-                  },
-                  'vendre': () async {
-                    // Première vente depuis la fermeture : on ouvre d'abord la caisse.
-                    if (!await etat.caisseOuverte()) {
-                      if (!context.mounted) return;
-                      final ouverte = await Navigator.of(context).push<bool>(
-                        MaterialPageRoute(
-                          builder: (_) => pageOuvrirCaisse(etat),
-                        ),
-                      );
-                      if (ouverte != true) return;
-                    }
-                    if (!context.mounted) return;
-                    await Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => PageVendre(etat: etat)),
-                    );
-                  },
-                },
-                config: etat.config,
-                nomVendeur:
-                    etat.utilisateurActuel?.nom ??
-                    etat.patron?.nom ??
-                    'Vendeur',
+                etat: etat,
                 maintenant: maintenant,
                 pied: PiedDePage(
                   infosPaquet: infosPaquet ?? PackageInfo.fromPlatform(),

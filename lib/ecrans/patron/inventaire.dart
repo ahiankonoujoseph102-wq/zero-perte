@@ -270,7 +270,7 @@ class PageResultatInventaire extends StatelessWidget {
       ),
       EtatLigneInventaire.surplus => (
         'En trop : ${decrireUnites(l.ecart, unite)} (${formatFrancs(l.ecartFrancs)})',
-        const Color(0xFF8A5300),
+        CouleursZp.creditTexte,
       ),
     };
     return Container(

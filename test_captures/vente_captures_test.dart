@@ -125,7 +125,7 @@ void main() {
         preparer: boutiqueAvecStock,
       );
       await afficherApp(tester, env.etat, taille: e.value, densite: 2);
-      await toucher(tester, find.byKey(const Key('bouton-depense')));
+      await toucherDansMaCaisse(tester, 'bouton-depense');
       await toucher(tester, find.byKey(const Key('choix-depense-argent')));
       await toucher(tester, find.byKey(const Key('motif-Transport')));
       await expectLater(
@@ -157,7 +157,7 @@ void main() {
         },
       );
       await afficherApp(tester, env.etat, taille: e.value, densite: 2);
-      await toucher(tester, find.byKey(const Key('bouton-fermer-caisse')));
+      await toucherDansMaCaisse(tester, 'bouton-fermer-caisse');
       await attendre(tester, tours: 8);
       for (final c in ['6', '0', '0', '0']) {
         await toucher(tester, find.byKey(Key('montant-$c')));
