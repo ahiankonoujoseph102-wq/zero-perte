@@ -39,6 +39,7 @@ class _PageTableauState extends State<PageTableau> {
   Widget build(BuildContext context) {
     return PageZp(
       titre: 'Tableau',
+      pleineLargeur: true,
       icone: Icons.insights_rounded,
       corps: ListView(
         padding: const EdgeInsets.all(16),
@@ -84,120 +85,143 @@ class _Contenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final b = t.benefice;
+    final tout = <Widget>[
+      _Chiffre(
+        cle: 'chiffre-ventes',
+        icone: Icons.shopping_basket_rounded,
+        titre: 'Ventes',
+        montant: t.ventes,
+        couleur: CouleursZp.argentEntre,
+        detail: '${t.nombreVentes} ${t.nombreVentes > 1 ? 'ventes' : 'vente'}',
+      ),
+      _Chiffre(
+        cle: 'chiffre-benefice',
+        icone: Icons.trending_up_rounded,
+        titre: 'Bénéfice estimé',
+        montant: b.benefice,
+        couleur: b.benefice >= 0
+            ? CouleursZp.argentEntre
+            : CouleursZp.argentSort,
+        detail: b.lignesSansCout > 0
+            ? 'Sans les produits dont le prix d\'achat n\'est pas connu '
+                  '(enregistrez leurs arrivages).'
+            : 'Prix de vente − prix d\'achat (dernier arrivage).',
+      ),
+      _Chiffre(
+        cle: 'chiffre-depenses',
+        icone: Icons.payments_rounded,
+        titre: 'Dépenses',
+        montant: t.depenses,
+        couleur: CouleursZp.argentSort,
+      ),
+      _Chiffre(
+        cle: 'chiffre-credits',
+        icone: Icons.menu_book_rounded,
+        titre: 'Les clients doivent (crédit)',
+        montant: t.credits,
+        couleur: const Color(0xFF8A5300),
+      ),
+    ];
+    final suite = <Widget>[
+      if (t.septJours.isNotEmpty) ...[
+        const SizedBox(height: 8),
+        const _Titre('Ventes des 7 derniers jours'),
+        _BarresSeptJours(jours: t.septJours),
+      ],
+      const SizedBox(height: 8),
+      const _Titre('Les plus vendus'),
+      if (t.meilleurs.isEmpty)
+        const Text(
+          'Aucune vente sur cette période.',
+          style: TextStyle(fontSize: 17, color: CouleursZp.texteDoux),
+        )
+      else
+        for (final (i, (nom, montant)) in t.meilleurs.indexed)
+          _Ligne(
+            cle: 'meilleur-$i',
+            gauche: '${i + 1}. $nom',
+            droite: formatFrancs(montant),
+          ),
+      const SizedBox(height: 16),
+      _Titre('Stock bas (${t.stockBas.length})'),
+      if (t.stockBas.isEmpty)
+        const Text(
+          'Rien à racheter pour l\'instant.',
+          style: TextStyle(fontSize: 17, color: CouleursZp.texteDoux),
+        )
+      else
+        for (final (p, stock, raison) in t.stockBas)
+          Container(
+            key: Key('stock-bas-${p.nom}'),
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: CouleursZp.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: raison == RaisonStockBas.epuise
+                    ? CouleursZp.argentSort
+                    : CouleursZp.credit,
+                width: 1.5,
+              ),
+            ),
+            child: Row(
+              children: [
+                ImageProduit(produit: p, taille: 40),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        p.nom,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        raison == RaisonStockBas.epuise
+                            ? texteRaison(raison)
+                            : '${texteRaison(raison)} · reste ${decrireUnites(stock, p.uniteBase)}',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: raison == RaisonStockBas.epuise
+                              ? CouleursZp.argentSort
+                              : CouleursZp.texteDoux,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+    ];
+    // Grand écran : chiffres à gauche, graphique et listes à droite.
+    if (estGrandEcran(context)) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: tout,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: suite,
+            ),
+          ),
+        ],
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _Chiffre(
-          cle: 'chiffre-ventes',
-          icone: Icons.shopping_basket_rounded,
-          titre: 'Ventes',
-          montant: t.ventes,
-          couleur: CouleursZp.argentEntre,
-          detail:
-              '${t.nombreVentes} ${t.nombreVentes > 1 ? 'ventes' : 'vente'}',
-        ),
-        _Chiffre(
-          cle: 'chiffre-benefice',
-          icone: Icons.trending_up_rounded,
-          titre: 'Bénéfice estimé',
-          montant: b.benefice,
-          couleur: b.benefice >= 0
-              ? CouleursZp.argentEntre
-              : CouleursZp.argentSort,
-          detail: b.lignesSansCout > 0
-              ? 'Sans les produits dont le prix d\'achat n\'est pas connu '
-                    '(enregistrez leurs arrivages).'
-              : 'Prix de vente − prix d\'achat (dernier arrivage).',
-        ),
-        _Chiffre(
-          cle: 'chiffre-depenses',
-          icone: Icons.payments_rounded,
-          titre: 'Dépenses',
-          montant: t.depenses,
-          couleur: CouleursZp.argentSort,
-        ),
-        _Chiffre(
-          cle: 'chiffre-credits',
-          icone: Icons.menu_book_rounded,
-          titre: 'Les clients doivent (crédit)',
-          montant: t.credits,
-          couleur: const Color(0xFF8A5300),
-        ),
-        if (t.septJours.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          const _Titre('Ventes des 7 derniers jours'),
-          _BarresSeptJours(jours: t.septJours),
-        ],
-        const SizedBox(height: 8),
-        const _Titre('Les plus vendus'),
-        if (t.meilleurs.isEmpty)
-          const Text(
-            'Aucune vente sur cette période.',
-            style: TextStyle(fontSize: 17, color: CouleursZp.texteDoux),
-          )
-        else
-          for (final (i, (nom, montant)) in t.meilleurs.indexed)
-            _Ligne(
-              cle: 'meilleur-$i',
-              gauche: '${i + 1}. $nom',
-              droite: formatFrancs(montant),
-            ),
-        const SizedBox(height: 16),
-        _Titre('Stock bas (${t.stockBas.length})'),
-        if (t.stockBas.isEmpty)
-          const Text(
-            'Rien à racheter pour l\'instant.',
-            style: TextStyle(fontSize: 17, color: CouleursZp.texteDoux),
-          )
-        else
-          for (final (p, stock, raison) in t.stockBas)
-            Container(
-              key: Key('stock-bas-${p.nom}'),
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: CouleursZp.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: raison == RaisonStockBas.epuise
-                      ? CouleursZp.argentSort
-                      : CouleursZp.credit,
-                  width: 1.5,
-                ),
-              ),
-              child: Row(
-                children: [
-                  ImageProduit(produit: p, taille: 40),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          p.nom,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        Text(
-                          raison == RaisonStockBas.epuise
-                              ? texteRaison(raison)
-                              : '${texteRaison(raison)} · reste ${decrireUnites(stock, p.uniteBase)}',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: raison == RaisonStockBas.epuise
-                                ? CouleursZp.argentSort
-                                : CouleursZp.texteDoux,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-      ],
+      children: [...tout, ...suite],
     );
   }
 }

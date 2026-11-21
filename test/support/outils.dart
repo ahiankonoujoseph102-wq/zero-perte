@@ -251,6 +251,8 @@ const ecransDeTest = <String, (Size, double)>{
   'téléphone 5 pouces': (Size(360, 640), 2.0),
   'grand téléphone 6,5 pouces': (Size(412, 915), 2.625),
   'tablette': (Size(800, 1280), 1.5),
+  'tablette 10 pouces paysage': (Size(1280, 800), 1.5),
+  'PC 1366×768': (Size(1366, 768), 1.0),
 };
 
 Future<void> afficherApp(

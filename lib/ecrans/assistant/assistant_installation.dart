@@ -5,6 +5,7 @@ import '../../domaine/licence.dart';
 import '../../domaine/verification_telephone.dart';
 import '../../services/aide.dart';
 import '../../services/telephone.dart';
+import '../communs.dart' show ColonneCentree;
 import '../../theme/couleurs.dart';
 import '../accueil_vendeur.dart';
 import 'etapes_boutique.dart';
@@ -114,68 +115,70 @@ class _AssistantInstallationState extends State<AssistantInstallation> {
         if (e == EtapeAssistant.verification) _verification ??= _verifier();
         final numero = (_etapes.indexOf(e) + 1).clamp(1, _etapes.length);
         return Scaffold(
-          body: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  MediaQuery.withClampedTextScaling(
-                    maxScaleFactor: 1.3,
-                    child: Row(
-                      children: [
-                        const LogoZp(taille: 40),
-                        const SizedBox(width: 12),
-                        const Expanded(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              'Installation',
-                              maxLines: 1,
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w700,
+          body: ColonneCentree(
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    MediaQuery.withClampedTextScaling(
+                      maxScaleFactor: 1.3,
+                      child: Row(
+                        children: [
+                          const LogoZp(taille: 40),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                'Installation',
+                                maxLines: 1,
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        _BoutonAide(onTap: () => _aideDepuisEtape(e)),
-                      ],
+                          const SizedBox(width: 8),
+                          _BoutonAide(onTap: () => _aideDepuisEtape(e)),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 14),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: LinearProgressIndicator(
-                      value: numero / _etapes.length,
-                      minHeight: 10,
-                      backgroundColor: CouleursZp.ligne,
-                      color: Theme.of(context).colorScheme.primary,
+                    const SizedBox(height: 14),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: LinearProgressIndicator(
+                        value: numero / _etapes.length,
+                        minHeight: 10,
+                        backgroundColor: CouleursZp.ligne,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Étape $numero sur ${_etapes.length}',
-                    textScaler: TextScaler.noScaling,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: CouleursZp.texteDoux,
+                    const SizedBox(height: 6),
+                    Text(
+                      'Étape $numero sur ${_etapes.length}',
+                      textScaler: TextScaler.noScaling,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: CouleursZp.texteDoux,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  if (e.index >= EtapeAssistant.typeBoutique.index)
-                    Expanded(child: pageEtapeBoutique(etat, e))
-                  else ...[
-                    Expanded(child: _contenu(e)),
                     const SizedBox(height: 12),
-                    MediaQuery.withClampedTextScaling(
-                      maxScaleFactor: 1.3,
-                      child: _barreBas(e),
-                    ),
+                    if (e.index >= EtapeAssistant.typeBoutique.index)
+                      Expanded(child: pageEtapeBoutique(etat, e))
+                    else ...[
+                      Expanded(child: _contenu(e)),
+                      const SizedBox(height: 12),
+                      MediaQuery.withClampedTextScaling(
+                        maxScaleFactor: 1.3,
+                        child: _barreBas(e),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),

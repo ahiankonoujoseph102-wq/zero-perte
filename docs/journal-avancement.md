@@ -10,7 +10,7 @@ Il est mis à jour **à la fin de chaque étape**.
 | | |
 |---|---|
 | **Dernière étape terminée** | **B13** — Sauvegarde chiffrée → **bloc B terminé** |
-| **Version publiée** | 0.18.0 (voir les Releases GitHub) |
+| **Version publiée** | 0.19.0 (voir les Releases GitHub) |
 | **Dernière étape terminée (bis)** | **C1** — Crédit client |
 | **Prochaine étape** | Rapport de fin de bloc C1, puis bloc **D** (synchronisation) |
 | **Méthode** | Enchaîner les étapes de `docs/plan-v1.md` sans validation intermédiaire : B1→B13, puis C1, D, C2→C4, E. Rapport au chef de projet **à la fin de chaque bloc**, ou si une décision appartient au propriétaire, ou si on est bloqué. |
@@ -355,3 +355,23 @@ d'entrée de gamme à chaque entrée du patron) ; export au format CSV (Excel) p
 
 **Choix pris au plus simple :** n'importe quel client (même sans téléphone) peut être choisi pour une vente
 payée ; le téléphone reste exigé seulement pour le crédit.
+
+### Étape 3 — Tablette, paysage et PC ✅ (version 0.19.0)
+**Fait :**
+- **Vendre** sur grand écran (à partir de 840 points de large : tablette 10 pouces en paysage, PC) :
+  produits à gauche, **panier à droite** (client, lignes, total, « Encaisser ») ; cases un peu plus grandes.
+- **Tableau du patron** : chiffres à gauche, graphique des 7 jours et listes à droite.
+- **Accueil** : les 4 gros boutons restent groupés au centre (900 points maximum).
+- **Toutes les autres pages** (encaissement, clients, dépenses, caisse, espace patron, connexion,
+  installation…) : une seule colonne centrée, 720 points maximum, au lieu d'être étirées sur tout l'écran.
+- Le téléphone est **exactement** comme avant (les deux colonnes n'apparaissent qu'à partir de 840 points).
+- Tous les tests « rien ne déborde » tournent maintenant aussi sur **tablette 10 pouces paysage (1280×800)**
+  et **PC 1366×768**, en plus des 4 tailles d'avant.
+
+**Tests (tous réussis)**, par exemple :
+- PC 1366×768 : 1 kg de riz + 1 paquet de sucre → panier à droite, **total 1 400 F** ; « 5 000 F » → rendre
+  **3 600 F** (2 000 + 1 000 + 500 + 100).
+- Tablette paysage : accueil centré, aucun débordement sur aucun des écrans testés.
+- Téléphone 4 pouces : captures identiques à la version 0.18.
+
+**Choix pris au plus simple :** les pages sans intérêt à deux colonnes sont centrées plutôt que redessinées.

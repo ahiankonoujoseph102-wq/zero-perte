@@ -9,6 +9,33 @@ import '../theme/couleurs.dart';
 import 'clavier_pin.dart';
 
 /// Page standard de Zéro Perte : grande barre de titre avec bouton retour.
+/// Largeur à partir de laquelle on parle de « grand écran » (tablette, PC).
+const double largeurGrandEcran = 840;
+
+/// Largeur maximale d'une page d'une seule colonne sur grand écran.
+const double largeurMaxColonne = 720;
+
+bool estGrandEcran(BuildContext context) =>
+    MediaQuery.sizeOf(context).width >= largeurGrandEcran;
+
+/// Sur grand écran, centre [child] et limite sa largeur ; sinon ne change rien.
+class ColonneCentree extends StatelessWidget {
+  const ColonneCentree({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!estGrandEcran(context)) return child;
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: largeurMaxColonne),
+        child: child,
+      ),
+    );
+  }
+}
+
 class PageZp extends StatelessWidget {
   const PageZp({
     super.key,
@@ -17,7 +44,12 @@ class PageZp extends StatelessWidget {
     this.actions,
     this.bas,
     this.icone,
+    this.pleineLargeur = false,
   });
+
+  /// Vrai si la page organise elle-même la largeur (deux colonnes) ; sinon,
+  /// sur grand écran, elle est centrée et limitée à [largeurMaxColonne].
+  final bool pleineLargeur;
 
   final String titre;
   final IconData? icone;
@@ -61,20 +93,33 @@ class PageZp extends StatelessWidget {
       ),
       body: SafeArea(
         top: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(child: corps),
-            if (bas != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                child: MediaQuery.withClampedTextScaling(
-                  maxScaleFactor: 1.3,
-                  child: bas!,
+        child: _limiter(
+          context,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: corps),
+              if (bas != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                  child: MediaQuery.withClampedTextScaling(
+                    maxScaleFactor: 1.3,
+                    child: bas!,
+                  ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _limiter(BuildContext context, Widget enfant) {
+    if (pleineLargeur || !estGrandEcran(context)) return enfant;
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: largeurMaxColonne),
+        child: enfant,
       ),
     );
   }

@@ -64,111 +64,114 @@ class PageConnexion extends StatelessWidget {
   Widget build(BuildContext context) {
     final personnes = etat.utilisateurs;
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  LogoBoutique(config: etat.config, taille: 56),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      etat.config.nom,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Qui êtes-vous ?',
-                style: TextStyle(fontSize: 30, fontWeight: FontWeight.w700),
-              ),
-              const Text(
-                'Touchez votre nom.',
-                style: TextStyle(fontSize: 18, color: CouleursZp.texteDoux),
-              ),
-              const SizedBox(height: 14),
-              Expanded(
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 180,
-                    mainAxisExtent: 160,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                  ),
-                  itemCount: personnes.length,
-                  itemBuilder: (context, i) {
-                    final u = personnes[i];
-                    return Material(
-                      color: CouleursZp.surface,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(22),
-                        side: const BorderSide(
-                          color: CouleursZp.ligne,
-                          width: 1.5,
+      body: ColonneCentree(
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    LogoBoutique(config: etat.config, taille: 56),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        etat.config.nom,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
-                      child: InkWell(
-                        key: Key('connexion-${u.nom}'),
-                        borderRadius: BorderRadius.circular(22),
-                        onTap: u.actif
-                            ? () => demanderPin(context, etat, u)
-                            : () => annoncer(
-                                context,
-                                'Le compte de ${u.nom} est bloqué. Voyez le patron.',
-                                erreur: true,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Qui êtes-vous ?',
+                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.w700),
+                ),
+                const Text(
+                  'Touchez votre nom.',
+                  style: TextStyle(fontSize: 18, color: CouleursZp.texteDoux),
+                ),
+                const SizedBox(height: 14),
+                Expanded(
+                  child: GridView.builder(
+                    gridDelegate:
+                        const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 180,
+                          mainAxisExtent: 160,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                        ),
+                    itemCount: personnes.length,
+                    itemBuilder: (context, i) {
+                      final u = personnes[i];
+                      return Material(
+                        color: CouleursZp.surface,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(22),
+                          side: const BorderSide(
+                            color: CouleursZp.ligne,
+                            width: 1.5,
+                          ),
+                        ),
+                        child: InkWell(
+                          key: Key('connexion-${u.nom}'),
+                          borderRadius: BorderRadius.circular(22),
+                          onTap: u.actif
+                              ? () => demanderPin(context, etat, u)
+                              : () => annoncer(
+                                  context,
+                                  'Le compte de ${u.nom} est bloqué. Voyez le patron.',
+                                  erreur: true,
+                                ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(10),
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Column(
+                                children: [
+                                  Avatar(
+                                    nom: u.nom,
+                                    bloque: !u.actif,
+                                    position: i,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    u.nom,
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  Text(
+                                    !u.actif
+                                        ? 'Bloqué'
+                                        : (u.role == Role.patron
+                                              ? 'Patron'
+                                              : 'Vendeur'),
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: u.actif
+                                          ? CouleursZp.texteDoux
+                                          : CouleursZp.argentSort,
+                                    ),
+                                  ),
+                                ],
                               ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(10),
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Column(
-                              children: [
-                                Avatar(
-                                  nom: u.nom,
-                                  bloque: !u.actif,
-                                  position: i,
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  u.nom,
-                                  style: const TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                Text(
-                                  !u.actif
-                                      ? 'Bloqué'
-                                      : (u.role == Role.patron
-                                            ? 'Patron'
-                                            : 'Vendeur'),
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: u.actif
-                                        ? CouleursZp.texteDoux
-                                        : CouleursZp.argentSort,
-                                  ),
-                                ),
-                              ],
                             ),
                           ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

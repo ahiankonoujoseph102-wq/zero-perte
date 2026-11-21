@@ -60,104 +60,110 @@ class AccueilVendeur extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: LayoutBuilder(
-            builder: (context, contraintes) {
-              // Écran très bas (petit téléphone, grand texte) : on donne plus de
-              // place aux petits boutons pour qu'ils restent faciles à toucher.
-              final bas = contraintes.maxHeight < 560;
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // L'en-tête et le pied grossissent avec le réglage « taille du texte »
-                  // du téléphone, mais au plus ×1,3 pour laisser la place aux boutons
-                  // (qui, eux, s'adaptent tout seuls).
-                  MediaQuery.withClampedTextScaling(
-                    maxScaleFactor: 1.3,
-                    child: _EnTete(
-                      config: config,
-                      nomVendeur: nomVendeur,
-                      date: maintenant ?? DateTime.now(),
-                      compact: bas,
-                      onEspacePatron: onEspacePatron,
-                      onChangerUtilisateur: onChangerUtilisateur,
-                    ),
-                  ),
-                  SizedBox(height: bas ? 10 : 16),
-                  Expanded(
-                    flex: bas ? 4 : 5,
-                    child: BoutonAction(
-                      key: const Key('bouton-vendre'),
-                      titre: 'Vendre',
-                      sousTitre: 'Encaisser une vente',
-                      icone: Icons.shopping_basket_rounded,
-                      couleur: CouleursZp.argentEntre,
-                      couleurClaire: CouleursZp.argentEntreClair,
-                      principal: true,
-                      onTap:
-                          actions['vendre'] ??
-                          () => _bientot(context, 'Vendre'),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Expanded(
-                    flex: 3,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          child: BoutonAction(
-                            key: const Key('bouton-credit'),
-                            titre: 'Crédit',
-                            icone: Icons.menu_book_rounded,
-                            couleur: CouleursZp.credit,
-                            couleurClaire: CouleursZp.creditClair,
-                            couleurTexte: CouleursZp.texteSurCredit,
-                            onTap:
-                                actions['credit'] ??
-                                () => _bientot(context, 'Crédit'),
-                          ),
+        // Grand écran (tablette, PC) : les boutons restent groupés au centre.
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 900),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: LayoutBuilder(
+                builder: (context, contraintes) {
+                  // Écran très bas (petit téléphone, grand texte) : on donne plus de
+                  // place aux petits boutons pour qu'ils restent faciles à toucher.
+                  final bas = contraintes.maxHeight < 560;
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // L'en-tête et le pied grossissent avec le réglage « taille du texte »
+                      // du téléphone, mais au plus ×1,3 pour laisser la place aux boutons
+                      // (qui, eux, s'adaptent tout seuls).
+                      MediaQuery.withClampedTextScaling(
+                        maxScaleFactor: 1.3,
+                        child: _EnTete(
+                          config: config,
+                          nomVendeur: nomVendeur,
+                          date: maintenant ?? DateTime.now(),
+                          compact: bas,
+                          onEspacePatron: onEspacePatron,
+                          onChangerUtilisateur: onChangerUtilisateur,
                         ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: BoutonAction(
-                            key: const Key('bouton-depense'),
-                            titre: 'Dépense',
-                            icone: Icons.payments_rounded,
-                            couleur: CouleursZp.argentSort,
-                            couleurClaire: CouleursZp.argentSortClair,
-                            onTap:
-                                actions['depense'] ??
-                                () => _bientot(context, 'Dépense'),
-                          ),
+                      ),
+                      SizedBox(height: bas ? 10 : 16),
+                      Expanded(
+                        flex: bas ? 4 : 5,
+                        child: BoutonAction(
+                          key: const Key('bouton-vendre'),
+                          titre: 'Vendre',
+                          sousTitre: 'Encaisser une vente',
+                          icone: Icons.shopping_basket_rounded,
+                          couleur: CouleursZp.argentEntre,
+                          couleurClaire: CouleursZp.argentEntreClair,
+                          principal: true,
+                          onTap:
+                              actions['vendre'] ??
+                              () => _bientot(context, 'Vendre'),
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Expanded(
-                    flex: bas ? 3 : 2,
-                    child: BoutonAction(
-                      key: const Key('bouton-fermer-caisse'),
-                      titre: 'Fermer la caisse',
-                      icone: Icons.lock_rounded,
-                      couleur: CouleursZp.marque,
-                      couleurClaire: const Color(0xFF2E4A72),
-                      horizontal: true,
-                      onTap:
-                          actions['fermer'] ??
-                          () => _bientot(context, 'Fermer la caisse'),
-                    ),
-                  ),
-                  SizedBox(height: bas ? 6 : 10),
-                  MediaQuery.withClampedTextScaling(
-                    maxScaleFactor: 1.3,
-                    child: pied,
-                  ),
-                ],
-              );
-            },
+                      ),
+                      const SizedBox(height: 14),
+                      Expanded(
+                        flex: 3,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              child: BoutonAction(
+                                key: const Key('bouton-credit'),
+                                titre: 'Crédit',
+                                icone: Icons.menu_book_rounded,
+                                couleur: CouleursZp.credit,
+                                couleurClaire: CouleursZp.creditClair,
+                                couleurTexte: CouleursZp.texteSurCredit,
+                                onTap:
+                                    actions['credit'] ??
+                                    () => _bientot(context, 'Crédit'),
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: BoutonAction(
+                                key: const Key('bouton-depense'),
+                                titre: 'Dépense',
+                                icone: Icons.payments_rounded,
+                                couleur: CouleursZp.argentSort,
+                                couleurClaire: CouleursZp.argentSortClair,
+                                onTap:
+                                    actions['depense'] ??
+                                    () => _bientot(context, 'Dépense'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      Expanded(
+                        flex: bas ? 3 : 2,
+                        child: BoutonAction(
+                          key: const Key('bouton-fermer-caisse'),
+                          titre: 'Fermer la caisse',
+                          icone: Icons.lock_rounded,
+                          couleur: CouleursZp.marque,
+                          couleurClaire: const Color(0xFF2E4A72),
+                          horizontal: true,
+                          onTap:
+                              actions['fermer'] ??
+                              () => _bientot(context, 'Fermer la caisse'),
+                        ),
+                      ),
+                      SizedBox(height: bas ? 6 : 10),
+                      MediaQuery.withClampedTextScaling(
+                        maxScaleFactor: 1.3,
+                        child: pied,
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
           ),
         ),
       ),
