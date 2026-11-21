@@ -781,3 +781,21 @@ ce jeton. Aucun secret ni code affiché (masqués). La ligne de test reste dans 
   téléphone (fond bleu nuit, aucun débordement, liens du menu qui marchent) :
   https://ahiankonoujoseph102-wq.github.io/zero-perte/ ,
   …/confidentialite.html , …/conditions.html. Domaine autorisé Google : `ahiankonoujoseph102-wq.github.io`.
+
+### Version 0.29.0 — logo Zéro Perte
+- **Logo redessiné en SVG** d'après le modèle du propriétaire (`outils/logo/dessiner_logo.py`, formes
+  calculées) : zéro blanc **fermé** (ovale plein percé d'un ovale, aucune coupure), coche verte devant, détachée
+  par un fin contour bleu nuit, anneau or ouvert et effilé (ouvert en haut à droite, là où sort la coche),
+  fond bleu nuit. Couleurs du thème : bleu nuit `#0B1730`, vert `#2BC77A`, or `#F8BE5F`, blanc.
+  Vérifié à 48, 72 et 96 pixels (lisible), en rond, carré et goutte, et en monochrome.
+- **Fichiers source** : `assets/logo/` (SVG complet, avant-plan, monochrome, notification ; PNG 1024 × 1024).
+  `outils/logo/fabriquer_icones.py` refait toutes les icônes (rendu Chromium). Le logo n'est pas un asset
+  Flutter : l'APK ne grossit que des icônes Android (~110 Ko).
+- **Android** : icône adaptative (`mipmap-anydpi-v26/ic_launcher.xml` : fond bleu nuit, avant-plan dans la zone
+  sûre — dessin à 70 % —, monochrome pour les icônes à thème d'Android 13+), icône classique arrondie, et
+  **petite icône blanche des notifications d'alerte** (`drawable-*/ic_notification.png`, déclarée pour
+  Firebase, teinte verte) : sans elle Android aurait affiché un carré blanc.
+- **Windows** : `app_icon.ico` (16 à 256 px) ; **Microsoft Store** : `logo_path` du paquet MSIX = PNG 1024.
+- **Site** : logo en haut des 3 pages, grand logo sur l'accueil, icône d'onglet (SVG + PNG 32, icône Apple 180).
+- Le logo de chaque boutique (personnalisation, reçus, raccourci) n'a pas changé. Rien dans Google Cloud.
+- Test `test/domaine/icones_test.dart` (fichiers et tailles). **Tests : 403, tous réussis.**

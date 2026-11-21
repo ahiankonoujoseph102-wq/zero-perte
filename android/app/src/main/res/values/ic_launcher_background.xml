@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Bleu nuit du thème (CouleursZp.fond). -->
+    <color name="ic_launcher_background">#0B1730</color>
+    <!-- Couleur de la petite icône des notifications (vert du thème, lisible
+         en mode clair comme en mode sombre). -->
+    <color name="ic_notification_couleur">#2BC77A</color>
+</resources>
