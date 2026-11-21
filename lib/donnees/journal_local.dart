@@ -131,6 +131,35 @@ class VenteEnregistree {
   final MonnaieARendre? monnaie;
 }
 
+/// Résumé d'une vente (pour la liste des ventes du jour).
+class VenteResume {
+  const VenteResume({
+    required this.operationId,
+    required this.heure,
+    required this.auteurId,
+    required this.donnees,
+    this.motifAnnulation,
+  });
+
+  final String operationId;
+  final int heure;
+  final String auteurId;
+  final Map<String, Object?> donnees;
+
+  /// Motif si la vente a été annulée, sinon nul.
+  final String? motifAnnulation;
+
+  bool get annulee => motifAnnulation != null;
+  String get recu => donnees['recu'] as String;
+  int get total => donnees['total'] as int;
+  ModePaiement get mode =>
+      ModePaiement.depuisCode(donnees['mode_paiement'] as String);
+  List<Map<String, Object?>> get lignes => [
+    for (final l in (donnees['lignes'] as List))
+      (l as Map).cast<String, Object?>(),
+  ];
+}
+
 /// Bénéfice estimé sur une période.
 class ResumeBenefice {
   const ResumeBenefice({
@@ -893,6 +922,29 @@ class JournalLocal implements ReglagesLocaux {
         },
       );
     });
+  }
+
+  /// Ventes depuis une heure donnée (millisecondes), les plus récentes d'abord,
+  /// avec leur état (annulée ou non).
+  Future<List<VenteResume>> ventesDepuis(int depuis) async {
+    final r = await _db.rawQuery(
+      'SELECT o.id, o.heure_telephone AS h, o.auteur_id AS a, o.donnees AS d, '
+      'an.motif AS motif FROM operations o '
+      'LEFT JOIN ventes_annulees an ON an.vente_operation_id = o.id '
+      'WHERE o.type = ? AND o.heure_telephone >= ? ORDER BY o.heure_telephone DESC, o.numero DESC',
+      [TypeOperation.vente, depuis],
+    );
+    return [
+      for (final l in r)
+        VenteResume(
+          operationId: l['id'] as String,
+          heure: l['h'] as int,
+          auteurId: l['a'] as String,
+          donnees: (jsonDecode(l['d'] as String) as Map)
+              .cast<String, Object?>(),
+          motifAnnulation: l['motif'] as String?,
+        ),
+    ];
   }
 
   /// Bénéfice estimé entre deux heures (millisecondes), bornes comprises.

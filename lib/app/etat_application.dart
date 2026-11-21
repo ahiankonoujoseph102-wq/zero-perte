@@ -407,6 +407,48 @@ class EtatApplication extends ChangeNotifier {
     return vente;
   }
 
+  /// Début de la journée en cours (minuit, heure du téléphone).
+  int get debutDuJour {
+    final m = maintenant();
+    return DateTime(m.year, m.month, m.day).millisecondsSinceEpoch;
+  }
+
+  /// Ventes du jour (les plus récentes d'abord).
+  Future<List<VenteResume>> ventesDuJour() => journal.ventesDepuis(debutDuJour);
+
+  /// Annule une vente (motif obligatoire) : la marchandise revient, l'argent sort de la caisse.
+  Future<void> annulerVente(VenteResume v, String motif) async {
+    await journal.annulerVente(
+      venteOperationId: v.operationId,
+      motif: motif,
+      auteurId: auteurActuel,
+    );
+    await rechargerProduits();
+  }
+
+  /// Perte déclarée (casse, périmé…) : [nombre] unités de [conditionnement] (ou de base).
+  Future<void> declarerPerte({
+    required Produit produit,
+    Conditionnement? conditionnement,
+    required int nombre,
+    required String motif,
+  }) async {
+    final milliemes = conditionnement == null
+        ? nombre * milliemesParUnite
+        : versMilliemes(nombre, conditionnement);
+    await journal.enregistrerPerte(
+      produitId: produit.id,
+      milliemes: milliemes,
+      motif: motif,
+      auteurId: auteurActuel,
+    );
+    await rechargerProduits();
+  }
+
+  /// Nom d'une personne d'après son identifiant (pour les listes).
+  String nomDe(String id) =>
+      _utilisateurs.where((u) => u.id == id).firstOrNull?.nom ?? '—';
+
   /// Arrivage de marchandise (patron seulement).
   Future<void> enregistrerArrivage({
     required Produit produit,

@@ -478,4 +478,29 @@ void main() {
       expect((await j.produits()).map((p) => p.nom), ['Huile']);
     },
   );
+
+  test('ventes du jour : une vente annulée apparaît avec son motif', () async {
+    final riz = await j.definirProduit(
+      nom: 'Riz',
+      uniteBase: 'kg',
+      prixUnitaire: 600,
+      auteurId: 'p',
+    );
+    final v = await j.enregistrerVente(
+      lignes: [LigneDemandee.quantite(produitId: riz, nombre: 2)],
+      mode: ModePaiement.especes,
+      montantRecu: 1200,
+      auteurId: 'v',
+    );
+    expect((await j.ventesDepuis(0)).single.annulee, isFalse);
+    await j.annulerVente(
+      venteOperationId: v.operation.id,
+      motif: 'Retour du client',
+      auteurId: 'v',
+    );
+    final liste = await j.ventesDepuis(0);
+    expect(liste.single.annulee, isTrue);
+    expect(liste.single.motifAnnulation, 'Retour du client');
+    expect(liste.single.recu, 'A-000001');
+  });
 }

@@ -9,9 +9,9 @@ Il est mis à jour **à la fin de chaque étape**.
 
 | | |
 |---|---|
-| **Dernière étape terminée** | **B7** — Vendeurs et connexion par code |
-| **Version publiée** | 0.8.0 (voir les Releases GitHub) |
-| **Prochaine étape** | **B8** — Annulation, retour, perte |
+| **Dernière étape terminée** | **B8** — Annulation, retour, perte |
+| **Version publiée** | 0.9.0 (voir les Releases GitHub) |
+| **Prochaine étape** | **B9** — Fonds de caisse, dépenses, retrait du patron |
 | **Méthode** | Enchaîner les étapes de `docs/plan-v1.md` sans validation intermédiaire : B1→B13, puis C1, D, C2→C4, E. Rapport au chef de projet **à la fin de chaque bloc**, ou si une décision appartient au propriétaire, ou si on est bloqué. |
 | **Ordre des blocs** | A ✅ → **B (en cours)** → C1 → D → C2–C4 → E |
 
@@ -156,3 +156,17 @@ Police Atkinson Hyperlegible, marque bleu nuit, écran d'accueil vendeur à 4 gr
 - Écran « Qui êtes-vous ? » vérifié sur 4 tailles d'écran.
 
 **Note :** la version 0.7.0 a d'abord été envoyée avec un test périmé (fabrication en échec), corrigé aussitôt par le commit suivant ; désormais l'enregistrement n'a lieu que si tous les tests passent.
+
+### B8 — Annulation, retour client, perte déclarée ✅ (version 0.9.0)
+**Fait :**
+- Écran **Vendre** → bouton **« Ventes du jour »** : reçu, heure, vendeur, moyen de paiement, montant ; une vente annulée apparaît **barrée** avec son motif.
+- Détail d'une vente → **« Annuler cette vente »** (rouge) → **motif obligatoire** : « Erreur en tapant la vente », **« Retour du client »**, « Le client a changé d'avis », ou « Autre » (texte libre). La marchandise **revient en stock**, l'argent **sort de la caisse** du bon moyen de paiement, la voix dit « Vente annulée ». Une vente ne peut être annulée qu'une fois ; rien n'est jamais effacé.
+- Bouton **Dépense** → deux grands choix : « De l'argent est sorti » (B9) ou **« De la marchandise est perdue »** → produit → unité → compteur → **motif obligatoire** (cassé, périmé, pourri, rats ou insectes, volé, mouillé) → stock diminué.
+- **Bug trouvé et corrigé grâce aux tests** : la liste des ventes ne se rafraîchissait pas après une annulation (`setState` appelé avec une fonction qui renvoyait une tâche asynchrone). La liste se recharge maintenant à chaque changement de la boutique.
+
+**Tests (164 au total, tous réussis)**, par exemple :
+- Vente de **2 kg de riz (1 200 F)** puis annulation « **Retour du client** » : stock **98 kg → 100 kg**, caisse espèces **1 200 F → 0 F**, liste « Annulée : Retour du client », plus de bouton « Annuler ».
+- Motif libre « **Mauvais client** » enregistré tel quel.
+- Perte de **3 kg de riz mouillé** : stock **100 kg → 97 kg** ; sans motif, le bouton reste désactivé.
+
+**Problèmes restants :** le retour **partiel** (le client rend seulement une partie) n'existe pas encore : on annule la vente entière puis on refait une vente. À prévoir si les patrons le demandent.

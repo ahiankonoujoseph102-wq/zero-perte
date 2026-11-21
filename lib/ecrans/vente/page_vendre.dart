@@ -10,6 +10,7 @@ import '../../theme/couleurs.dart';
 import '../clavier_montant.dart';
 import '../communs.dart';
 import 'page_encaisser.dart';
+import 'ventes_du_jour.dart';
 
 /// Écran « Vendre » : grille des produits en haut, panier et total en bas.
 class PageVendre extends StatefulWidget {
@@ -84,6 +85,18 @@ class _PageVendreState extends State<PageVendre> {
         return PageZp(
           titre: 'Vendre',
           icone: Icons.shopping_basket_rounded,
+          actions: [
+            IconButton(
+              key: const Key('bouton-ventes-du-jour'),
+              tooltip: 'Ventes du jour',
+              iconSize: 30,
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => PageVentesDuJour(etat: etat)),
+              ),
+              icon: const Icon(Icons.receipt_long_rounded),
+            ),
+            const SizedBox(width: 8),
+          ],
           corps: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [

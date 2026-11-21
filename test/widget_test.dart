@@ -75,7 +75,7 @@ void main() {
     await afficherAccueil(tester, const Size(360, 640), 2.0);
     expect(find.text('Ma boutique'), findsOneWidget);
     expect(find.text('21 nov.'), findsOneWidget);
-    expect(find.text('Zéro Perte · version 0.5.0 (12)'), findsOneWidget);
+    expect(find.textContaining('Zéro Perte · version'), findsOneWidget);
     expect(find.text('Vendre'), findsOneWidget);
     expect(find.text('Crédit'), findsOneWidget);
     expect(find.text('Dépense'), findsOneWidget);
