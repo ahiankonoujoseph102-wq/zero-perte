@@ -515,3 +515,8 @@ limite de 20 Mo ; à surveiller.
 **Choix pris au plus simple :** l'achat à crédit est noté à part de l'arrivage (le patron enregistre aussi
 l'arrivage pour le stock) ; les paiements fournisseurs ne comptent pas dans « Dépenses » du tableau du
 patron (ce n'est pas une dépense, c'est le paiement du stock), mais ils sortent bien de la caisse.
+
+**Bilan de la nuit (publications) :** v0.17.0 à v0.24.0 publiées, sauf **0.23.0** dont la fabrication a été
+annulée par GitHub (attente trop longue d'une machine) : son contenu (C3) est inclus dans **0.24.0**.
+Dernière version : **v0.24.0-n37** — APK universel **17,3 Mo** (arm64 9,4 Mo, armv7 8,8 Mo),
+**ZeroPerte-Windows.zip 13,2 Mo**. Prochaine étape : bloc **E** (mise en service), après le retour du propriétaire.
