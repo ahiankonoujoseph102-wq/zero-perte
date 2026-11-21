@@ -91,8 +91,8 @@ void main() {
     tester,
   ) async {
     await afficherAccueil(tester, const Size(360, 640), 2.0);
-    await tester.tap(find.byKey(const Key('bouton-vendre')));
+    await tester.tap(find.byKey(const Key('bouton-credit')));
     await tester.pump();
-    expect(find.text('« Vendre » arrive bientôt.'), findsOneWidget);
+    expect(find.text('« Crédit » arrive bientôt.'), findsOneWidget);
   });
 }
