@@ -480,6 +480,31 @@ class EtatApplication extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Moyens de paiement à compter à la fermeture : toujours les espèces, plus
+  /// Flooz et Mixx s'ils ont reçu de l'argent depuis la dernière fermeture.
+  Future<List<ModePaiement>> modesAFermer() async {
+    final enCours = await journal.caisseEnCours();
+    return [
+      for (final e in enCours.entries)
+        if (e.key == ModePaiement.especes ||
+            attenduAFermeture(e.key, e.value) != 0)
+          e.key,
+    ];
+  }
+
+  /// Fermeture de caisse en comptage aveugle.
+  Future<FermetureCaisse> fermerCaisse(Map<ModePaiement, int> comptes) async {
+    final f = await journal.enregistrerFermeture(
+      comptes,
+      auteurId: auteurActuel,
+    );
+    notifyListeners();
+    return f;
+  }
+
+  /// La personne connectée est-elle le patron ?
+  bool get estPatron => utilisateurActuel?.role == Role.patron;
+
   /// Nom d'une personne d'après son identifiant (pour les listes).
   String nomDe(String id) =>
       _utilisateurs.where((u) => u.id == id).firstOrNull?.nom ?? '—';

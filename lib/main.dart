@@ -9,6 +9,7 @@ import 'domaine/licence.dart';
 import 'donnees/journal_local.dart';
 import 'ecrans/accueil_vendeur.dart';
 import 'ecrans/assistant/assistant_installation.dart';
+import 'ecrans/caisse/fermeture.dart';
 import 'ecrans/caisse/saisie_montant.dart';
 import 'ecrans/communs.dart';
 import 'ecrans/connexion.dart';
@@ -180,6 +181,22 @@ class ZeroPerteApp extends StatelessWidget {
                       ),
                     ),
                   ),
+                  'fermer': () async {
+                    if (!await etat.caisseOuverte()) {
+                      if (context.mounted) {
+                        annoncer(context, 'La caisse n\'est pas ouverte.');
+                      }
+                      return;
+                    }
+                    final modes = await etat.modesAFermer();
+                    if (!context.mounted) return;
+                    await Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            PageFermerCaisse(etat: etat, modes: modes),
+                      ),
+                    );
+                  },
                   'vendre': () async {
                     // Première vente depuis la fermeture : on ouvre d'abord la caisse.
                     if (!await etat.caisseOuverte()) {

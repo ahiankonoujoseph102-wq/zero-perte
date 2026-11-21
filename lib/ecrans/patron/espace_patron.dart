@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/etat_application.dart';
 import '../../theme/couleurs.dart';
+import '../caisse/fermeture.dart';
 import '../caisse/saisie_montant.dart';
 import '../communs.dart';
 import 'arrivages.dart';
@@ -40,6 +41,13 @@ final List<EntreePatron> entreesPatron = [
     'Vendeurs',
     CouleursZp.marque,
     (etat) => PageVendeurs(etat: etat),
+  ),
+  EntreePatron(
+    'fermetures',
+    Icons.fact_check_rounded,
+    'Caisses fermées',
+    CouleursZp.marque,
+    (etat) => PageFermetures(etat: etat),
   ),
   EntreePatron(
     'retrait',

@@ -1031,6 +1031,92 @@ class JournalLocal implements ReglagesLocaux {
     return (r.first['h'] as int?) ?? 0;
   }
 
+  /// Repère (heure, numéro) de la dernière fermeture, ou nul.
+  Future<RepereOperation?> _repereDerniereFermeture() async {
+    final r = await _db.query(
+      'operations',
+      columns: ['heure_telephone', 'numero'],
+      where: 'type = ?',
+      whereArgs: [TypeOperation.fermetureCaisse],
+      orderBy: 'heure_telephone DESC, numero DESC',
+      limit: 1,
+    );
+    if (r.isEmpty) return null;
+    return (
+      heure: r.first['heure_telephone'] as int,
+      numero: r.first['numero'] as int,
+    );
+  }
+
+  /// Ce qui doit se trouver dans chaque caisse depuis la dernière fermeture.
+  Future<Map<ModePaiement, MouvementsCaisse>> caisseEnCours() async {
+    final apres = await _repereDerniereFermeture();
+    return {
+      for (final m in ModePaiement.values)
+        m: await mouvementsCaisse(m, apres: apres),
+    };
+  }
+
+  /// Fermeture en comptage aveugle : [comptes] = argent compté par moyen de
+  /// paiement. L'attendu est calculé ici et enregistré avec la fermeture, pour
+  /// que le patron voie l'écart plus tard ; le vendeur ne le voit jamais.
+  Future<FermetureCaisse> enregistrerFermeture(
+    Map<ModePaiement, int> comptes, {
+    required String auteurId,
+  }) async {
+    if (comptes.values.any((v) => v < 0)) {
+      throw const ErreurZeroPerte(
+        'Un montant compté ne peut pas être négatif.',
+      );
+    }
+    final enCours = await caisseEnCours();
+    final attendus = {
+      for (final e in enCours.entries) e.key: attenduAFermeture(e.key, e.value),
+    };
+    final op = await _db.transaction(
+      (t) => _ajouter(
+        t,
+        type: TypeOperation.fermetureCaisse,
+        auteurId: auteurId,
+        donnees: {
+          'comptes': {
+            for (final m in ModePaiement.values) m.code: comptes[m] ?? 0,
+          },
+          'attendus': {
+            for (final m in ModePaiement.values) m.code: attendus[m],
+          },
+        },
+      ),
+    );
+    return FermetureCaisse._depuis(
+      op.id,
+      op.heureTelephone,
+      auteurId,
+      op.donnees,
+    );
+  }
+
+  /// Fermetures de caisse, la plus récente d'abord.
+  Future<List<FermetureCaisse>> fermetures({int limite = 60}) async {
+    final r = await _db.query(
+      'operations',
+      columns: ['id', 'heure_telephone', 'auteur_id', 'donnees'],
+      where: 'type = ?',
+      whereArgs: [TypeOperation.fermetureCaisse],
+      orderBy: 'heure_telephone DESC, numero DESC',
+      limit: limite,
+    );
+    return [
+      for (final l in r)
+        FermetureCaisse._depuis(
+          l['id'] as String,
+          l['heure_telephone'] as int,
+          l['auteur_id'] as String,
+          json.decode(l['donnees'] as String) as Map<String, dynamic>,
+        ),
+    ];
+  }
+
   /// Dépense payée avec la caisse, motif obligatoire.
   Future<Operation> enregistrerDepense(
     int montant, {
@@ -1068,11 +1154,18 @@ class JournalLocal implements ReglagesLocaux {
     ModePaiement mode, {
     int? depuis,
     int? jusqua,
+    RepereOperation? apres,
   }) async {
-    final bornes = [depuis ?? 0, jusqua ?? 9007199254740991];
+    final bornes = <Object?>[
+      depuis ?? 0,
+      jusqua ?? 9007199254740991,
+      if (apres != null) ...[apres.heure, apres.heure, apres.numero],
+    ];
     Future<int> somme(String sql, List<Object?> args) async =>
         ((await _db.rawQuery(sql, args)).first['s'] as int?) ?? 0;
-    const filtre = 'o.heure_telephone >= ? AND o.heure_telephone <= ?';
+    final filtre =
+        'o.heure_telephone >= ? AND o.heure_telephone <= ?'
+        '${apres == null ? '' : ' AND (o.heure_telephone > ? OR (o.heure_telephone = ? AND o.numero > ?))'}';
     final ventes = await somme(
       'SELECT SUM(v.total) AS s FROM ventes v JOIN operations o ON o.id = v.operation_id '
       'WHERE v.mode_paiement = ? AND $filtre',
@@ -1264,4 +1357,58 @@ class JournalLocal implements ReglagesLocaux {
 
   /// Accès brut à la base, réservé aux tests.
   Database get baseBrutePourTests => _db;
+}
+
+/// Ce qu'on compare au comptage : toute la caisse pour les espèces ; pour
+/// Flooz et Mixx, seulement l'argent reçu (le vendeur additionne les messages
+/// de paiement reçus ; les dépenses payées par Mobile Money restent notées à part).
+int attenduAFermeture(ModePaiement mode, MouvementsCaisse m) =>
+    mode == ModePaiement.especes
+    ? m.attendu
+    : m.ventes + m.remboursementsCredits;
+
+/// Repère d'une opération dans le journal (pour « tout ce qui suit »).
+typedef RepereOperation = ({int heure, int numero});
+
+/// Une fermeture de caisse enregistrée : compté et attendu par moyen de paiement.
+class FermetureCaisse {
+  const FermetureCaisse({
+    required this.id,
+    required this.heure,
+    required this.auteurId,
+    required this.comptes,
+    required this.attendus,
+  });
+
+  factory FermetureCaisse._depuis(
+    String id,
+    int heure,
+    String auteurId,
+    Map<String, dynamic> d,
+  ) {
+    Map<ModePaiement, int> lire(Object? m) => {
+      for (final e in ((m as Map?) ?? const {}).entries)
+        ModePaiement.depuisCode(e.key as String): (e.value as num).toInt(),
+    };
+    return FermetureCaisse(
+      id: id,
+      heure: heure,
+      auteurId: auteurId,
+      comptes: lire(d['comptes']),
+      attendus: lire(d['attendus']),
+    );
+  }
+
+  final String id;
+  final int heure;
+  final String auteurId;
+  final Map<ModePaiement, int> comptes;
+  final Map<ModePaiement, int> attendus;
+
+  ResultatCaisse resultat(ModePaiement m) =>
+      ResultatCaisse(attendu: attendus[m] ?? 0, compte: comptes[m] ?? 0);
+
+  /// Somme des écarts de tous les moyens de paiement.
+  int get ecartTotal =>
+      ModePaiement.values.fold(0, (s, m) => s + resultat(m).ecart);
 }

@@ -8,6 +8,10 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../test/ecrans/vente_test.dart'
     show boutiqueAvecStock, ouvrirLaCaisseSiDemande;
+import '../test/ecrans/fermeture_test.dart' show journeeEspeces;
+
+import 'package:zero_perte/donnees/journal_local.dart';
+
 import '../test/support/outils.dart';
 
 Future<void> _chargerPolices() async {
@@ -114,6 +118,40 @@ void main() {
       await expectLater(
         find.byType(MaterialApp),
         matchesGoldenFile('captures/depense_bas_${e.key}.png'),
+      );
+    });
+  }
+  for (final e in ecrans.entries) {
+    testWidgets('fermeture ${e.key}', (tester) async {
+      final env = await environnementDeTest(
+        tester,
+        preparer: (etat) async {
+          await journeeEspeces(etat);
+          final riz = etat.produits.firstWhere((p) => p.nom == 'Riz');
+          await etat.journal.enregistrerVente(
+            lignes: [LigneDemandee.quantite(produitId: riz.id, nombre: 1)],
+            mode: ModePaiement.flooz,
+            referencePaiement: '123',
+            auteurId: etat.auteurActuel,
+          );
+        },
+      );
+      await afficherApp(tester, env.etat, taille: e.value, densite: 2);
+      await toucher(tester, find.byKey(const Key('bouton-fermer-caisse')));
+      await attendre(tester, tours: 8);
+      for (final c in ['6', '0', '0', '0']) {
+        await toucher(tester, find.byKey(Key('montant-$c')));
+      }
+      await toucher(tester, find.byKey(const Key('bouton-suivant-fermeture')));
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('captures/fermeture_flooz_${e.key}.png'),
+      );
+      await toucher(tester, find.byKey(const Key('bouton-suivant-fermeture')));
+      await attendre(tester, tours: 10);
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('captures/fermeture_resultat_${e.key}.png'),
       );
     });
   }

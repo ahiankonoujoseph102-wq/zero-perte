@@ -9,9 +9,9 @@ Il est mis à jour **à la fin de chaque étape**.
 
 | | |
 |---|---|
-| **Dernière étape terminée** | **B9** — Fonds de caisse, dépenses, argent pris |
-| **Version publiée** | 0.10.0 (voir les Releases GitHub) |
-| **Prochaine étape** | **B10** — Fermeture de caisse à l'aveugle |
+| **Dernière étape terminée** | **B10** — Fermeture de caisse à l'aveugle |
+| **Version publiée** | 0.11.0 (voir les Releases GitHub) |
+| **Prochaine étape** | **B11** — Reçu partagé sur WhatsApp |
 | **Méthode** | Enchaîner les étapes de `docs/plan-v1.md` sans validation intermédiaire : B1→B13, puis C1, D, C2→C4, E. Rapport au chef de projet **à la fin de chaque bloc**, ou si une décision appartient au propriétaire, ou si on est bloqué. |
 | **Ordre des blocs** | A ✅ → **B (en cours)** → C1 → D → C2–C4 → E |
 
@@ -185,4 +185,22 @@ Police Atkinson Hyperlegible, marque bleu nuit, écran d'accueil vendeur à 4 gr
 - Caisse ouverte avec **10 000 F**, « Argent pris » **2 000 F** → attendu **8 000 F**. Sans motif, « Enregistrer la dépense » reste désactivé.
 
 **Problèmes restants :** les motifs de dépense sont une liste fixe ; à ajuster selon les retours des boutiques.
+
+### B10 — Fermeture de caisse à l'aveugle ✅ (version 0.11.0)
+**Fait :**
+- Bouton **« Fermer la caisse »** : un écran de comptage par moyen de paiement (« Étape 1 sur 2 »…). Toujours les **espèces** (« Comptez tout l'argent de la caisse ») ; **Flooz** et **Mixx** seulement s'ils ont reçu des paiements depuis l'ouverture (« Combien avez-vous reçu sur Flooz ? »).
+- **Comptage aveugle** : le vendeur ne voit jamais combien il devrait y avoir. À la fin il voit seulement « Caisse fermée. Merci ! Le patron verra le résultat. » (et la voix le dit).
+- L'attendu est **calculé et enregistré avec la fermeture** (journal non modifiable) : le patron voit l'écart même des jours plus tard. Si c'est le patron qui ferme, il voit l'écart tout de suite.
+- Espace patron → nouvelle tuile **« Caisses fermées »** : liste (date, qui a fermé, « Juste » en vert / « Il manque 200 F » en rouge / « En trop : 100 F » en ambre) → détail par moyen de paiement (« Il devait y avoir », « Compté », écart).
+- Après une fermeture, la caisse est fermée : le prochain « Vendre » redemande le fonds de caisse (B9). Les calculs repartent de zéro après chaque fermeture.
+- **Règle Mobile Money** : pour Flooz et Mixx, on compare seulement l'**argent reçu** (ventes) ; une dépense payée par Flooz reste enregistrée mais n'entre pas dans le comptage (sinon « il devait y avoir −500 F » n'aurait pas de sens).
+- Défauts corrigés grâce aux tests/captures : à l'étape 2 l'écran restait défilé et cachait la question ; titre coupé sur 4 pouces.
+
+**Tests (180 au total, tous réussis)**, par exemple :
+- Fonds **5 000 F** + vente **1 200 F** → le vendeur Kossi compte **6 000 F** : il ne voit aucun chiffre ; le patron voit « **Il manque 200 F** » (attendu 6 200 F, compté 6 000 F, fermé par Kossi).
+- Fonds 5 000 F, vente 1 200 F espèces, vente 600 F Flooz, patron prend 300 F, dépense Flooz 500 F → espèces comptées **5 900 F = Juste** ; Flooz compté **700 F** → « **En trop : 100 F** ».
+- Fermeture puis nouvelle ouverture avec 2 000 F et dépense repas 700 F → caisse en cours attendue **1 300 F** (l'ancienne journée n'est plus comptée).
+
+**Problèmes restants :** la fermeture est par téléphone ; avec deux téléphones (bloc D, synchronisation) il faudra décider si chaque téléphone ferme sa propre caisse (choix provisoire : oui, une caisse par téléphone).
+
 
