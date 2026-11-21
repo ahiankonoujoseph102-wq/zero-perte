@@ -10,23 +10,25 @@ Il est mis à jour **à la fin de chaque étape**.
 | | |
 |---|---|
 | **Dernière étape terminée** | **B13** — Sauvegarde chiffrée → **bloc B terminé** |
-| **Version publiée** | 0.14.0 (voir les Releases GitHub) |
-| **Prochaine étape** | Rapport de fin de bloc B au chef de projet, puis **C1** — Crédit client |
+| **Version publiée** | 0.15.0 (voir les Releases GitHub) |
+| **Prochaine étape** | **C1** — Crédit client |
 | **Méthode** | Enchaîner les étapes de `docs/plan-v1.md` sans validation intermédiaire : B1→B13, puis C1, D, C2→C4, E. Rapport au chef de projet **à la fin de chaque bloc**, ou si une décision appartient au propriétaire, ou si on est bloqué. |
-| **Ordre des blocs** | A ✅ → B ✅ → **C1** → D → C2–C4 → E |
+| **Ordre des blocs** | A ✅ → B ✅ → **C1 (en cours)** → D → C2–C4 → E |
+| **Pour tout choix non décidé** | Prendre l'option la plus simple et la lister dans le rapport de fin de bloc C1 avec une recommandation. |
 
-### Décisions en attente du propriétaire (à poser dans le rapport de fin de bloc B)
+### Décisions du propriétaire (validées le 21 novembre 2026, après le rapport de fin de bloc B)
 
-| # | Question | Choix provisoire (facile à changer) |
+| # | Décision | Ce qui a été fait |
 |---|---|---|
-| Q1 | Que peut faire une boutique **avant** d'avoir collé son code d'activation ? (a) rien : l'installation s'arrête à l'étape « Code d'activation » ; (b) une démonstration avec des produits fictifs ; (c) un essai de quelques jours | **(a) bloquée** (le plus simple, empêche le piratage). Pour changer : `EtapeAssistant.activation` dans `lib/app/etat_application.dart` |
-| Q2 | **Clé des licences** : le workflow « 3 - Créer la clé des licences » doit tourner **avant le 28 novembre** (expiration de `ZP_JETON_COFFRE`). Le propriétaire le lance-t-il, ou autorise-t-il Claude à le lancer ? | Pas encore lancé : `assets/licence/cle_publique.txt` = « ABSENTE » → l'application affiche « ne peut pas encore vérifier les codes » |
-| Q3 | **Jeton longue durée `ZP_JETON_CODES`** (1 an, écriture du coffre seulement) pour générer des codes après le 28 novembre ? | Sans lui, le workflow 4 utilise `ZP_JETON_COFFRE` (jusqu'au 28 novembre seulement) |
-| Q5 | **Facteurs « à vérifier » du catalogue** (ex. 1 sac de maïs de 100 kg = 40 bols, 1 casier = 12 grandes bouteilles) : les agents peuvent-ils les confirmer sur le terrain ? | Affichés « à vérifier » au patron, qui peut les corriger |
-| Q4 | **Texte du message d'activation** envoyé au patron (workflow 4, fichier dans le coffre) : à valider | « Bonjour, Voici le code d'activation Zéro Perte de votre boutique « NOM » (2 téléphones) : CODE. Pour l'activer : appuyez longtemps sur ce message, choisissez « Copier », puis ouvrez Zéro Perte et touchez « Coller le code ». Ce code est personnel : ne le donnez à personne. » |
-| Q6 | **Textes vus par les clients** : bas du reçu par défaut « Merci, à bientôt ! » et texte joint au reçu WhatsApp « Reçu n° A-000001 – NOM : 1 200 F. Merci, à bientôt ! » | Ces deux textes (le patron peut déjà changer le bas du reçu) |
-| Q7 | **Retour partiel** (le client rend une partie seulement) | Pas encore : on annule la vente entière puis on refait une vente |
-| Q8 | **Protection du fichier de sauvegarde** : code de 4 chiffres du patron (simple, mais faible contre un spécialiste) ou un mot de passe plus long choisi par le patron (plus sûr, mais à ne pas oublier) | Code de 4 chiffres du patron |
+| Q1 | **Démonstration oui** avant le code d'activation, avec des produits fictifs ; elle ne doit jamais servir à tenir une vraie boutique, et ses données ne passent jamais dans une boutique activée. | Fait (0.15.0) : bouton « Voir une démonstration » à l'étape « Code d'activation » → base **à part**, **effacée à chaque ouverture**, reçus « D-… » marqués « DÉMONSTRATION — SANS VALEUR », pas de sauvegarde ni de restauration, aucun ajout de produit, bandeau permanent + « Quitter ». `lib/app/demo.dart`. |
+| Q2 | Claude lance l'action « 3 - Créer la clé des licences » avant le 28 novembre. | Fait le 21/11 : réussie, copie de secours chiffrée dans le coffre (`cle-licences/…run44909660257.pem.chiffre`), clé publique dans `assets/licence/cle_publique.txt`, un code de test (« TEST - ne pas utiliser ») fabriqué par l'action 4 est **accepté** par l'application, un code modifié est refusé. Aucun secret dans les journaux. La ligne de test reste dans `registre-clients.csv` du coffre (à ignorer). |
+| Q3 | Après le 28 novembre, le propriétaire crée `ZP_JETON_CODES` (1 an, écriture du coffre seulement). | L'action 4 utilise déjà `ZP_JETON_CODES` s'il existe, sinon `ZP_JETON_COFFRE`. Autorisations à cocher : voir le rapport. |
+| Q4 | Garder le texte du message d'activation. | Rien à changer. |
+| Q5 | Garder les conversions « à vérifier » ; le patron peut les corriger ; les agents vérifieront sur le terrain. | Rien à changer. |
+| Q6 | Garder « Merci, à bientôt ! » et le texte joint au reçu WhatsApp. | Rien à changer. |
+| Q7 | Retour partiel : annuler la vente entière puis la refaire. | Rien à changer. |
+| Q8 | La sauvegarde doit être protégée par un code de **6 chiffres** et une méthode lente à deviner ; si c'est le même code que celui du patron pour entrer dans l'application, ne rien changer avant d'avoir expliqué l'impact. | C'est le même code (4 chiffres). **Rien n'a été changé** ; l'impact est expliqué dans le rapport, en attente de décision. |
+| — | Réduire la taille de l'APK (26 → 33 Mo), garder armeabi-v7a, lien `releases/latest/download/ZeroPerte.apk` toujours valable. | Voir « Taille de l'APK » ci-dessous. |
 
 ---
 
@@ -250,6 +252,18 @@ Police Atkinson Hyperlegible, marque bleu nuit, écran d'accueil vendeur à 4 gr
 **Problèmes restants :**
 - **Pas encore d'écran pour restaurer** (choisir le fichier reçu) : il faut un accès aux fichiers du téléphone. Prévu avec le bloc D (la synchronisation Google Drive sera le moyen normal de tout retrouver) ; d'ici là la sauvegarde automatique d'Android couvre le cas du téléphone remplacé.
 - Le fichier est fermé avec le **code de 4 chiffres** du patron : il arrête un curieux, pas un spécialiste qui essaierait les 10 000 codes (question Q8).
+
+### Après le bloc B — décisions Q1 à Q8, clé des licences, démonstration ✅ (version 0.15.0)
+**Fait :**
+- **Clé des licences** créée (action 3, lancée par Claude avec l'accord du propriétaire) et vérifiée de bout en bout (voir Q2 plus haut).
+- **Défaut corrigé dans l'action 4** grâce au code de test : un nom de boutique avec des espaces (« TEST - ne pas utiliser ») faisait échouer l'action. Les valeurs sont maintenant protégées (`printf %q`), testé aussi avec des guillemets, « » et `$(…)`.
+- **Démonstration** (Q1) : voir le tableau des décisions.
+
+**Tests (217 au total, tous réussis)**, par exemple :
+- Démonstration ouverte deux fois : la vente « D-000001 » faite la première fois a disparu la deuxième (riz de nouveau à **100 kg**), et la vraie base du téléphone a toujours **0** opération.
+- Activation → « Voir une démonstration » → vente → reçu « **DÉMONSTRATION — SANS VALEUR** » → « Quitter » → retour à « Coller le code ».
+- La clé publique officielle est présente et fait bien **32 octets**.
+
 
 
 

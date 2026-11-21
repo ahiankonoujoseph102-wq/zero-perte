@@ -26,6 +26,7 @@ class ApercuRecu extends StatelessWidget {
       LigneRecu('1 huile 1 L', 1200),
     ],
     this.paiement = 'Espèces',
+    this.demo = false,
   });
 
   final ConfigBoutique config;
@@ -34,6 +35,9 @@ class ApercuRecu extends StatelessWidget {
   final String date;
   final List<LigneRecu> lignes;
   final String paiement;
+
+  /// Reçu de la démonstration : marqué « sans valeur ».
+  final bool demo;
 
   @override
   Widget build(BuildContext context) {
@@ -173,6 +177,20 @@ class ApercuRecu extends StatelessWidget {
                     fontStyle: FontStyle.italic,
                   ),
                 ),
+                if (demo)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 6),
+                    child: Text(
+                      'DÉMONSTRATION — SANS VALEUR',
+                      key: Key('recu-demo'),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: CouleursZp.argentSort,
+                      ),
+                    ),
+                  ),
                 if (exemple)
                   const Padding(
                     padding: EdgeInsets.only(top: 6),

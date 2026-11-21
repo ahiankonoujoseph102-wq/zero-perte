@@ -564,9 +564,17 @@ class EtatApplication extends ChangeNotifier {
     );
   }
 
+  /// Vrai pour la boutique de démonstration (voir `app/demo.dart`).
+  bool estDemo = false;
+
   /// Fichier de sauvegarde chiffré avec le code secret du patron.
-  Future<Uint8List> creerSauvegarde(String codePatron) async =>
-      chiffrerSauvegarde(await journal.exporterJournal(), codePatron);
+  /// Jamais en démonstration (ses données ne doivent pas en sortir).
+  Future<Uint8List> creerSauvegarde(String codePatron) async {
+    if (estDemo) {
+      throw const ErreurZeroPerte('Pas de sauvegarde en démonstration.');
+    }
+    return chiffrerSauvegarde(await journal.exporterJournal(), codePatron);
+  }
 
   /// Nom du fichier de sauvegarde : « ZeroPerte-Boutique-Ama-2026-11-21.zps ».
   String nomSauvegarde() {
@@ -581,6 +589,9 @@ class EtatApplication extends ChangeNotifier {
   /// Restaure une sauvegarde sur un téléphone vide, puis recharge tout.
   /// Renvoie le nombre d'opérations restaurées.
   Future<int> restaurerSauvegarde(List<int> fichier, String codePatron) async {
+    if (estDemo) {
+      throw const ErreurZeroPerte('Pas de restauration en démonstration.');
+    }
     final clair = await dechiffrerSauvegarde(fichier, codePatron);
     final n = await journal.restaurerJournal(clair);
     _codes

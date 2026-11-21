@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -113,5 +115,11 @@ void main() {
       ),
     );
     expect(lireClePublique('ABSENTE'), isNull);
+  });
+
+  test('la clé publique officielle est présente et valide (32 octets)', () {
+    final texte = File('assets/licence/cle_publique.txt').readAsStringSync();
+    expect(texte.trim(), isNot('ABSENTE'));
+    expect(lireClePublique(texte), hasLength(32));
   });
 }

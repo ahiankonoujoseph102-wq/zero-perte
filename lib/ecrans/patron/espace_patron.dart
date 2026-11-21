@@ -82,6 +82,11 @@ class EspacePatron extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Pas de sauvegarde en démonstration : ses données ne doivent pas en sortir.
+    final entrees = [
+      for (final e in entreesPatron)
+        if (!(etat.estDemo && e.cle == 'sauvegarde')) e,
+    ];
     return PageZp(
       titre: 'Espace patron',
       icone: Icons.key_rounded,
@@ -93,9 +98,9 @@ class EspacePatron extends StatelessWidget {
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
         ),
-        itemCount: entreesPatron.length,
+        itemCount: entrees.length,
         itemBuilder: (context, i) {
-          final e = entreesPatron[i];
+          final e = entrees[i];
           final couleur = e.couleur == CouleursZp.marque
               ? Theme.of(context).colorScheme.primary
               : e.couleur;

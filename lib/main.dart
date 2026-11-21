@@ -4,6 +4,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as chemins;
 import 'package:sqflite/sqflite.dart';
 
+import 'app/demo.dart';
 import 'app/etat_application.dart';
 import 'domaine/licence.dart';
 import 'donnees/journal_local.dart';
@@ -49,6 +50,16 @@ Future<JournalLocal> ouvrirJournalDuTelephone() async {
   );
 }
 
+/// Démonstration : base à part, effacée à chaque ouverture.
+Future<EtatApplication> creerDemoTelephone(ServicesZp services) async {
+  final dossier = await getDatabasesPath();
+  return preparerDemo(
+    fabrique: databaseFactory,
+    chemin: chemins.join(dossier, 'zero_perte_demo.db'),
+    services: services,
+  );
+}
+
 /// Charge l'état complet de l'application sur le téléphone.
 Future<EtatApplication> chargerEtatDuTelephone() async {
   final journal = await ouvrirJournalDuTelephone();
@@ -84,7 +95,13 @@ class Demarrage extends StatelessWidget {
     return FutureBuilder<EtatApplication>(
       future: etat,
       builder: (context, r) {
-        if (r.hasData) return ZeroPerteApp(etat: r.data!);
+        if (r.hasData) {
+          final etat = r.data!;
+          return ZeroPerteApp(
+            etat: etat,
+            creerDemo: () => creerDemoTelephone(etat.services),
+          );
+        }
         return MaterialApp(
           debugShowCheckedModeBanner: false,
           theme: themeZeroPerte(),
@@ -117,9 +134,17 @@ class ZeroPerteApp extends StatelessWidget {
     required this.etat,
     this.infosPaquet,
     this.maintenant,
+    this.creerDemo,
+    this.quitterDemo,
   });
 
   final EtatApplication etat;
+
+  /// Crée une boutique de démonstration neuve (bouton de l'étape d'activation).
+  final Future<EtatApplication> Function()? creerDemo;
+
+  /// Non nul quand CETTE application est la démonstration : ferme la démo.
+  final VoidCallback? quitterDemo;
 
   /// Permettent aux tests de fournir la version et la date.
   final Future<PackageInfo>? infosPaquet;
@@ -133,6 +158,21 @@ class ZeroPerteApp extends StatelessWidget {
       theme: themeZeroPerte(couleurMarque: Color(etat.config.couleur)),
       builder: (context, enfant) {
         final contenu = enfant ?? const SizedBox.shrink();
+        final quitter = quitterDemo;
+        if (quitter != null) {
+          return Column(
+            children: [
+              BandeauDemo(onQuitter: quitter),
+              Expanded(
+                child: MediaQuery.removePadding(
+                  context: context,
+                  removeTop: true,
+                  child: contenu,
+                ),
+              ),
+            ],
+          );
+        }
         if (estVersionOfficielle) return contenu;
         // Le bandeau occupe déjà la zone de la barre d'état : on ne la compte pas deux fois.
         return Column(
@@ -151,7 +191,22 @@ class ZeroPerteApp extends StatelessWidget {
       home: ListenableBuilder(
         listenable: etat,
         builder: (context, _) => !etat.installationTerminee
-            ? AssistantInstallation(etat: etat)
+            ? Builder(
+                builder: (context) => AssistantInstallation(
+                  etat: etat,
+                  onDemonstration: creerDemo == null
+                      ? null
+                      : () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => PageDemonstration(
+                              creer: creerDemo!,
+                              infosPaquet: infosPaquet,
+                              maintenant: maintenant,
+                            ),
+                          ),
+                        ),
+                ),
+              )
             : (etat.utilisateurActuel == null && etat.utilisateurs.isNotEmpty)
             ? PageConnexion(etat: etat)
             : AccueilVendeur(
@@ -308,6 +363,102 @@ class BandeauEssai extends StatelessWidget {
               fontWeight: FontWeight.w700,
               fontFamily: policeZp,
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Ouvre la démonstration (une boutique fictive neuve) par-dessus l'assistant.
+class PageDemonstration extends StatefulWidget {
+  const PageDemonstration({
+    super.key,
+    required this.creer,
+    this.infosPaquet,
+    this.maintenant,
+  });
+
+  final Future<EtatApplication> Function() creer;
+  final Future<PackageInfo>? infosPaquet;
+  final DateTime? maintenant;
+
+  @override
+  State<PageDemonstration> createState() => _PageDemonstrationState();
+}
+
+class _PageDemonstrationState extends State<PageDemonstration> {
+  late final Future<EtatApplication> _demo = widget.creer();
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<EtatApplication>(
+      future: _demo,
+      builder: (context, r) {
+        if (r.hasData) {
+          return ZeroPerteApp(
+            etat: r.data!,
+            infosPaquet: widget.infosPaquet,
+            maintenant: widget.maintenant,
+            quitterDemo: () => Navigator.of(context).pop(),
+          );
+        }
+        return Scaffold(
+          body: Center(
+            child: r.hasError
+                ? Text(
+                    'La démonstration ne peut pas s\'ouvrir.\n${r.error}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 20),
+                  )
+                : const CircularProgressIndicator(),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Bandeau permanent de la démonstration, avec le code du patron et « Quitter ».
+class BandeauDemo extends StatelessWidget {
+  const BandeauDemo({super.key, required this.onQuitter});
+
+  final VoidCallback onQuitter;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: CouleursZp.credit,
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 6, 8, 6),
+          child: Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'DÉMONSTRATION — rien n\'est gardé\nCode du patron : $codePatronDemo',
+                  key: Key('bandeau-demo'),
+                  style: TextStyle(
+                    color: CouleursZp.texteSurCredit,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: policeZp,
+                  ),
+                ),
+              ),
+              FilledButton.icon(
+                key: const Key('bouton-quitter-demo'),
+                onPressed: onQuitter,
+                icon: const Icon(Icons.close_rounded),
+                label: const Text('Quitter'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: CouleursZp.texteSurCredit,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(0, 48),
+                ),
+              ),
+            ],
           ),
         ),
       ),

@@ -96,7 +96,12 @@ class _RecuPartageableState extends State<RecuPartageable> {
       image.dispose();
       final r = await widget.etat.services.partagerImage(
         octets!.buffer.asUint8List(),
-        texteRecu(widget.etat.config, _recu, widget.donnees['total'] as int),
+        (widget.etat.estDemo ? 'DÉMONSTRATION — SANS VALEUR. ' : '') +
+            texteRecu(
+              widget.etat.config,
+              _recu,
+              widget.donnees['total'] as int,
+            ),
       );
       if (r == ResultatPartage.echec && mounted) {
         annoncer(context, 'Impossible d\'envoyer le reçu.', erreur: true);
@@ -148,6 +153,7 @@ class _RecuPartageableState extends State<RecuPartageable> {
                     date: dateRecu(widget.heure),
                     lignes: s.data!,
                     paiement: nomPaiement(mode),
+                    demo: widget.etat.estDemo,
                   ),
                 ),
               ),

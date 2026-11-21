@@ -14,6 +14,10 @@ import 'package:zero_perte/donnees/journal_local.dart';
 
 import '../test/ecrans/tableau_test.dart' show journee;
 import '../test/ecrans/vendeurs_test.dart' show ouvrirEspacePatron;
+import '../test/ecrans/demo_test.dart' show demo, cheminDemo;
+
+import 'package:zero_perte/app/etat_application.dart';
+
 import '../test/support/outils.dart';
 
 Future<void> _chargerPolices() async {
@@ -200,6 +204,37 @@ void main() {
       await expectLater(
         find.byType(MaterialApp),
         matchesGoldenFile('captures/sauvegarde_${e.key}.png'),
+      );
+    });
+  }
+  for (final e in ecrans.entries) {
+    testWidgets('demo ${e.key}', (tester) async {
+      final env = await environnementDeTest(
+        tester,
+        etape: EtapeAssistant.activation,
+      );
+      final d = (await tester.runAsync(() => demo(env, cheminDemo())))!;
+      await afficherApp(
+        tester,
+        env.etat,
+        taille: e.value,
+        densite: 2,
+        creerDemo: () async => d,
+      );
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('bouton-demonstration')),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await expectLater(
+        find.byType(MaterialApp).first,
+        matchesGoldenFile('captures/activation_demo_${e.key}.png'),
+      );
+      await toucher(tester, find.byKey(const Key('bouton-demonstration')));
+      await attendre(tester, tours: 8);
+      await expectLater(
+        find.byType(MaterialApp).first,
+        matchesGoldenFile('captures/demo_accueil_${e.key}.png'),
       );
     });
   }

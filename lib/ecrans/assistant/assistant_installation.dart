@@ -12,9 +12,16 @@ import 'etapes_boutique.dart';
 /// Assistant d'installation : une étape par écran, une voix qui lit la consigne,
 /// un bouton d'aide toujours visible. Il reprend là où il s'était arrêté.
 class AssistantInstallation extends StatefulWidget {
-  const AssistantInstallation({super.key, required this.etat});
+  const AssistantInstallation({
+    super.key,
+    required this.etat,
+    this.onDemonstration,
+  });
 
   final EtatApplication etat;
+
+  /// Ouvre la boutique de démonstration (avant l'activation) ; nul = pas de démo.
+  final VoidCallback? onDemonstration;
 
   @override
   State<AssistantInstallation> createState() => _AssistantInstallationState();
@@ -206,6 +213,7 @@ class _AssistantInstallationState extends State<AssistantInstallation> {
     EtapeAssistant.activation => _Activation(
       licence: etat.licence,
       erreur: _erreurActivation,
+      onDemonstration: widget.onDemonstration,
     ),
     _ => const SizedBox.shrink(),
   };
@@ -585,10 +593,15 @@ class _FeuilleAide extends StatelessWidget {
 
 /// Étape « Code d'activation ».
 class _Activation extends StatelessWidget {
-  const _Activation({required this.licence, required this.erreur});
+  const _Activation({
+    required this.licence,
+    required this.erreur,
+    this.onDemonstration,
+  });
 
   final Licence? licence;
   final String? erreur;
+  final VoidCallback? onDemonstration;
 
   @override
   Widget build(BuildContext context) {
@@ -656,6 +669,29 @@ class _Activation extends StatelessWidget {
           icone: Icons.content_paste_rounded,
           texte: 'Revenez ici et touchez « Coller le code ».',
         ),
+        if (onDemonstration != null) ...[
+          const SizedBox(height: 8),
+          const Text(
+            'Pas encore de code ?',
+            style: TextStyle(fontSize: 18, color: CouleursZp.texteDoux),
+          ),
+          const SizedBox(height: 6),
+          OutlinedButton.icon(
+            key: const Key('bouton-demonstration'),
+            onPressed: onDemonstration,
+            icon: const Icon(Icons.play_circle_rounded, size: 28),
+            label: const Text(
+              'Voir une démonstration',
+              style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700),
+            ),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(0, 60),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
