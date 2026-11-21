@@ -55,10 +55,18 @@ Widget texteSolde(Client c, {double taille = 17, Key? key}) => Text(
 /// Liste des clients (bouton « Crédit » de l'accueil). Avec [choisir], toucher
 /// un client le renvoie (vente à crédit).
 class PageClients extends StatefulWidget {
-  const PageClients({super.key, required this.etat, this.choisir = false});
+  const PageClients({
+    super.key,
+    required this.etat,
+    this.choisir = false,
+    this.pourCredit = true,
+  });
 
   final EtatApplication etat;
   final bool choisir;
+
+  /// En mode [choisir] : le client doit pouvoir prendre à crédit (téléphone).
+  final bool pourCredit;
 
   @override
   State<PageClients> createState() => _PageClientsState();
@@ -239,7 +247,7 @@ class _PageClientsState extends State<PageClients> {
                       key: Key('client-${c.nom}'),
                       borderRadius: BorderRadius.circular(16),
                       onTap: () => widget.choisir
-                          ? (c.peutPrendreCredit
+                          ? (c.peutPrendreCredit || !widget.pourCredit
                                 ? Navigator.of(context).pop(c)
                                 : annoncer(
                                     context,
@@ -272,7 +280,9 @@ class _PageClientsState extends State<PageClients> {
                                     ),
                                   ),
                                   texteSolde(c),
-                                  if (widget.choisir && !c.peutPrendreCredit)
+                                  if (widget.choisir &&
+                                      widget.pourCredit &&
+                                      !c.peutPrendreCredit)
                                     const Text(
                                       'Téléphone manquant',
                                       style: TextStyle(
@@ -280,7 +290,7 @@ class _PageClientsState extends State<PageClients> {
                                         color: CouleursZp.argentSort,
                                       ),
                                     )
-                                  else if (widget.choisir)
+                                  else if (widget.choisir && widget.pourCredit)
                                     Text(
                                       'Peut encore prendre ${formatFrancs(c.disponible)}',
                                       style: const TextStyle(

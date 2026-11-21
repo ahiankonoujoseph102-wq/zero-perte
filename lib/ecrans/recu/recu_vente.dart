@@ -84,6 +84,9 @@ class _RecuPartageableState extends State<RecuPartageable> {
     if (id == null) return null;
     final c = await widget.etat.journal.client(id);
     if (c == null) return null;
+    if (widget.donnees['mode_paiement'] != ModePaiement.credit.code) {
+      return 'Client : ${c.nom}';
+    }
     return 'Client : ${c.nom} — reste à payer : ${formatFrancs(c.solde)}';
   }();
   bool _enCours = false;

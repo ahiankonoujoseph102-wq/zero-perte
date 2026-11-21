@@ -10,7 +10,7 @@ Il est mis à jour **à la fin de chaque étape**.
 | | |
 |---|---|
 | **Dernière étape terminée** | **B13** — Sauvegarde chiffrée → **bloc B terminé** |
-| **Version publiée** | 0.17.0 (voir les Releases GitHub) |
+| **Version publiée** | 0.18.0 (voir les Releases GitHub) |
 | **Dernière étape terminée (bis)** | **C1** — Crédit client |
 | **Prochaine étape** | Rapport de fin de bloc C1, puis bloc **D** (synchronisation) |
 | **Méthode** | Enchaîner les étapes de `docs/plan-v1.md` sans validation intermédiaire : B1→B13, puis C1, D, C2→C4, E. Rapport au chef de projet **à la fin de chaque bloc**, ou si une décision appartient au propriétaire, ou si on est bloqué. |
@@ -333,3 +333,25 @@ mais le résultat est presque inutilisable (bruit) : seuls quelques mots sûrs.
 
 **Choix pris au plus simple :** 120 000 tours pour le code patron (environ 1 seconde sur un téléphone
 d'entrée de gamme à chaque entrée du patron) ; export au format CSV (Excel) plutôt qu'en PDF.
+
+### Étape 2 — Ce qui manquait face au concurrent ✅ (version 0.18.0)
+**Fait :**
+- **Client dans le panier, en un toucher** : sous le panier, « Client (facultatif) » → liste → le client
+  apparaît en étiquette (le toucher l'enlève). Par défaut : vente sans client. Le client est enregistré
+  avec la vente quel que soit le paiement, écrit sur le reçu (« Client : Yao »), et déjà choisi si l'on
+  passe en « Crédit ».
+- **Billets à l'encaissement** : « Compte exact », 1 000, 2 000, 5 000, 10 000 F (seulement les billets plus
+  grands que le total, et toujours 10 000 F). Nous les avions déjà ; le 500 F a été retiré.
+- **Filtre par catégorie** au-dessus des produits (Tous, Alimentation, Boissons…), seulement quand la
+  boutique a des produits de plusieurs catégories.
+- **Tableau du patron : barres des ventes des 7 derniers jours** (aujourd'hui en vert foncé).
+- Classement complet des manques : `docs/analyse-concurrent.md`.
+
+**Tests (254 au total, tous réussis)**, par exemple :
+- 2 kg de riz pour **Yao** (sans téléphone), payé en espèces → reçu « Client : Yao », Yao doit **0 F**.
+- Kofi choisi dans le panier → « Crédit » → déjà sélectionné : « Après cette vente, il devra 1 200 F. »
+- Total **1 200 F** → pas de bouton 1 000 F ; « 2 000 F » → rendre **800 F**. Une vente de 1 200 F aujourd'hui
+  → barre « auj. » = 1 200 F, les 6 autres jours à 0.
+
+**Choix pris au plus simple :** n'importe quel client (même sans téléphone) peut être choisi pour une vente
+payée ; le téléphone reste exigé seulement pour le crédit.

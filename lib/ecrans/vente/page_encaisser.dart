@@ -52,6 +52,12 @@ class _PageEncaisserState extends State<PageEncaisser> {
   void initState() {
     super.initState();
     widget.etat.services.voix.dire('À payer : ${montantPourVoix(_total)}');
+    final id = widget.panier.clientId;
+    if (id != null) {
+      widget.etat.journal.client(id).then((c) {
+        if (mounted && c != null) setState(() => _client = c);
+      });
+    }
   }
 
   @override
@@ -84,7 +90,9 @@ class _PageEncaisserState extends State<PageEncaisser> {
         mode: _mode,
         montantRecu: _mode == ModePaiement.especes ? _recu : null,
         reference: _mode == ModePaiement.credit ? null : _reference.text,
-        clientId: _mode == ModePaiement.credit ? _client?.id : null,
+        clientId: _mode == ModePaiement.credit
+            ? _client?.id
+            : widget.panier.clientId,
       );
       final rendre = vente.monnaie?.aRendre ?? 0;
       await widget.etat.services.voix.dire(
@@ -234,7 +242,7 @@ class _PageEncaisserState extends State<PageEncaisser> {
                           ),
                           onPressed: () => setState(() => _recu = _total),
                         ),
-                        for (final b in const [500, 1000, 2000, 5000, 10000])
+                        for (final b in const [1000, 2000, 5000, 10000])
                           if (b > _total || b == 10000)
                             Padding(
                               padding: const EdgeInsets.only(left: 8),

@@ -172,7 +172,7 @@ class ApercuRecu extends StatelessWidget {
                   ],
                 ),
                 Text(
-                  credit == null ? 'Payé : $paiement' : 'À crédit',
+                  paiement == 'Crédit' ? 'À crédit' : 'Payé : $paiement',
                   style: petit,
                 ),
                 if (credit != null)

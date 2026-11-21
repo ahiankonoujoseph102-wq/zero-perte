@@ -99,5 +99,19 @@ class Panier {
   }
 
   void retirer(int index) => _lignes.removeAt(index);
-  void vider() => _lignes.clear();
+
+  /// Client choisi pour cette vente (facultatif ; par défaut : sans client).
+  String? clientId;
+  String? clientNom;
+
+  void choisirClient(String? id, String? nom) {
+    clientId = id;
+    clientNom = id == null ? null : nom;
+  }
+
+  void vider() {
+    _lignes.clear();
+    clientId = null;
+    clientNom = null;
+  }
 }

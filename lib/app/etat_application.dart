@@ -566,6 +566,7 @@ class EtatApplication extends ChangeNotifier {
       benefice: benefice,
       depenses: depenses,
       credits: await journal.totalCredits(),
+      septJours: await ventesSeptJours(),
       meilleurs: [
         for (final e in meilleurs.take(3))
           (
@@ -757,6 +758,27 @@ class EtatApplication extends ChangeNotifier {
     return Uri.https('wa.me', '/$numero', {'text': messageRappel(c)});
   }
 
+  /// Ventes de chacun des 7 derniers jours (le plus ancien d'abord).
+  Future<List<(DateTime, int)>> ventesSeptJours() async {
+    final m = maintenant();
+    final aujourdhui = DateTime(m.year, m.month, m.day);
+    final jours = [
+      for (var i = 6; i >= 0; i--)
+        DateTime(aujourdhui.year, aujourdhui.month, aujourdhui.day - i),
+    ];
+    final totaux = List<int>.filled(7, 0);
+    for (final (h, t) in await journal.ventesDetaillees(
+      depuis: jours.first.millisecondsSinceEpoch,
+    )) {
+      final d = DateTime.fromMillisecondsSinceEpoch(h);
+      final i = jours.indexWhere(
+        (j) => j.year == d.year && j.month == d.month && j.day == d.day,
+      );
+      if (i >= 0) totaux[i] += t;
+    }
+    return [for (var i = 0; i < 7; i++) (jours[i], totaux[i])];
+  }
+
   /// La personne connectée est-elle le patron ?
   bool get estPatron => utilisateurActuel?.role == Role.patron;
 
@@ -858,6 +880,7 @@ class TableauPatron {
     required this.benefice,
     required this.depenses,
     this.credits = 0,
+    this.septJours = const [],
     required this.meilleurs,
     required this.stockBas,
   });
@@ -872,6 +895,9 @@ class TableauPatron {
 
   /// Ce que les clients doivent encore (crédit), aujourd'hui, toutes périodes.
   final int credits;
+
+  /// Ventes des 7 derniers jours : (jour, total).
+  final List<(DateTime, int)> septJours;
 
   /// Les 3 produits qui ont rapporté le plus : (nom, montant).
   final List<(String, int)> meilleurs;

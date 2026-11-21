@@ -9,6 +9,7 @@ import '../../donnees/journal_local.dart';
 import '../../theme/couleurs.dart';
 import '../clavier_montant.dart';
 import '../communs.dart';
+import '../credit/clients.dart';
 import 'page_encaisser.dart';
 import 'ventes_du_jour.dart';
 
@@ -24,6 +25,25 @@ class PageVendre extends StatefulWidget {
 
 class _PageVendreState extends State<PageVendre> {
   final Panier _panier = Panier();
+
+  /// Catégorie affichée (null = toutes).
+  String? _categorie;
+
+  Future<void> _choisirClient() async {
+    if (_panier.clientId != null) {
+      setState(() => _panier.choisirClient(null, null));
+      return;
+    }
+    final c = await Navigator.of(context).push<Client>(
+      MaterialPageRoute(
+        builder: (_) =>
+            PageClients(etat: etat, choisir: true, pourCredit: false),
+      ),
+    );
+    if (c != null && mounted) {
+      setState(() => _panier.choisirClient(c.id, c.nom));
+    }
+  }
 
   EtatApplication get etat => widget.etat;
 
@@ -81,7 +101,18 @@ class _PageVendreState extends State<PageVendre> {
     return ListenableBuilder(
       listenable: etat,
       builder: (context, _) {
-        final produits = etat.produits;
+        final tous = etat.produits;
+        String cat(Produit p) => p.catalogueId?.split('.').first ?? 'autres';
+        final categories = <String>{for (final p in tous) cat(p)}.toList();
+        final produits = _categorie == null
+            ? tous
+            : tous.where((p) => cat(p) == _categorie).toList();
+        String nomCategorie(String id) =>
+            etat.catalogue.categories
+                .where((c) => c.id == id)
+                .firstOrNull
+                ?.nom ??
+            'Autres';
         return PageZp(
           titre: 'Vendre',
           icone: Icons.shopping_basket_rounded,
@@ -100,8 +131,32 @@ class _PageVendreState extends State<PageVendre> {
           corps: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Filtre par catégorie, seulement si la boutique en a plusieurs.
+              if (categories.length > 1)
+                SizedBox(
+                  height: 52,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    children: [
+                      for (final c in <String?>[null, ...categories])
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: ChoiceChip(
+                            key: Key('categorie-${c ?? 'tous'}'),
+                            label: Text(
+                              c == null ? 'Tous' : nomCategorie(c),
+                              style: const TextStyle(fontSize: 17),
+                            ),
+                            selected: _categorie == c,
+                            onSelected: (_) => setState(() => _categorie = c),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               Expanded(
-                child: produits.isEmpty
+                child: tous.isEmpty
                     ? const Center(
                         child: Padding(
                           padding: EdgeInsets.all(24),
@@ -128,6 +183,33 @@ class _PageVendreState extends State<PageVendre> {
                         ),
                       ),
               ),
+              if (!_panier.vide)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: _panier.clientId == null
+                        ? TextButton.icon(
+                            key: const Key('bouton-client-panier'),
+                            onPressed: _choisirClient,
+                            icon: const Icon(Icons.person_add_alt_1_rounded),
+                            label: const Text(
+                              'Client (facultatif)',
+                              style: TextStyle(fontSize: 17),
+                            ),
+                          )
+                        : InputChip(
+                            key: const Key('client-panier'),
+                            avatar: const Icon(Icons.person_rounded),
+                            label: Text(
+                              _panier.clientNom ?? '',
+                              style: const TextStyle(fontSize: 17),
+                            ),
+                            onDeleted: _choisirClient,
+                            onPressed: _choisirClient,
+                          ),
+                  ),
+                ),
               if (!_panier.vide)
                 _ListePanier(panier: _panier, onChange: () => setState(() {})),
             ],

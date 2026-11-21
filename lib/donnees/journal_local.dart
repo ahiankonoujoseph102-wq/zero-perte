@@ -1223,7 +1223,7 @@ class JournalLocal implements ReglagesLocaux {
           'montant_recu': montantRecu,
           'monnaie_rendue': monnaie?.aRendre,
           'reference_paiement': referencePaiement,
-          if (mode == ModePaiement.credit) 'client': clientId,
+          'client': ?clientId,
         },
       );
       return VenteEnregistree(
@@ -1341,6 +1341,18 @@ class JournalLocal implements ReglagesLocaux {
       [depuis],
     );
     return (total: r.first['t'] as int, nombre: r.first['n'] as int);
+  }
+
+  /// Ventes non annulées depuis [depuis] : (heure, total), pour les graphiques.
+  Future<List<(int, int)>> ventesDetaillees({required int depuis}) async {
+    final r = await _db.rawQuery(
+      'SELECT o.heure_telephone AS h, v.total AS t FROM ventes v '
+      'JOIN operations o ON o.id = v.operation_id '
+      'LEFT JOIN ventes_annulees an ON an.vente_operation_id = v.operation_id '
+      'WHERE o.heure_telephone >= ? AND an.operation_id IS NULL',
+      [depuis],
+    );
+    return [for (final l in r) (l['h'] as int, l['t'] as int)];
   }
 
   /// Total des dépenses (tous moyens de paiement) depuis [depuis].
