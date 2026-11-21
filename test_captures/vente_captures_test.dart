@@ -391,4 +391,33 @@ void main() {
       );
     });
   }
+  for (final e in ecrans.entries) {
+    testWidgets('fournisseurs ${e.key}', (tester) async {
+      final env = await environnementDeTest(
+        tester,
+        preparer: (etat) async {
+          await boutiqueAvecKofi(etat);
+          final id = await etat.ajouterFournisseur(
+            nom: 'Grossiste Sika',
+            telephone: '90001122',
+          );
+          final f = (await etat.fournisseurs()).firstWhere((x) => x.id == id);
+          await etat.achatFournisseur(f, 125000);
+        },
+      );
+      await afficherApp(tester, env.etat, taille: e.value, densite: 2);
+      await ouvrirEspacePatron(tester);
+      await toucher(tester, find.byKey(const Key('patron-fournisseurs')));
+      await attendre(tester, tours: 6);
+      await toucher(
+        tester,
+        find.byKey(const Key('fournisseur-Grossiste Sika')),
+      );
+      await attendre(tester, tours: 8);
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('captures/fournisseur_${e.key}.png'),
+      );
+    });
+  }
 }

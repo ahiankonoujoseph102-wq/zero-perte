@@ -13,7 +13,7 @@
 /// n'utilise donc ni UPSERT, ni RETURNING, ni fonctions JSON, ni fonctions de fenêtre.
 library;
 
-const int versionSchema = 4;
+const int versionSchema = 5;
 
 /// Migrations : pour passer de la version N-1 à la version N.
 /// Uniquement des AJOUTS (ALTER TABLE … ADD COLUMN), compatibles SQLite 3.18.
@@ -58,6 +58,29 @@ CREATE TABLE mouvements_credit (
     'ALTER TABLE clients_versions ADD COLUMN quartier TEXT',
     'ALTER TABLE clients_versions ADD COLUMN email TEXT',
   ],
+  // Crédit fournisseur (étape C4).
+  5: [
+    '''
+CREATE TABLE fournisseurs_versions (
+  operation_id TEXT PRIMARY KEY NOT NULL,
+  fournisseur_id TEXT NOT NULL,
+  nom TEXT NOT NULL,
+  telephone TEXT NOT NULL DEFAULT '',
+  actif INTEGER NOT NULL DEFAULT 1
+)''',
+    // montant > 0 : la boutique doit plus (achat à crédit) ; < 0 : paiement.
+    '''
+CREATE TABLE mouvements_fournisseur (
+  operation_id TEXT PRIMARY KEY NOT NULL,
+  fournisseur_id TEXT NOT NULL,
+  montant INTEGER NOT NULL,
+  nature TEXT NOT NULL,
+  note TEXT,
+  mode_paiement TEXT
+)''',
+    ...declencheursPour('fournisseurs_versions'),
+    ...declencheursPour('mouvements_fournisseur'),
+  ],
 };
 
 /// Tables en « ajout seulement » ajoutées par les migrations (déclencheurs
@@ -65,6 +88,8 @@ CREATE TABLE mouvements_credit (
 const List<String> tablesAjoutSeulementMigrees = [
   'clients_versions',
   'mouvements_credit',
+  'fournisseurs_versions',
+  'mouvements_fournisseur',
 ];
 
 /// Tables en « ajout seulement » (protégées par des déclencheurs).

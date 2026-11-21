@@ -468,6 +468,40 @@ class JournalLocal implements ReglagesLocaux {
           'quartier': d['quartier'],
           'email': d['email'],
         });
+      case TypeOperation.fournisseurDefini:
+        await t.insert('fournisseurs_versions', {
+          'operation_id': op.id,
+          'fournisseur_id': d['fournisseur'],
+          'nom': d['nom'],
+          'telephone': d['telephone'] ?? '',
+          'actif': (d['actif'] ?? true) == true ? 1 : 0,
+        });
+      case TypeOperation.achatFournisseur:
+        await t.insert('mouvements_fournisseur', {
+          'operation_id': op.id,
+          'fournisseur_id': d['fournisseur'],
+          'montant': d['montant'],
+          'nature': 'achat',
+          'note': d['note'],
+          'mode_paiement': null,
+        });
+      case TypeOperation.paiementFournisseur:
+        await t.insert('mouvements_fournisseur', {
+          'operation_id': op.id,
+          'fournisseur_id': d['fournisseur'],
+          'montant': -(d['montant'] as int),
+          'nature': 'paiement',
+          'note': null,
+          'mode_paiement': d['mode_paiement'],
+        });
+        // Le paiement sort de la caisse de ce moyen de paiement.
+        await t.insert('mouvements_caisse', {
+          'operation_id': op.id,
+          'nature': op.type,
+          'mode_paiement': d['mode_paiement'],
+          'montant': d['montant'],
+          'motif': 'Fournisseur',
+        });
       case TypeOperation.remboursementCredit:
         await t.insert('mouvements_credit', {
           'operation_id': op.id,
@@ -702,6 +736,147 @@ class JournalLocal implements ReglagesLocaux {
               .first['s']
           as int?) ??
       0;
+
+  // ---------------------------------------------------------------------------
+  // Crédit fournisseur (C4)
+  // ---------------------------------------------------------------------------
+
+  Future<String> definirFournisseur({
+    String? fournisseurId,
+    required String nom,
+    String telephone = '',
+    bool actif = true,
+    required String auteurId,
+  }) async {
+    if (nom.trim().isEmpty) {
+      throw const ErreurZeroPerte('Écrivez le nom du fournisseur.');
+    }
+    final id = fournisseurId ?? nouvelIdentifiant();
+    await _db.transaction(
+      (t) => _ajouter(
+        t,
+        type: TypeOperation.fournisseurDefini,
+        auteurId: auteurId,
+        donnees: {
+          'fournisseur': id,
+          'nom': nom.trim(),
+          'telephone': telephone.trim(),
+          'actif': actif,
+        },
+      ),
+    );
+    return id;
+  }
+
+  /// Fournisseurs actifs avec ce que la boutique leur doit.
+  Future<List<Fournisseur>> fournisseurs() async {
+    final ids = await _db.rawQuery(
+      'SELECT DISTINCT fournisseur_id AS f FROM fournisseurs_versions',
+    );
+    final soldes = {
+      for (final l in await _db.rawQuery(
+        'SELECT fournisseur_id AS f, SUM(montant) AS s FROM mouvements_fournisseur GROUP BY fournisseur_id',
+      ))
+        l['f'] as String: (l['s'] as int?) ?? 0,
+    };
+    final liste = <Fournisseur>[];
+    for (final l in ids) {
+      final id = l['f'] as String;
+      final r = await _db.rawQuery(
+        'SELECT fv.* FROM fournisseurs_versions fv JOIN operations o ON o.id = fv.operation_id '
+        'WHERE fv.fournisseur_id = ? ORDER BY o.heure_telephone DESC, o.numero DESC LIMIT 1',
+        [id],
+      );
+      final v = r.first;
+      if ((v['actif'] as int) != 1) continue;
+      liste.add(
+        Fournisseur(
+          id: id,
+          nom: v['nom'] as String,
+          telephone: v['telephone'] as String,
+          doit: soldes[id] ?? 0,
+        ),
+      );
+    }
+    liste.sort((a, b) => b.doit.compareTo(a.doit));
+    return liste;
+  }
+
+  /// Achat à crédit chez un fournisseur (la boutique lui doit [montant]).
+  Future<void> enregistrerAchatFournisseur({
+    required String fournisseurId,
+    required int montant,
+    String note = '',
+    required String auteurId,
+  }) async {
+    if (montant <= 0) {
+      throw const ErreurZeroPerte('Le montant doit être positif.');
+    }
+    await _db.transaction(
+      (t) => _ajouter(
+        t,
+        type: TypeOperation.achatFournisseur,
+        auteurId: auteurId,
+        donnees: {
+          'fournisseur': fournisseurId,
+          'montant': montant,
+          if (note.trim().isNotEmpty) 'note': note.trim(),
+        },
+      ),
+    );
+  }
+
+  /// La boutique paie (tout ou partie de) sa dette ; l'argent sort de la caisse.
+  Future<void> enregistrerPaiementFournisseur({
+    required String fournisseurId,
+    required int montant,
+    required ModePaiement mode,
+    required String auteurId,
+  }) async {
+    if (montant <= 0) {
+      throw const ErreurZeroPerte('Le montant doit être positif.');
+    }
+    if (mode == ModePaiement.credit) {
+      throw const ErreurZeroPerte('Payez en espèces, Flooz ou Mixx.');
+    }
+    await _db.transaction((t) async {
+      final doit =
+          ((await t.rawQuery(
+                'SELECT SUM(montant) AS s FROM mouvements_fournisseur WHERE fournisseur_id = ?',
+                [fournisseurId],
+              )).first['s']
+              as int?) ??
+          0;
+      if (montant > doit) {
+        throw ErreurZeroPerte(
+          doit <= 0
+              ? 'La boutique ne doit rien à ce fournisseur.'
+              : 'La boutique doit seulement ${formatFrancs(doit)}.',
+        );
+      }
+      await _ajouter(
+        t,
+        type: TypeOperation.paiementFournisseur,
+        auteurId: auteurId,
+        donnees: {
+          'fournisseur': fournisseurId,
+          'montant': montant,
+          'mode_paiement': mode.code,
+        },
+      );
+    });
+  }
+
+  /// Historique d'un fournisseur, le plus récent d'abord : (heure, montant, note).
+  Future<List<(int, int, String?)>> historiqueFournisseur(String id) async => [
+    for (final l in await _db.rawQuery(
+      'SELECT m.montant AS m, m.note AS n, o.heure_telephone AS h FROM mouvements_fournisseur m '
+      'JOIN operations o ON o.id = m.operation_id WHERE m.fournisseur_id = ? '
+      'ORDER BY o.heure_telephone DESC, o.numero DESC',
+      [id],
+    ))
+      (l['h'] as int, l['m'] as int, l['n'] as String?),
+  ];
 
   // ---------------------------------------------------------------------------
   // Synchronisation entre appareils (bloc D)
@@ -1892,7 +2067,9 @@ class JournalLocal implements ReglagesLocaux {
       fondsDeCaisse: await caisse(TypeOperation.fondsDeCaisse),
       ventes: ventes - annulations,
       remboursementsCredits: await caisse(TypeOperation.remboursementCredit),
-      depenses: await caisse(TypeOperation.depense),
+      depenses:
+          await caisse(TypeOperation.depense) +
+          await caisse(TypeOperation.paiementFournisseur),
       retraitsPatron: await caisse(TypeOperation.retraitPatron),
       consignesEncaissees: consignesEncaissees,
       consignesRendues: consignesRendues,
@@ -2223,4 +2400,21 @@ class Inventaire {
   final List<LigneInventaire> lignes;
 
   int get ecartFrancs => lignes.fold(0, (s, l) => s + l.ecartFrancs);
+}
+
+/// Un fournisseur et ce que la boutique lui doit.
+class Fournisseur {
+  const Fournisseur({
+    required this.id,
+    required this.nom,
+    required this.telephone,
+    required this.doit,
+  });
+
+  final String id;
+  final String nom;
+  final String telephone;
+
+  /// Ce que la boutique doit encore à ce fournisseur (F).
+  final int doit;
 }

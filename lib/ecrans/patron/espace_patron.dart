@@ -6,6 +6,7 @@ import '../caisse/fermeture.dart';
 import '../caisse/saisie_montant.dart';
 import '../communs.dart';
 import 'arrivages.dart';
+import 'fournisseurs.dart';
 import 'inventaire.dart';
 import 'sauvegarde.dart';
 import 'synchronisation.dart';
@@ -66,6 +67,13 @@ final List<EntreePatron> entreesPatron = [
     'Caisses fermées',
     CouleursZp.marque,
     (etat) => PageFermetures(etat: etat),
+  ),
+  EntreePatron(
+    'fournisseurs',
+    Icons.local_shipping_rounded,
+    'Fournisseurs',
+    CouleursZp.marque,
+    (etat) => PageFournisseurs(etat: etat),
   ),
   EntreePatron(
     'retrait',

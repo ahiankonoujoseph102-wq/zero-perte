@@ -10,7 +10,7 @@ Il est mis à jour **à la fin de chaque étape**.
 | | |
 |---|---|
 | **Dernière étape terminée** | **B13** — Sauvegarde chiffrée → **bloc B terminé** |
-| **Version publiée** | 0.23.0 (Android et Windows, voir les Releases GitHub) |
+| **Version publiée** | 0.24.0 (Android et Windows, voir les Releases GitHub) |
 | **Dernière étape terminée (bis)** | **C1** — Crédit client |
 | **Prochaine étape** | Rapport de fin de bloc C1, puis bloc **D** (synchronisation) |
 | **Méthode** | Enchaîner les étapes de `docs/plan-v1.md` sans validation intermédiaire : B1→B13, puis C1, D, C2→C4, E. Rapport au chef de projet **à la fin de chaque bloc**, ou si une décision appartient au propriétaire, ou si on est bloqué. |
@@ -495,3 +495,23 @@ limite de 20 Mo ; à surveiller.
   « Kossi − 68 000 F » (100 kg × 600 F + 10 × 800 F).
 
 **Choix pris au plus simple :** l'inventaire du jour est proposé après la fermeture de caisse (pas imposé).
+
+### Étape 6 — C4 : crédit fournisseur ✅ (version 0.24.0)
+**Fait :**
+- Espace patron → **« Fournisseurs »** : liste avec « On lui doit … » (les plus grosses dettes en haut) et
+  « La boutique doit en tout … » ; « Nouveau fournisseur » (nom, téléphone facultatif).
+- Fiche : **« Achat à crédit »** (montant de la marchandise prise à crédit) ; **« Je paie »** (montant +
+  espèces / Flooz / Mixx) : l'argent **sort de la caisse** correspondante (compté à la fermeture) ;
+  historique. Payer plus que la dette est refusé.
+- Base : schéma **version 5** (`fournisseurs_versions`, `mouvements_fournisseur`, ajout seulement).
+- Défaut évité : le message de confirmation cachait le bouton « Je paie » ; la fiche montre déjà le montant.
+
+**Tests (351 au total, tous réussis)**, par exemple :
+- Sika : achat à crédit **50 000 F**, paiement **20 000 F** en espèces → « On lui doit 30 000 F » ;
+  caisse ouverte avec 25 000 F → attendue **5 000 F**.
+- Dette de 10 000 F, paiement de 15 000 F → « La boutique doit seulement 10 000 F. »
+- Fiche fournisseur sans débordement sur les 6 tailles d'écran.
+
+**Choix pris au plus simple :** l'achat à crédit est noté à part de l'arrivage (le patron enregistre aussi
+l'arrivage pour le stock) ; les paiements fournisseurs ne comptent pas dans « Dépenses » du tableau du
+patron (ce n'est pas une dépense, c'est le paiement du stock), mais ils sortent bien de la caisse.

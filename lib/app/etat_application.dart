@@ -784,6 +784,46 @@ class EtatApplication extends ChangeNotifier {
     return r;
   }
 
+  // --- Crédit fournisseur (patron) -----------------------------------------
+
+  Future<List<Fournisseur>> fournisseurs() => journal.fournisseurs();
+
+  Future<String> ajouterFournisseur({
+    required String nom,
+    String telephone = '',
+  }) async {
+    final id = await journal.definirFournisseur(
+      nom: nom,
+      telephone: normaliserTelephone(telephone) ?? telephone.trim(),
+      auteurId: auteurActuel,
+    );
+    notifyListeners();
+    return id;
+  }
+
+  Future<void> achatFournisseur(Fournisseur f, int montant) async {
+    await journal.enregistrerAchatFournisseur(
+      fournisseurId: f.id,
+      montant: montant,
+      auteurId: auteurActuel,
+    );
+    notifyListeners();
+  }
+
+  Future<void> payerFournisseur(
+    Fournisseur f,
+    int montant, {
+    required ModePaiement mode,
+  }) async {
+    await journal.enregistrerPaiementFournisseur(
+      fournisseurId: f.id,
+      montant: montant,
+      mode: mode,
+      auteurId: auteurActuel,
+    );
+    notifyListeners();
+  }
+
   /// Supprime un client du carnet (patron seulement, et s'il ne doit rien).
   /// Rien n'est effacé du journal : la fiche est seulement désactivée.
   Future<void> supprimerClient(Client c) async {
