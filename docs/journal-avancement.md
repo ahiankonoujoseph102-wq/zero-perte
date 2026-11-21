@@ -9,9 +9,9 @@ Il est mis à jour **à la fin de chaque étape**.
 
 | | |
 |---|---|
-| **Dernière étape terminée** | **B6** — Vendre |
-| **Version publiée** | 0.7.0 (voir les Releases GitHub) |
-| **Prochaine étape** | **B7** — Vendeurs, connexion par code |
+| **Dernière étape terminée** | **B7** — Vendeurs et connexion par code |
+| **Version publiée** | 0.8.0 (voir les Releases GitHub) |
+| **Prochaine étape** | **B8** — Annulation, retour, perte |
 | **Méthode** | Enchaîner les étapes de `docs/plan-v1.md` sans validation intermédiaire : B1→B13, puis C1, D, C2→C4, E. Rapport au chef de projet **à la fin de chaque bloc**, ou si une décision appartient au propriétaire, ou si on est bloqué. |
 | **Ordre des blocs** | A ✅ → **B (en cours)** → C1 → D → C2–C4 → E |
 
@@ -142,3 +142,17 @@ Police Atkinson Hyperlegible, marque bleu nuit, écran d'accueil vendeur à 4 gr
 - Total 600 F, le client donne 500 F → **« Il manque 100 F »**, bouton « Valider » désactivé.
 
 **Problèmes restants :** sur un écran de 4 pouces, l'écran « Encaisser » défile un peu pour voir le bas du clavier (choix délibéré : le clavier garde des touches d'au moins 30 points).
+
+### B7 — Vendeurs et connexion par code ✅ (version 0.8.0)
+**Fait :**
+- Au démarrage : écran **« Qui êtes-vous ? »** (avatars avec initiale et couleur, « Patron » / « Vendeur » / « Bloqué ») → **code secret** de la personne → accueil à son nom. Bouton **« Changer d'utilisateur »** sur l'accueil.
+- Le patron qui termine l'installation est connecté automatiquement.
+- Espace patron → **Vendeurs** : ajouter (prénom + code **choisi par le vendeur lui-même**, confirmé 2 fois, codes trop faciles refusés), **bloquer / débloquer**, **changer le code**. Chaque changement = nouvelle version dans le journal.
+- **Chaque opération porte l'identifiant de la personne connectée** (auteur).
+
+**Tests (156 au total, tous réussis)**, par exemple :
+- Le patron ajoute **Kossi (code 5913)** ; Kossi tape le code du patron **4827 → « Code faux »**, puis **5913 → accueil « Kossi »** ; sa vente de riz est enregistrée avec **l'auteur = Kossi**.
+- Kossi **bloqué** → connexion refusée (« bloqué ») ; **débloqué** → il se reconnecte.
+- Écran « Qui êtes-vous ? » vérifié sur 4 tailles d'écran.
+
+**Note :** la version 0.7.0 a d'abord été envoyée avec un test périmé (fabrication en échec), corrigé aussitôt par le commit suivant ; désormais l'enregistrement n'a lieu que si tous les tests passent.

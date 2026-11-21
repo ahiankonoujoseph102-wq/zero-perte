@@ -214,8 +214,76 @@ class EtatApplication extends ChangeNotifier {
     );
     await journal.definirUtilisateur(u, auteurId: u.id);
     _utilisateurs = await journal.utilisateurs();
+    // Le patron qui vient de choisir son code est connecté.
+    _utilisateurActuel = u;
     notifyListeners();
     return u;
+  }
+
+  /// Vendeurs (actifs et bloqués).
+  List<Utilisateur> get vendeurs =>
+      _utilisateurs.where((u) => u.role == Role.vendeur).toList();
+
+  /// Ajoute un vendeur avec son code secret (choisi par lui).
+  Future<Utilisateur> ajouterVendeur({
+    required String nom,
+    required String pin,
+  }) async {
+    if (nom.trim().isEmpty) {
+      throw const ErreurZeroPerte('Écrivez le prénom du vendeur.');
+    }
+    final probleme = problemePin(pin);
+    if (probleme != null) throw ErreurZeroPerte(probleme);
+    final sel = nouveauSel();
+    final u = Utilisateur(
+      id: nouvelIdentifiant(),
+      nom: nom.trim(),
+      role: Role.vendeur,
+      sel: sel,
+      hachage: await hacherPin(pin, sel),
+    );
+    await journal.definirUtilisateur(u, auteurId: auteurActuel);
+    _utilisateurs = await journal.utilisateurs();
+    notifyListeners();
+    return u;
+  }
+
+  /// Bloque ou débloque un vendeur (nouvelle version ; l'historique reste).
+  Future<void> bloquer(Utilisateur u, {required bool bloque}) async {
+    await journal.definirUtilisateur(
+      Utilisateur(
+        id: u.id,
+        nom: u.nom,
+        role: u.role,
+        sel: u.sel,
+        hachage: u.hachage,
+        actif: !bloque,
+      ),
+      auteurId: auteurActuel,
+    );
+    _utilisateurs = await journal.utilisateurs();
+    if (bloque && _utilisateurActuel?.id == u.id) _utilisateurActuel = null;
+    notifyListeners();
+  }
+
+  /// Change le code secret d'un utilisateur.
+  Future<void> changerPin(Utilisateur u, String pin) async {
+    final probleme = problemePin(pin);
+    if (probleme != null) throw ErreurZeroPerte(probleme);
+    final sel = nouveauSel();
+    await journal.definirUtilisateur(
+      Utilisateur(
+        id: u.id,
+        nom: u.nom,
+        role: u.role,
+        sel: sel,
+        hachage: await hacherPin(pin, sel),
+        actif: u.actif,
+      ),
+      auteurId: auteurActuel,
+    );
+    _utilisateurs = await journal.utilisateurs();
+    notifyListeners();
   }
 
   // ---------------------------------------------------------------------------

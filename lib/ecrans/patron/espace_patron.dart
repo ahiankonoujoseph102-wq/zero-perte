@@ -4,6 +4,7 @@ import '../../app/etat_application.dart';
 import '../../theme/couleurs.dart';
 import '../communs.dart';
 import 'arrivages.dart';
+import 'vendeurs.dart';
 
 /// Une entrée du menu du patron.
 class EntreePatron {
@@ -31,6 +32,13 @@ final List<EntreePatron> entreesPatron = [
     'Arrivages',
     CouleursZp.marque,
     (etat) => PageArrivages(etat: etat),
+  ),
+  EntreePatron(
+    'vendeurs',
+    Icons.groups_rounded,
+    'Vendeurs',
+    CouleursZp.marque,
+    (etat) => PageVendeurs(etat: etat),
   ),
 ];
 

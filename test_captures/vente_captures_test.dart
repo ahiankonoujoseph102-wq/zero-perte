@@ -23,6 +23,16 @@ Future<void> _chargerPolices() async {
 void main() {
   setUpAll(_chargerPolices);
   const ecrans = {'5pouces': Size(360, 640), '4pouces': Size(320, 568)};
+  testWidgets('connexion 5pouces', (tester) async {
+    final env = await environnementDeTest(tester, preparer: (etat) async {
+      await boutiqueAvecStock(etat);
+      await etat.ajouterVendeur(nom: 'Kossi', pin: '5913');
+      await etat.ajouterVendeur(nom: 'Afi', pin: '6024');
+      etat.deconnecter();
+    });
+    await afficherApp(tester, env.etat, taille: const Size(360, 640), densite: 2);
+    await expectLater(find.byType(MaterialApp), matchesGoldenFile('captures/connexion_5pouces.png'));
+  });
   for (final e in ecrans.entries) {
     testWidgets('vente ${e.key}', (tester) async {
       final env = await environnementDeTest(tester, preparer: boutiqueAvecStock);

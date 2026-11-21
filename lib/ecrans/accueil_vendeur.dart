@@ -15,8 +15,12 @@ class AccueilVendeur extends StatelessWidget {
     required this.pied,
     this.maintenant,
     this.onEspacePatron,
+    this.onChangerUtilisateur,
     this.actions = const {},
   });
+
+  /// Revenir à l'écran « Qui êtes-vous ? ».
+  final VoidCallback? onChangerUtilisateur;
 
   /// Ouvre l'espace du patron (après son code secret).
   final VoidCallback? onEspacePatron;
@@ -77,6 +81,7 @@ class AccueilVendeur extends StatelessWidget {
                       date: maintenant ?? DateTime.now(),
                       compact: bas,
                       onEspacePatron: onEspacePatron,
+                      onChangerUtilisateur: onChangerUtilisateur,
                     ),
                   ),
                   SizedBox(height: bas ? 10 : 16),
@@ -167,9 +172,11 @@ class _EnTete extends StatelessWidget {
     required this.date,
     this.compact = false,
     this.onEspacePatron,
+    this.onChangerUtilisateur,
   });
 
   final VoidCallback? onEspacePatron;
+  final VoidCallback? onChangerUtilisateur;
 
   final ConfigBoutique config;
   final String nomVendeur;
@@ -243,6 +250,17 @@ class _EnTete extends StatelessWidget {
             ],
           ),
         ),
+        if (onChangerUtilisateur != null) ...[
+          const SizedBox(width: 6),
+          IconButton.outlined(
+            key: const Key('bouton-changer-utilisateur'),
+            onPressed: onChangerUtilisateur,
+            tooltip: 'Changer d\'utilisateur',
+            iconSize: 26,
+            style: IconButton.styleFrom(minimumSize: const Size(48, 48)),
+            icon: const Icon(Icons.switch_account_rounded),
+          ),
+        ],
         if (onEspacePatron != null) ...[
           const SizedBox(width: 8),
           IconButton.filledTonal(

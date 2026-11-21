@@ -10,6 +10,7 @@ import 'donnees/journal_local.dart';
 import 'ecrans/accueil_vendeur.dart';
 import 'ecrans/assistant/assistant_installation.dart';
 import 'ecrans/communs.dart';
+import 'ecrans/connexion.dart';
 import 'ecrans/patron/espace_patron.dart';
 import 'ecrans/vente/page_vendre.dart';
 import 'services/aide.dart';
@@ -143,8 +144,14 @@ class ZeroPerteApp extends StatelessWidget {
       },
       home: ListenableBuilder(
         listenable: etat,
-        builder: (context, _) => etat.installationTerminee
-            ? AccueilVendeur(
+        builder: (context, _) => !etat.installationTerminee
+            ? AssistantInstallation(etat: etat)
+            : (etat.utilisateurActuel == null && etat.utilisateurs.isNotEmpty)
+            ? PageConnexion(etat: etat)
+            : AccueilVendeur(
+                onChangerUtilisateur: etat.utilisateurs.isEmpty
+                    ? null
+                    : etat.deconnecter,
                 onEspacePatron: etat.patron == null
                     ? null
                     : () async {
@@ -168,14 +175,16 @@ class ZeroPerteApp extends StatelessWidget {
                   ),
                 },
                 config: etat.config,
-                nomVendeur: etat.patron?.nom ?? 'Vendeur',
+                nomVendeur:
+                    etat.utilisateurActuel?.nom ??
+                    etat.patron?.nom ??
+                    'Vendeur',
                 maintenant: maintenant,
                 pied: PiedDePage(
                   infosPaquet: infosPaquet ?? PackageInfo.fromPlatform(),
                   baseOuverte: true,
                 ),
-              )
-            : AssistantInstallation(etat: etat),
+              ),
       ),
     );
   }
