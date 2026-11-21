@@ -17,6 +17,7 @@ import 'ecrans/depense/page_depense.dart';
 import 'ecrans/patron/espace_patron.dart';
 import 'ecrans/vente/page_vendre.dart';
 import 'services/aide.dart';
+import 'services/partage.dart';
 import 'services/photos.dart';
 import 'services/raccourci.dart';
 import 'services/telephone.dart';
@@ -66,6 +67,7 @@ Future<EtatApplication> chargerEtatDuTelephone() async {
           rootBundle.loadString('assets/catalogues/catalogues.json'),
       prendrePhoto: prendrePhotoAndroid,
       creerRaccourci: creerRaccourciAndroid,
+      partagerImage: partagerImageAndroid,
     ),
   );
 }

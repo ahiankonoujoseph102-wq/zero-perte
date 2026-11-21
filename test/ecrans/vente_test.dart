@@ -78,7 +78,8 @@ void main() {
       expect(find.text('1 × 1 000 F'), findsOneWidget); // un billet de 1 000
 
       await toucher(tester, find.byKey(const Key('bouton-valider-vente')));
-      expect(find.text('Reçu n° A-000001'), findsOneWidget);
+      expect(find.byKey(const Key('numero-recu')), findsOneWidget);
+      expect(find.text('Reçu n° A-000001'), findsWidgets); // en-tête + reçu
       expect(find.byKey(const Key('rendre-final')), findsOneWidget);
       expect(env.voix.phrases.last, 'Vente enregistrée. Rendez 3000 francs.');
 
@@ -135,8 +136,8 @@ void main() {
     await toucher(tester, find.byKey(const Key('mode-mixx')));
     await tester.enterText(find.byKey(const Key('champ-reference')), '4821');
     await toucher(tester, find.byKey(const Key('bouton-valider-vente')));
-    expect(find.text('Reçu n° A-000001'), findsOneWidget);
-    expect(find.textContaining('Mixx (T-Money)'), findsOneWidget);
+    expect(find.text('Reçu n° A-000001'), findsWidgets);
+    expect(find.textContaining('Mixx (T-Money)'), findsWidgets);
 
     final riz = env.etat.produits.firstWhere((p) => p.nom == 'Riz');
     expect(env.etat.stock(riz.id), 100000 - 167); // 100 F ÷ 600 F = 0,167 kg

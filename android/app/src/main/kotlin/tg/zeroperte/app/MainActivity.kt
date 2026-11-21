@@ -9,6 +9,8 @@ import android.graphics.drawable.Icon
 import android.os.Build
 import android.os.Environment
 import android.os.StatFs
+import androidx.core.content.FileProvider
+import java.io.File
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -28,6 +30,12 @@ class MainActivity : FlutterActivity() {
                         creerRaccourci(
                             appel.argument<String>("nom") ?: "Zéro Perte",
                             appel.argument<ByteArray>("png"),
+                        )
+                    )
+                    "partagerImage" -> resultat.success(
+                        partagerImage(
+                            appel.argument<ByteArray>("png"),
+                            appel.argument<String>("texte") ?: "",
                         )
                     )
                     else -> resultat.notImplemented()
@@ -61,6 +69,38 @@ class MainActivity : FlutterActivity() {
             .setIntent(intention)
             .build()
         return gestionnaire.requestPinShortcut(info, null)
+    }
+
+    /**
+     * Partage une image (reçu) : directement dans WhatsApp s'il est installé
+     * (ou WhatsApp Business), sinon par le menu de partage d'Android.
+     * Renvoie "whatsapp", "autre" ou "echec".
+     */
+    private fun partagerImage(png: ByteArray?, texte: String): String {
+        if (png == null) return "echec"
+        return try {
+            val dossier = File(cacheDir, "recus").apply { mkdirs() }
+            dossier.listFiles()?.forEach { it.delete() } // un seul reçu à la fois
+            val fichier = File(dossier, "recu-${System.currentTimeMillis()}.png")
+            fichier.writeBytes(png)
+            val uri = FileProvider.getUriForFile(this, "$packageName.fichiers", fichier)
+            val intention = Intent(Intent.ACTION_SEND).apply {
+                type = "image/png"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                if (texte.isNotEmpty()) putExtra(Intent.EXTRA_TEXT, texte)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            val whatsapp = listOf("com.whatsapp", "com.whatsapp.w4b").firstOrNull { paquetInstalle(it) }
+            if (whatsapp != null) {
+                startActivity(intention.setPackage(whatsapp))
+                "whatsapp"
+            } else {
+                startActivity(Intent.createChooser(intention, "Envoyer le reçu"))
+                "autre"
+            }
+        } catch (e: Exception) {
+            "echec"
+        }
     }
 
     private fun paquetInstalle(nom: String): Boolean = try {

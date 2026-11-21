@@ -6,6 +6,7 @@ import '../../donnees/journal_local.dart';
 import '../../theme/couleurs.dart';
 import '../assistant/etapes_boutique.dart' show decorationChamp;
 import '../communs.dart';
+import '../recu/recu_vente.dart';
 import 'page_encaisser.dart' show nomPaiement;
 
 String heureCourte(int ms) {
@@ -262,6 +263,10 @@ class PageDetailVente extends StatelessWidget {
                 ),
               ),
             ),
+          ],
+          if (!v.annulee) ...[
+            const SizedBox(height: 20),
+            RecuPartageable(etat: etat, donnees: v.donnees, heure: v.heure),
           ],
         ],
       ),

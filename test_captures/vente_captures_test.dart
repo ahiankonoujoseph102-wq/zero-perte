@@ -96,6 +96,16 @@ void main() {
         find.byType(MaterialApp),
         matchesGoldenFile('captures/vente_terminee_${e.key}.png'),
       );
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('apercu-recu')),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await attendre(tester);
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('captures/vente_recu_${e.key}.png'),
+      );
     });
   }
   for (final e in ecrans.entries) {

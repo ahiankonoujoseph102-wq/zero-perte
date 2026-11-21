@@ -8,6 +8,7 @@ import '../../donnees/journal_local.dart';
 import '../../theme/couleurs.dart';
 import '../assistant/etapes_boutique.dart' show decorationChamp;
 import '../clavier_montant.dart';
+import '../recu/recu_vente.dart';
 import '../communs.dart';
 
 /// Nom affiché d'un moyen de paiement (« Mixx » = l'ancien T-Money).
@@ -498,6 +499,12 @@ class PageVenteTerminee extends StatelessWidget {
               ),
             ),
           ],
+          const SizedBox(height: 24),
+          RecuPartageable(
+            etat: etat,
+            donnees: vente.operation.donnees,
+            heure: vente.operation.heureTelephone,
+          ),
         ],
       ),
     );

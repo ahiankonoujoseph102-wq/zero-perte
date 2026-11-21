@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:zero_perte/services/partage.dart';
 import 'package:zero_perte/app/etat_application.dart';
 import 'package:zero_perte/domaine/licence.dart';
 import 'package:zero_perte/donnees/journal_local.dart';
@@ -131,12 +132,16 @@ class Environnement {
     this.liens,
     this.pressePapiers,
     this.raccourcis,
+    this.partages,
   );
   final EtatApplication etat;
   final FausseVoix voix;
   final List<Uri> liens;
   final PressePapiers pressePapiers;
   final List<String> raccourcis;
+
+  /// Reçus partagés : (image PNG, texte).
+  final List<(Uint8List, String)> partages;
   JournalLocal get journal => etat.journal;
 }
 
@@ -157,6 +162,7 @@ Future<Environnement> environnementDeTest(
   final liens = <Uri>[];
   final presse = PressePapiers();
   final raccourcis = <String>[];
+  final partages = <(Uint8List, String)>[];
   final etat = await tester.runAsync(() async {
     sqfliteFfiInit();
     final journal = await JournalLocal.ouvrir(
@@ -183,13 +189,17 @@ Future<Environnement> environnementDeTest(
           raccourcis.add(nom);
           return true;
         },
+        partagerImage: (png, texte) async {
+          partages.add((png, texte));
+          return ResultatPartage.whatsapp;
+        },
       ),
     );
     if (preparer != null) await preparer(e);
     return e;
   });
   addTearDown(() => tester.runAsync(() => etat!.journal.fermer()));
-  return Environnement(etat!, voix, liens, presse, raccourcis);
+  return Environnement(etat!, voix, liens, presse, raccourcis, partages);
 }
 
 /// Laisse la base SQLite (qui tourne hors du temps simulé) finir son travail,

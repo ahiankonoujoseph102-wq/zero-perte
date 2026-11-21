@@ -8,6 +8,7 @@ import '../domaine/panier.dart';
 import '../domaine/quantites.dart';
 import '../domaine/utilisateurs.dart';
 import '../donnees/journal_local.dart';
+import '../services/partage.dart';
 import '../services/aide.dart';
 import '../services/telephone.dart';
 import '../services/voix.dart';
@@ -26,6 +27,7 @@ class ServicesZp {
     required this.lireCatalogue,
     required this.prendrePhoto,
     required this.creerRaccourci,
+    required this.partagerImage,
   });
 
   final ServiceTelephone telephone;
@@ -47,6 +49,10 @@ class ServicesZp {
   /// Demande à Android d'ajouter un raccourci (nom + image PNG) sur l'écran d'accueil.
   /// Faux si le téléphone ne le permet pas.
   final Future<bool> Function(String nom, Uint8List png) creerRaccourci;
+
+  /// Envoie une image (reçu) dans WhatsApp, ou par le menu de partage.
+  final Future<ResultatPartage> Function(Uint8List png, String texte)
+  partagerImage;
 }
 
 /// Étapes de l'assistant d'installation, dans l'ordre.

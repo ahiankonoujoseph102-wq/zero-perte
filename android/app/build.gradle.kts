@@ -67,3 +67,8 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // FileProvider : partager l'image du reçu avec WhatsApp.
+    implementation("androidx.core:core:1.13.1")
+}

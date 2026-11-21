@@ -9,9 +9,9 @@ Il est mis à jour **à la fin de chaque étape**.
 
 | | |
 |---|---|
-| **Dernière étape terminée** | **B10** — Fermeture de caisse à l'aveugle |
-| **Version publiée** | 0.11.0 (voir les Releases GitHub) |
-| **Prochaine étape** | **B11** — Reçu partagé sur WhatsApp |
+| **Dernière étape terminée** | **B11** — Reçu partagé sur WhatsApp |
+| **Version publiée** | 0.12.0 (voir les Releases GitHub) |
+| **Prochaine étape** | **B12** — Tableau du patron |
 | **Méthode** | Enchaîner les étapes de `docs/plan-v1.md` sans validation intermédiaire : B1→B13, puis C1, D, C2→C4, E. Rapport au chef de projet **à la fin de chaque bloc**, ou si une décision appartient au propriétaire, ou si on est bloqué. |
 | **Ordre des blocs** | A ✅ → **B (en cours)** → C1 → D → C2–C4 → E |
 
@@ -202,5 +202,21 @@ Police Atkinson Hyperlegible, marque bleu nuit, écran d'accueil vendeur à 4 gr
 - Fermeture puis nouvelle ouverture avec 2 000 F et dépense repas 700 F → caisse en cours attendue **1 300 F** (l'ancienne journée n'est plus comptée).
 
 **Problèmes restants :** la fermeture est par téléphone ; avec deux téléphones (bloc D, synchronisation) il faudra décider si chaque téléphone ferme sa propre caisse (choix provisoire : oui, une caisse par téléphone).
+
+### B11 — Reçu partagé sur WhatsApp ✅ (version 0.12.0)
+**Fait :**
+- Après chaque vente, l'écran « Vente enregistrée » montre le **vrai reçu** aux couleurs de la boutique (logo ou initiales, nom, téléphone, adresse, n° de reçu, date, lignes « 2 kg de Riz », total, moyen de paiement, message de fin), et un bouton **« Envoyer le reçu sur WhatsApp »**.
+- Un toucher : le reçu est transformé en **image** et WhatsApp s'ouvre directement (WhatsApp ou WhatsApp Business) pour choisir le client ; sans WhatsApp, le menu de partage d'Android s'ouvre. Texte joint : « Reçu n° A-000001 – Boutique : 1 200 F. Merci, à bientôt ! ».
+- Le reçu peut être **renvoyé** depuis « Ventes du jour » → détail d'une vente (sauf vente annulée).
+- Numéros de reçu **sans trou**, préfixe par téléphone (A-000001, A-000002…) : déjà en place depuis B6, vérifié par un test.
+- Code Android ajouté sans nouvelle bibliothèque Flutter : partage natif (`MainActivity.kt`, méthode `partagerImage`) + `FileProvider` (`res/xml/chemins_partage.xml`, seul le dossier temporaire des reçus est partagé). Dépendance `androidx.core` ajoutée dans `android/app/build.gradle.kts`.
+
+**Tests (188 au total, tous réussis)**, par exemple :
+- Vente de **2 kg de riz** → reçu affiché « 2 kg de Riz », bouton « Envoyer » → une **vraie image PNG** est envoyée avec le texte « Reçu n° A-000001 – Boutique Mama Ama : 1 200 F. … ».
+- Deux ventes puis « Ventes du jour » → A-000002 → « Envoyer » → texte « Reçu n° A-000002 ».
+- Trois ventes → numéros **1, 2, 3**, aucun manquant.
+
+**Problèmes restants :** le partage réel vers WhatsApp ne peut être vérifié que sur un téléphone (les tests simulent Android). Le **texte envoyé au client** est à valider par le propriétaire (question du rapport de fin de bloc B).
+
 
 
