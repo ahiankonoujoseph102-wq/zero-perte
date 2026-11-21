@@ -9,9 +9,9 @@ Il est mis à jour **à la fin de chaque étape**.
 
 | | |
 |---|---|
-| **Dernière étape terminée** | **B8** — Annulation, retour, perte |
-| **Version publiée** | 0.9.0 (voir les Releases GitHub) |
-| **Prochaine étape** | **B9** — Fonds de caisse, dépenses, retrait du patron |
+| **Dernière étape terminée** | **B9** — Fonds de caisse, dépenses, argent pris |
+| **Version publiée** | 0.10.0 (voir les Releases GitHub) |
+| **Prochaine étape** | **B10** — Fermeture de caisse à l'aveugle |
 | **Méthode** | Enchaîner les étapes de `docs/plan-v1.md` sans validation intermédiaire : B1→B13, puis C1, D, C2→C4, E. Rapport au chef de projet **à la fin de chaque bloc**, ou si une décision appartient au propriétaire, ou si on est bloqué. |
 | **Ordre des blocs** | A ✅ → **B (en cours)** → C1 → D → C2–C4 → E |
 
@@ -170,3 +170,19 @@ Police Atkinson Hyperlegible, marque bleu nuit, écran d'accueil vendeur à 4 gr
 - Perte de **3 kg de riz mouillé** : stock **100 kg → 97 kg** ; sans motif, le bouton reste désactivé.
 
 **Problèmes restants :** le retour **partiel** (le client rend seulement une partie) n'existe pas encore : on annule la vente entière puis on refait une vente. À prévoir si les patrons le demandent.
+
+### B9 — Fonds de caisse, dépenses, argent pris par le patron ✅ (version 0.10.0)
+**Fait :**
+- **Ouverture de la caisse** : au premier « Vendre » après une fermeture (ou au tout premier jour), l'application demande « Combien d'argent dans la caisse pour rendre la monnaie ? » (clavier géant, 0 accepté). Ensuite « Vendre » s'ouvre directement.
+- **Dépense d'argent** (bouton Dépense → « De l'argent est sorti ») : motif obligatoire par icône (transport, repas, électricité/eau, loyer, achat de marchandise, réparation, taxes/mairie, crédit téléphone, ou « Autre » écrit), moyen de paiement (espèces, Flooz, Mixx), montant. Un rappel « Transport · Espèces » s'affiche au-dessus du montant.
+- **Argent pris** (nouvelle tuile de l'espace patron) : le patron note ce qu'il prend dans la caisse, pour que la caisse ne paraisse pas volée à la fermeture.
+- Un seul écran réutilisable (`lib/ecrans/caisse/saisie_montant.dart`) sert aux trois usages.
+- Défaut corrigé grâce aux tests : le message « Caisse ouverte » cachait le bouton « Encaisser » de l'écran suivant ; il est supprimé.
+
+**Tests (171 au total, tous réussis)**, par exemple :
+- Caisse ouverte avec **5 000 F**, vente de **1 200 F**, dépense transport **1 500 F**, patron prend **3 000 F** → caisse espèces attendue **1 700 F**.
+- Dépense « Autre : Sachets » de **500 F payée en Flooz** → compte Flooz −500 F, espèces inchangées.
+- Caisse ouverte avec **10 000 F**, « Argent pris » **2 000 F** → attendu **8 000 F**. Sans motif, « Enregistrer la dépense » reste désactivé.
+
+**Problèmes restants :** les motifs de dépense sont une liste fixe ; à ajuster selon les retours des boutiques.
+

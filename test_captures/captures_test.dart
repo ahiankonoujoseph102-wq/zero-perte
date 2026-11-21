@@ -64,16 +64,19 @@ void main() {
               ? telephoneCompatible
               : const InfosTelephoneSansGoogle(),
           preparer: (etat) async {
-            await etat.enregistrerConfig(etat.config.copie(
-              nom: 'Boutique Mama Ama',
-              types: ['alimentation', 'boissons'],
-              telephone: '+228 90 12 34 56',
-              ville: 'Lomé',
-              quartier: 'Bè-Kpota',
-              couleur: 0xFF7A2E5C,
-            ));
+            await etat.enregistrerConfig(
+              etat.config.copie(
+                nom: 'Boutique Mama Ama',
+                types: ['alimentation', 'boissons'],
+                telephone: '+228 90 12 34 56',
+                ville: 'Lomé',
+                quartier: 'Bè-Kpota',
+                couleur: 0xFF7A2E5C,
+              ),
+            );
             await etat.ajouterDuCatalogue(
-                etat.catalogue.produitsDe(['alimentation']).take(3));
+              etat.catalogue.produitsDe(['alimentation']).take(3),
+            );
           },
         );
         await afficherApp(tester, env.etat, taille: taille, densite: 2);

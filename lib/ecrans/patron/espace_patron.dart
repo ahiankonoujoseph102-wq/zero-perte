@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/etat_application.dart';
 import '../../theme/couleurs.dart';
+import '../caisse/saisie_montant.dart';
 import '../communs.dart';
 import 'arrivages.dart';
 import 'vendeurs.dart';
@@ -39,6 +40,13 @@ final List<EntreePatron> entreesPatron = [
     'Vendeurs',
     CouleursZp.marque,
     (etat) => PageVendeurs(etat: etat),
+  ),
+  EntreePatron(
+    'retrait',
+    Icons.account_balance_wallet_rounded,
+    'Argent pris',
+    CouleursZp.argentSort,
+    pageRetraitPatron,
   ),
 ];
 

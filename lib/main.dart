@@ -9,6 +9,7 @@ import 'domaine/licence.dart';
 import 'donnees/journal_local.dart';
 import 'ecrans/accueil_vendeur.dart';
 import 'ecrans/assistant/assistant_installation.dart';
+import 'ecrans/caisse/saisie_montant.dart';
 import 'ecrans/communs.dart';
 import 'ecrans/connexion.dart';
 import 'ecrans/depense/page_depense.dart';
@@ -173,12 +174,28 @@ class ZeroPerteApp extends StatelessWidget {
                 actions: {
                   'depense': () => Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => PageChoixDepense(etat: etat),
+                      builder: (_) => PageChoixDepense(
+                        etat: etat,
+                        ouvrirDepenseArgent: (_) => pageDepenseArgent(etat),
+                      ),
                     ),
                   ),
-                  'vendre': () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => PageVendre(etat: etat)),
-                  ),
+                  'vendre': () async {
+                    // Première vente depuis la fermeture : on ouvre d'abord la caisse.
+                    if (!await etat.caisseOuverte()) {
+                      if (!context.mounted) return;
+                      final ouverte = await Navigator.of(context).push<bool>(
+                        MaterialPageRoute(
+                          builder: (_) => pageOuvrirCaisse(etat),
+                        ),
+                      );
+                      if (ouverte != true) return;
+                    }
+                    if (!context.mounted) return;
+                    await Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => PageVendre(etat: etat)),
+                    );
+                  },
                 },
                 config: etat.config,
                 nomVendeur:

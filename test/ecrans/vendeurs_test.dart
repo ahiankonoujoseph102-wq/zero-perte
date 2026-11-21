@@ -6,7 +6,7 @@ import 'package:zero_perte/ecrans/connexion.dart';
 import 'package:zero_perte/ecrans/patron/espace_patron.dart';
 
 import '../support/outils.dart';
-import 'vente_test.dart' show boutiqueAvecStock;
+import 'vente_test.dart' show boutiqueAvecStock, ouvrirLaCaisseSiDemande;
 
 Future<void> ouvrirEspacePatron(WidgetTester tester) async {
   await toucher(tester, find.byKey(const Key('bouton-espace-patron')));
@@ -59,6 +59,7 @@ void main() {
       expect(find.text('Kossi'), findsOneWidget);
 
       await toucher(tester, find.byKey(const Key('bouton-vendre')));
+      await ouvrirLaCaisseSiDemande(tester);
       await toucher(tester, find.byKey(const Key('vendre-alimentation.riz')));
       await toucher(tester, find.byKey(const Key('choix-base')));
       await toucher(tester, find.byKey(const Key('bouton-encaisser')));

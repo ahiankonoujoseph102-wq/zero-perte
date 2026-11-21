@@ -975,9 +975,10 @@ class JournalLocal implements ReglagesLocaux {
     ModePaiement mode,
     int montant,
     String? motif,
-    String auteurId,
-  ) {
-    if (montant <= 0) {
+    String auteurId, {
+    bool zeroPermis = false,
+  }) {
+    if (montant < 0 || (montant == 0 && !zeroPermis)) {
       throw const ErreurZeroPerte('Le montant doit être positif.');
     }
     return _db.transaction(
@@ -1004,7 +1005,31 @@ class JournalLocal implements ReglagesLocaux {
     montant,
     null,
     auteurId,
+    zeroPermis: true,
   );
+
+  /// Type du dernier événement de caisse (ouverture = fonds de caisse, ou fermeture),
+  /// ou nul s'il n'y en a jamais eu.
+  Future<String?> dernierEvenementCaisse() async {
+    final r = await _db.query(
+      'operations',
+      columns: ['type'],
+      where: 'type IN (?, ?)',
+      whereArgs: [TypeOperation.fondsDeCaisse, TypeOperation.fermetureCaisse],
+      orderBy: 'heure_telephone DESC, numero DESC',
+      limit: 1,
+    );
+    return r.isEmpty ? null : r.first['type'] as String;
+  }
+
+  /// Heure de la dernière fermeture de caisse (0 s'il n'y en a jamais eu).
+  Future<int> derniereFermeture() async {
+    final r = await _db.rawQuery(
+      'SELECT MAX(heure_telephone) AS h FROM operations WHERE type = ?',
+      [TypeOperation.fermetureCaisse],
+    );
+    return (r.first['h'] as int?) ?? 0;
+  }
 
   /// Dépense payée avec la caisse, motif obligatoire.
   Future<Operation> enregistrerDepense(

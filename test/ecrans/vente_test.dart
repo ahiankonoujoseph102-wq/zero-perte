@@ -29,7 +29,25 @@ Future<void> ouvrirVendre(
 }) async {
   await afficherApp(tester, env.etat, taille: taille, densite: densite);
   await toucher(tester, find.byKey(const Key('bouton-vendre')));
+  await ouvrirLaCaisseSiDemande(tester);
   expect(find.byType(PageVendre), findsOneWidget);
+}
+
+/// Première vente de la journée : la caisse est ouverte avec [fonds] F.
+Future<void> ouvrirLaCaisseSiDemande(
+  WidgetTester tester, {
+  int fonds = 0,
+}) async {
+  await attendre(tester, tours: 8);
+  if (find.byKey(const Key('bouton-valider-montant-page')).evaluate().isEmpty) {
+    return;
+  }
+  for (final c in fonds.toString().split('')) {
+    if (fonds == 0) break;
+    await toucher(tester, find.byKey(Key('montant-$c')));
+  }
+  await toucher(tester, find.byKey(const Key('bouton-valider-montant-page')));
+  await attendre(tester, tours: 12);
 }
 
 void main() {

@@ -445,6 +445,41 @@ class EtatApplication extends ChangeNotifier {
     await rechargerProduits();
   }
 
+  /// Vrai si la caisse a été ouverte (fonds de caisse) depuis la dernière fermeture.
+  Future<bool> caisseOuverte() async =>
+      await journal.dernierEvenementCaisse() == TypeOperation.fondsDeCaisse;
+
+  /// Ouvre la caisse avec l'argent laissé pour rendre la monnaie (0 accepté).
+  Future<void> ouvrirCaisse(int fonds) async {
+    await journal.enregistrerFondsDeCaisse(fonds, auteurId: auteurActuel);
+    notifyListeners();
+  }
+
+  /// Dépense payée avec la caisse (motif obligatoire).
+  Future<void> depenser(
+    int montant, {
+    required String motif,
+    required ModePaiement mode,
+  }) async {
+    await journal.enregistrerDepense(
+      montant,
+      motif: motif,
+      mode: mode,
+      auteurId: auteurActuel,
+    );
+    notifyListeners();
+  }
+
+  /// Argent pris par le patron.
+  Future<void> retraitPatron(int montant, {required ModePaiement mode}) async {
+    await journal.enregistrerRetraitPatron(
+      montant,
+      mode: mode,
+      auteurId: auteurActuel,
+    );
+    notifyListeners();
+  }
+
   /// Nom d'une personne d'après son identifiant (pour les listes).
   String nomDe(String id) =>
       _utilisateurs.where((u) => u.id == id).firstOrNull?.nom ?? '—';
