@@ -1,6 +1,20 @@
 # Zéro Perte — Décision serveur : une architecture à 0 F pour le propriétaire
 
-*Mission 2, 21 novembre 2026. Aucun code n'a été écrit.*
+*Mission 2, 21 novembre 2026, mise à jour en mission 3. Aucun code n'a été écrit.*
+
+## ✅ Décisions validées (mission 3)
+
+| Sujet | Décision |
+|---|---|
+| Synchronisation et sauvegarde | **Drive de chaque boutique** (dossier caché de l'application, autorisation `drive.appdata`) : **validé** |
+| Compte Google de la boutique | Créé **à l'installation** par le propriétaire ou ses agents, **avec le patron et SON numéro de téléphone** (procédure au §2.5) |
+| Alertes instantanées | **OUI**, pour les cas graves, via le relais Cloudflare gratuit + Firebase Cloud Messaging (§2.6) |
+| Hébergement des APK | **PAS de dépôt GitHub public.** Solution retenue : **Cloudflare Pages** (§2.2) |
+| Licence | Paiement unique, **2 téléphones** (patron + 1 vendeur), mises à jour gratuites à vie, **téléphone supplémentaire vendu en option** (§2.1) |
+| SMS de secours | **OUI, en option, désactivé par défaut**, payé par la boutique |
+| Huawei sans services Google | **Non pris en charge en V1.** L'application le détecte et l'affiche clairement. |
+| Installation | **Sur place à Lomé** ; **à distance ailleurs** (APK + vidéo). Il faut donc un **assistant d'installation utilisable seul** (§4.0). |
+| Risques à traiter | (a) Vendeur qui efface le Drive ou retire le compte : **§2.4** ; (b) limite de comptes par numéro : **§2.5** |
 
 **Contrainte non négociable :** le commerçant paie une seule fois. Le propriétaire ne paie **aucun** serveur, ni aujourd'hui ni avec des milliers de boutiques. Le patron doit quand même pouvoir suivre sa boutique à distance.
 
@@ -12,8 +26,8 @@
 >
 > - **Coût pour le propriétaire : 0 F.** Le stockage appartient au compte de la boutique (15 Go gratuits). La consommation augmente avec le nombre de boutiques, mais elle est **répartie sur leurs comptes**, pas sur le nôtre.
 > - Ce même Drive sert de **sauvegarde** : un téléphone perdu se restaure en se connectant au compte.
-> - Le **code d'activation est signé** et vérifié sans Internet. Les **mises à jour** sont publiées dans un **dépôt GitHub public qui ne contient que les APK** (le code reste privé).
-> - **Option gratuite, plus tard :** un petit relais Cloudflare (offre gratuite) pour les **alertes urgentes instantanées** (notification « push »). Le petit volume de messages tient dans l'offre gratuite jusqu'à plusieurs milliers de boutiques.
+> - Le **code d'activation est signé** et vérifié sans Internet. Les **mises à jour** sont publiées sur **Cloudflare Pages** (gratuit, sans carte bancaire), à une adresse fixe, par GitHub Actions. Le dépôt de code reste privé.
+> - **Relais Cloudflare gratuit** pour les **alertes graves instantanées** (notification « push »). Le petit volume de messages tient dans l'offre gratuite jusqu'à plusieurs milliers de boutiques.
 
 Il n'y a aucune base de données centrale à nous, aucune carte bancaire enregistrée, et donc **aucune facture possible**. Si un quota gratuit est dépassé, le service ralentit ou refuse les requêtes, mais rien n'est facturé.
 
@@ -150,52 +164,179 @@ Limites vérifiées : **100 000 requêtes/jour**, 10 ms de calcul par requête. 
 
 **Principe (signature numérique Ed25519) :**
 - Vous détenez une **clé privée secrète**. L'application contient la **clé publique** correspondante.
-- Un code d'activation contient : identifiant de la boutique, **empreinte du compte Google de la boutique**, date, type de licence (« à vie »), nombre de téléphones autorisés. Ces informations sont **signées** avec la clé privée.
+- Un code d'activation contient : identifiant de la boutique, **empreinte du compte Google de la boutique**, date, licence « à vie », **nombre de téléphones autorisés (2 par défaut)**. Ces informations sont **signées** avec la clé privée.
 - L'application vérifie la signature **sans Internet**. Un code modifié ou inventé est rejeté.
 - Comme le code est **lié au compte Google de la boutique**, le copier dans une autre boutique ne sert à rien.
 
+**Deux téléphones par licence, et le téléphone supplémentaire :**
+- Chaque téléphone relié à la boutique s'inscrit dans un fichier `telephones.json` du Drive de la boutique : identifiant, rôle, préfixe de reçu, date.
+- Un **3e téléphone est refusé**, avec ce message : « Votre licence couvre 2 téléphones. Pour en ajouter un, contactez Zéro Perte. »
+- **Téléphone supplémentaire vendu** : vous générez un **code d'extension** signé (« +1 téléphone » pour cette boutique). Il s'ajoute à la licence existante.
+- **Remplacement d'un téléphone** (perdu ou cassé) : toujours **gratuit**. Le patron, avec son PIN, choisit « Remplacer le téléphone du vendeur ». L'ancien est **désactivé** (il ne peut plus rien envoyer) et le patron est alerté si l'ancien tente encore de se connecter.
+
 **Fabriquer les codes sans ordinateur :**
-- Un **bouton dans GitHub** (une tâche GitHub Actions lancée à la main depuis l'application GitHub du téléphone). Vous saisissez le nom de la boutique et son adresse Gmail, et vous recevez **un lien et un QR code** à envoyer par WhatsApp.
-- La clé privée est conservée dans les **secrets GitHub**, avec **une copie de secours hors ligne** (papier + coffre). Ce n'est pas la même clé que celle qui signe l'APK.
-- Chaque code émis est noté automatiquement dans un **registre des clients** du dépôt privé. Ce registre devient votre fichier clients.
+- Un **bouton dans GitHub** (tâche GitHub Actions lancée à la main depuis l'application GitHub du téléphone). Vous saisissez : nom de la boutique, adresse Gmail de la boutique, type (« licence » ou « +1 téléphone »).
+- Vous recevez **un lien et un QR code** à envoyer par WhatsApp.
+- La clé privée est dans les **secrets GitHub**, avec **une copie de secours hors ligne**. Ce n'est pas la même clé que celle qui signe l'APK.
+- Chaque code émis est noté automatiquement dans un **registre des clients** du dépôt privé : votre fichier clients.
 
-**Format :**
-- Une signature fait 64 octets, soit environ 100 caractères. C'est **trop long à taper**.
-- Le code est donc transmis par **lien WhatsApp** (un toucher ouvre l'application et l'active) ou par **QR code** à scanner.
+**Format :** une signature fait environ 100 caractères, ce qui est trop long à taper. Le code est donc transmis par **lien WhatsApp** (un toucher ouvre l'application et l'active) ou par **QR code**.
 
-**Révocation :** une licence hors ligne ne peut pas être annulée à distance. On publie quand même une **liste noire** (boutiques fraudeuses ou codes volés) dans le fichier de version public (voir 2.2). L'application la lit quand elle vérifie les mises à jour.
+**Révocation :** une **liste noire** (codes volés ou boutiques fraudeuses) est publiée dans le fichier de version **signé** (§2.2). L'application la lit à chaque vérification de mise à jour.
 
 > **Franchise :** une personne très compétente peut toujours modifier un APK pour contourner la vérification. Aucune protection sans serveur n'empêche cela. Pour vos clients, le risque est faible.
 
-### 2.2 Mises à jour de l'application
+### 2.2 Hébergement des mises à jour (sans dépôt public) — solution retenue : Cloudflare Pages
 
-**Le problème :** les fichiers d'un dépôt GitHub **privé**, y compris les « Releases », ne sont pas téléchargeables sans connexion à GitHub.
+**Besoin :**
+- un **lien fixe** pour l'APK et le fichier `version.json` ;
+- une **mise à jour automatique** depuis GitHub Actions (dépôt privé) ;
+- **gratuit**, **sans carte bancaire** si possible ;
+- des fichiers d'environ 10 Mo.
 
-**Solution recommandée : un deuxième dépôt GitHub public, par exemple `zero-perte-telechargement`, qui ne contient AUCUN code.** Il contient seulement :
-- les **APK signés** (dans ses « Releases ») ;
-- un fichier **`version.json`** : numéro de la dernière version, lien de l'APK, nouveautés en français simple, liste noire de licences ;
-- les **catalogues de produits** par type de boutique (voir la partie 4) ;
-- la **page de politique de confidentialité** (GitHub Pages), utile pour la vérification Google.
+**Comparaison (vérifiée en novembre 2026) :**
 
-**Fonctionnement :**
-1. Le code reste dans le dépôt **privé**. GitHub Actions y fabrique l'APK signé.
-2. La même tâche **publie** l'APK et met à jour `version.json` dans le dépôt public, avec une clé d'accès limitée à ce seul dépôt.
-3. À chaque ouverture avec du réseau, l'application lit `version.json`. Si une nouvelle version existe : **« Nouvelle version disponible — Installer »**.
-4. Android n'accepte la mise à jour que si elle est **signée avec la même clé** que la version installée. Un faux APK ne peut donc pas remplacer le vrai.
+| Option | Taille max. d'un fichier | Bande passante gratuite | Carte bancaire | Mise à jour depuis GitHub Actions | Lien fixe | Verdict |
+|---|---|---|---|---|---|---|
+| **Cloudflare Pages** (envoi direct) | **25 Mio** | Fichiers statiques **illimités** (selon une source secondaire, à confirmer) | **Non** | Oui : commande `wrangler pages deploy` + clé d'accès Cloudflare dans les secrets GitHub | Oui : `https://<nom>.pages.dev/...` | ⭐ **Retenu** |
+| Cloudflare R2 (stockage) | Très grande | 10 Go stockés, sortie gratuite | **Contradictoire** : Cloudflare dit « sans carte », un guide dit qu'un moyen de paiement est demandé à la création | Oui | Oui | En réserve |
+| Google Drive du propriétaire | Très grande (avertissement antivirus au-delà d'environ 100 Mo seulement) | Quota de téléchargement **non publié** : un fichier très téléchargé peut être bloqué temporairement (« quota dépassé ») | Non | Possible, mais il faut garder dans GitHub une autorisation permanente de votre compte Google | Oui, si on remplace le fichier en gardant son identifiant | **Secours seulement** : quota flou, et Google peut bloquer le partage d'un APK |
+| Firebase App Distribution | — | — | Non | Oui | **Non** : il faut **inviter chaque testeur par e-mail** (500 maximum par projet) ; les versions sont **supprimées après 150 jours** | ❌ Fait pour les tests, pas pour des clients |
+| Firebase Hosting (offre Spark) | 2 Go | 10 Go/mois | Non | Oui | Oui | ❌ **Les fichiers .apk sont interdits** sur l'offre gratuite (vérifié) |
+| Netlify (offre gratuite) | Non vérifiée | 300 crédits/mois, soit environ **15 Go/mois** ; site coupé jusqu'au mois suivant si dépassé | Non | Oui | Oui | ❌ Trop juste : 2 000 boutiques × 2 téléphones × 10 Mo = 40 Go par mise à jour |
+| Dépôt GitHub privé (Releases) | 2 Go | — | Non | Oui | **Non** : téléchargement impossible sans être connecté à GitHub | ❌ |
+| Dépôt GitHub public | 2 Go | Large | Non | Oui | Oui | ❌ Refusé par le propriétaire |
 
-C'est gratuit : GitHub ne fait pas payer le téléchargement des Releases publiques. L'APK public ne pose pas de problème, car sans code d'activation l'application ne fonctionne pas.
+**Fonctionnement retenu :**
+1. GitHub Actions (dépôt privé) fabrique l'APK signé, **découpé par type de processeur** :
+   - `arm64-v8a` pour les téléphones récents ;
+   - `armeabi-v7a` pour les vieux ou très bas de gamme.
+   
+   Chacun fait environ 8 à 12 Mo, **bien sous la limite de 25 Mio**. Un APK « universel » (environ 20 à 25 Mo) frôlerait la limite : on ne le publie pas.
+2. La même tâche publie sur Cloudflare Pages :
+   - `zeroperte-maj.pages.dev/apk/zeroperte-arm64.apk` (le nom est à choisir) ;
+   - `zeroperte-maj.pages.dev/apk/zeroperte-armv7.apk` ;
+   - `zeroperte-maj.pages.dev/version.json` : numéro de version, nouveautés en français simple, empreinte de chaque APK et **liste noire de licences**. Ce fichier est **signé avec la clé de licence** : si quelqu'un piratait le compte Cloudflare, il ne pourrait ni fabriquer une fausse liste ni pointer vers un faux APK.
+   - `zeroperte-maj.pages.dev/catalogues/*.json` : les catalogues de produits (voir `categories.md`).
+3. L'application lit `version.json` à chaque ouverture avec du réseau, **télécharge le bon APK pour son processeur**, vérifie son empreinte, puis propose « Installer ».
+4. Android n'accepte la mise à jour que si l'APK est **signé avec la même clé** : double protection.
+5. **Première installation** : l'APK est toujours **envoyé par WhatsApp** avec la vidéo. Le lien Cloudflare peut aussi être donné.
+
+**Limites honnêtes de Cloudflare Pages :**
+- **25 Mio par fichier** : on surveille la taille de l'APK à chaque fabrication, et GitHub Actions échoue volontairement si un APK dépasse 22 Mo.
+- **500 déploiements par mois** et **20 000 fichiers** par site : largement suffisant.
+- Les fichiers sont **accessibles à quiconque connaît le lien**. Ce n'est pas grave, car l'APK ne marche pas sans code d'activation et le code reste privé. On ajoute une consigne pour que les moteurs de recherche n'indexent pas le site.
+- La « bande passante illimitée » n'est confirmée que par une source secondaire, et Cloudflare peut changer son offre. Si c'était le cas, le **plan B** est Google Drive du propriétaire, et l'application connaît une **adresse de secours** inscrite dans `version.json`.
+- Cloudflare fait évoluer Pages vers les « Workers static assets », qui ont la même limite de 25 Mio par fichier et sont aussi gratuits. La migration serait simple si nécessaire.
+- **Même compte Cloudflare** que le relais d'alertes (§2.6) : **un seul compte à protéger**, avec une double authentification sur votre téléphone.
 
 ### 2.3 Restauration après perte du téléphone
 
 | Cas | Solution |
 |---|---|
-| **Téléphone du vendeur perdu ou cassé** | Rien n'est perdu : ses opérations envoyées sont dans le Drive **et** sur le téléphone du patron. On installe l'APK sur un nouveau téléphone, on se connecte au compte de la boutique, et le téléphone reçoit un **nouveau préfixe de reçu**. |
-| **Téléphone du patron perdu** | Nouveau téléphone, installation de l'APK, connexion au compte Google de la boutique. L'application retrouve **tout** dans le Drive : journaux, réglages, personnalisation, licence. |
-| **Les deux téléphones perdus** | Même chose : le Drive contient tout ce qui a été envoyé. On perd seulement les opérations jamais envoyées. |
-| **Mot de passe du compte Google oublié** | Récupération Google classique par le **numéro du patron** (d'où l'importance de le mettre à l'installation). |
-| **Le vendeur efface les données cachées du Drive** (c'est possible depuis le site Drive) | Chaque téléphone garde **une copie complète** de tous les journaux. Le téléphone du patron détecte le trou et **renvoie tout**. Une alerte est envoyée au patron. |
-| **Le vendeur retire l'accès de l'application au compte** | La synchronisation s'arrête. Alerte « le téléphone vendeur n'a rien envoyé depuis X heures ». |
-| **Secours supplémentaire** | Sauvegarde automatique Android (bonus) + bouton « Exporter une sauvegarde » (fichier chiffré à s'envoyer sur WhatsApp). |
+| **Téléphone du vendeur perdu ou cassé** | Rien n'est perdu : ses opérations envoyées sont dans le Drive **et** sur le téléphone du patron. Le patron fait « Remplacer le téléphone du vendeur ». Le nouveau téléphone se connecte au compte de la boutique et reçoit un **nouveau préfixe de reçu**. |
+| **Téléphone du patron perdu** | Nouveau téléphone, installation de l'APK, connexion au compte Google de la boutique (code reçu par SMS sur le numéro du patron, ou codes de secours de l'enveloppe, §2.5). L'application retrouve **tout** : journaux, réglages, personnalisation, licence. |
+| **Les deux téléphones perdus** | Même chose. Seules les opérations jamais envoyées sont perdues. |
+| **Mot de passe oublié** | Récupération Google par le **numéro du patron** ou par les **codes de secours** de l'enveloppe. |
+| **Secours supplémentaire** | Bouton « Exporter une sauvegarde » (fichier chiffré à s'envoyer sur WhatsApp) + sauvegarde automatique Android (bonus). |
+
+### 2.4 Risque (a) : le vendeur efface les données du Drive ou retire le compte
+
+**Ce qu'un vendeur peut faire :**
+1. effacer les **données cachées de l'application** depuis les réglages de Google Drive (drive.google.com → Paramètres → Gérer les applications) ;
+2. **retirer le compte Google** de son téléphone, ou **retirer l'autorisation** donnée à Zéro Perte ;
+3. **désinstaller** l'application ou **effacer ses données** sur le téléphone ;
+4. **couper Internet** (mode avion) pour que rien ne parte ;
+5. **changer l'heure** du téléphone.
+
+**Règle de base : le téléphone du patron ne dépend jamais du Drive pour garder ses données.**
+- Tout ce qu'il reçoit est **copié dans sa propre base**, et **jamais effacé** (modèle « on ajoute seulement »).
+- Le Drive n'est qu'une **boîte aux lettres et une sauvegarde**. Le vider ne fait rien disparaître chez le patron.
+
+**Comment l'application détecte chaque problème :**
+
+| Mécanisme | Détail | Ce qu'il détecte |
+|---|---|---|
+| **Numéros de suite par téléphone** | Chaque opération porte le numéro suivant du téléphone qui l'a créée (A-1, A-2, A-3…). Le patron mémorise le dernier numéro reçu de chaque téléphone. | Toute **opération manquante** (trou dans la suite), toute **réinstallation** (la suite repart à 1) |
+| **Chaîne d'empreintes** | Chaque paquet envoyé contient l'empreinte du paquet précédent du même téléphone, et il est **signé par ce téléphone** avec sa clé, créée à la liaison. | Tout paquet **supprimé, modifié ou inventé** |
+| **Inventaire du Drive** | À chaque relève, le patron compare la liste des fichiers présents dans le Drive avec **sa propre liste** de ce qu'il a déjà reçu. | **Données effacées du Drive** |
+| **Signal de vie** | Quand l'application vendeur est ouverte, elle dépose toutes les 15 min un petit fichier « je suis vivant » (heure, dernier numéro, nombre d'opérations en attente, niveau de batterie). | **Arrêt de synchronisation**, téléphone éteint, mode avion, compte retiré |
+| **Erreur d'accès côté vendeur** | Si Google répond « compte absent » ou « autorisation retirée », l'application vendeur le sait immédiatement. | **Compte retiré**, **autorisation retirée** |
+| **Contrôle de l'heure** | L'heure de chaque fichier selon Google Drive est comparée à l'heure annoncée par le téléphone. | **Horloge faussée** |
+
+**Ce que fait l'application dans chaque cas :**
+
+| Situation | Réaction automatique | Alerte au patron |
+|---|---|---|
+| Fichiers effacés du Drive | Le téléphone du patron **renvoie toute sa copie** dans le Drive. Le vendeur la récupère à la relève suivante. | 🔴 **Instantanée** (relais Cloudflare) : « Les données de la boutique ont été effacées du Drive. Elles ont été restaurées. » |
+| Compte ou autorisation retirés sur le téléphone vendeur | L'application vendeur affiche un **écran rouge** (« Connexion à la boutique perdue, appelez le patron ») et **continue de vendre hors ligne** pour ne pas bloquer les clients. Tout est gardé localement. | 🔴 **Instantanée** : le relais Cloudflare **ne dépend pas du compte Google**, donc l'alerte part quand même dès qu'il y a Internet. **SMS** si l'option est activée. |
+| Signal de vie absent depuis plus de X heures pendant les heures d'ouverture (X réglable, 2 h par défaut) | — | 🟠 Notification locale : « Le téléphone de [vendeur] n'a rien envoyé depuis 3 h. » 🔴 Instantanée si cela dure plus de 6 h. |
+| Trou dans la suite des numéros | — | 🔴 « Des opérations du téléphone A ont disparu (n° 1 245 à 1 260). » |
+| Réinstallation ou effacement de l'application vendeur | Pour reconnecter le téléphone, il faut le **PIN du patron**. Le téléphone garde le même préfixe, mais la suite reprend après le dernier numéro connu du patron. | 🔴 « L'application a été réinstallée sur le téléphone du vendeur, le [date] à [heure]. Opérations non envoyées perdues : n° … » |
+| Horloge faussée | Les opérations sont marquées « heure douteuse ». | 🟠 « L'heure du téléphone vendeur a été modifiée. » |
+| Opérations en attente depuis longtemps sur le téléphone vendeur | Le voyant passe à l'orange puis au rouge chez le vendeur. Le compte des opérations en attente est aussi dans le signal de vie. | 🟠 si plus de 50 opérations ou plus de 4 h en attente |
+
+**Ce qui reste impossible à empêcher (franchement) :** un vendeur qui **efface l'application avant tout envoi** fait perdre les opérations non envoyées. On le **détecte** (réinstallation, trou dans les numéros, écart de caisse), mais on ne peut pas récupérer ce qui n'est jamais parti. C'est pourquoi l'envoi se fait **après chaque vente** dès qu'il y a du réseau.
+
+**Protection supplémentaire :** grâce à la **validation en deux étapes** du compte (§2.5), le vendeur **ne peut pas ajouter le compte** sur un autre appareil ni changer le mot de passe sans le code reçu sur le téléphone du patron.
+
+### 2.5 Risque (b) : procédure de création du compte Google de la boutique
+
+**Pourquoi c'est important (vérifié) :**
+- Google limite le nombre d'utilisations d'un même numéro pour la vérification. Le seuil n'est **pas publié**. Une étude universitaire relevait **au plus 2 par jour et environ 10 sur toute la vie du numéro**, et ce compteur ne se remet pas à zéro.
+- Si un agent utilise son propre numéro, **il sera bloqué après quelques boutiques**.
+- Google surveille aussi les **créations répétées depuis un même téléphone ou une même connexion Internet**.
+
+**Règles absolues :**
+1. **Toujours le numéro du patron**, jamais celui du propriétaire ou d'un agent, même « pour dépanner ».
+2. **Créer le compte depuis le téléphone du patron**, avec **sa connexion Internet** (données mobiles), jamais depuis le téléphone ni le partage de connexion de l'agent.
+3. **Un compte par boutique.** Si le patron a déjà un compte personnel, on en crée quand même un **nouveau** pour la boutique.
+4. Si Google répond « Ce numéro ne peut pas être utilisé » : **on s'arrête**. On essaie l'**autre puce du patron** (Moov ou Yas) ou le numéro d'un **proche du patron** présent et d'accord. On note le cas dans la fiche.
+
+**Avant de venir (à préparer) :**
+- Le patron a son téléphone chargé, avec **sa puce active** qui reçoit les SMS et du **crédit Internet**.
+- Le patron connaît sa **date de naissance**. **Il doit avoir 18 ans ou plus** dans le compte, sinon Google restreint le compte.
+- L'agent apporte une **fiche d'installation** papier et une **enveloppe** (modèle fourni en étape E).
+
+**Étapes (environ 10 minutes) :**
+
+| # | Action | Détail |
+|---|---|---|
+| 1 | Sur le **téléphone du patron** : **Paramètres → Comptes (ou Utilisateurs et comptes) → Ajouter un compte → Google** | Si le patron est déjà connecté à son compte personnel, ce n'est pas grave : on ajoute un second compte. L'assistant Zéro Perte peut ouvrir cet écran directement (§4.0). |
+| 2 | Toucher **« Créer un compte » → « Pour mon usage personnel »** | On évite l'option entreprise, qui propose des services payants. |
+| 3 | **Prénom** : nom de la boutique (par ex. « Boutique Mama Ama ») ; **Nom** : « Zéro Perte » | Le nom est visible seulement par le patron. |
+| 4 | **Date de naissance et genre du patron** | Date réelle, 18 ans ou plus. |
+| 5 | **Adresse Gmail** : choisir `zp.<nom-boutique>.<ville>@gmail.com` (par ex. `zp.mamaama.lome@gmail.com`) | Si elle est prise, ajouter le quartier ou un chiffre. Écrire l'adresse sur la fiche. |
+| 6 | **Mot de passe** : choisi **par le patron**, ou créé avec lui (au moins 10 caractères, facile à retenir pour lui) | Écrit **uniquement** sur la fiche secrète, glissée dans l'**enveloppe du patron**. **L'agent ne le garde pas** (sauf décision contraire du propriétaire, voir questions). |
+| 7 | **Numéro de téléphone : celui du PATRON** (+228 …) | Google envoie un code par SMS **au téléphone du patron**. On saisit le code. |
+| 8 | **Adresse e-mail de récupération** : l'e-mail personnel du patron s'il en a un, sinon passer | — |
+| 9 | Accepter les conditions. Refuser les options non nécessaires (paiement, etc.). | — |
+| 10 | **Activer la validation en deux étapes par SMS sur le numéro du patron** : myaccount.google.com → Sécurité → Validation en deux étapes | Empêche le vendeur d'utiliser le compte ailleurs ou de changer le mot de passe. |
+| 11 | **Imprimer ou recopier les 10 codes de secours** (Sécurité → Codes de secours) | Dans l'**enveloppe du patron**. Ils servent si le patron perd sa puce. |
+| 12 | **Vérifier** : le numéro de récupération est bien celui du patron (Sécurité → Numéro de téléphone de récupération) | — |
+| 13 | Ouvrir **Zéro Perte** → « Se connecter avec le compte de la boutique » → choisir **ce** compte (pas le compte personnel) → accepter l'autorisation | L'application vérifie que ce n'est pas un compte déjà utilisé par une autre boutique. |
+| 14 | Ajouter le **téléphone du vendeur** : sur ce téléphone, ajouter le **même compte** (le patron tape le mot de passe et reçoit le code de validation sur **son** téléphone), puis scanner dans Zéro Perte le QR code affiché par le patron | Le vendeur ne voit jamais le mot de passe. |
+| 15 | Remplir la **fiche d'installation** : nom de la boutique, adresse Gmail, numéro du patron, date, agent, type de licence. **Pas le mot de passe.** | La fiche revient au propriétaire, pour le registre des clients. |
+
+**À distance (hors de Lomé) :** l'assistant Zéro Perte guide le patron pas à pas, avec la voix et des captures d'écran, pour les étapes 1 à 14 (§4.0). Une vidéo montre la même chose. L'agent reste joignable par appel WhatsApp.
+
+### 2.6 Alertes instantanées (relais Cloudflare) : validé
+
+- **Rôle unique** : faire passer **des alertes graves**, jamais les données de la boutique.
+- **Cas graves retenus** :
+  - données effacées du Drive ;
+  - compte retiré du téléphone vendeur ;
+  - opérations disparues ;
+  - réinstallation de l'application ;
+  - écart de caisse au-delà du seuil du patron ;
+  - annulation d'une vente importante ;
+  - téléphone vendeur muet depuis plus de 6 h ;
+  - PIN du patron utilisé dans la boutique alors que le patron est ailleurs.
+- **Fonctionnement** : le téléphone vendeur envoie un **message court et chiffré** (code d'alerte + montant) au relais. Le relais le transmet via **Firebase Cloud Messaging** (gratuit) au téléphone du patron, qui le déchiffre et l'affiche.
+- **Volume** : environ 5 alertes/jour × 2 000 boutiques = **10 000 requêtes/jour**, soit **10 %** des 100 000 gratuites. Il faut aussi compter l'inscription des téléphones, qui est rare.
+- **Protection** : chaque téléphone a un **jeton** remis à l'activation. Le relais refuse les messages sans jeton valide et limite le nombre de messages par boutique, pour qu'un tricheur ne puisse pas épuiser le quota de tous.
+- **Si le quota gratuit est épuisé** : les alertes arrivent quand même par la relève normale du Drive (0 à 30 min). Rien n'est perdu et rien n'est facturé.
+- **SMS de secours** (option, **désactivé par défaut**, payé par la boutique) : pour le résumé du soir et les alertes graves **quand le téléphone vendeur n'a pas Internet**.
 
 ---
 
@@ -203,61 +344,82 @@ C'est gratuit : GitHub ne fait pas payer le téléchargement des Releases publiq
 
 ### Ce qui reste possible, mais moins bien
 
-| Fonction | Avec un serveur payant | À 0 F (Drive) |
+| Fonction | Avec un serveur payant | À 0 F (Drive + relais Cloudflare) |
 |---|---|---|
-| Délai pour que le patron voie une vente | quelques secondes | **0 à 30 minutes** (instantané pour les alertes si on ajoute le relais Cloudflare gratuit) |
-| Notifications | instantanées et fiables | **locales**, après chaque relève, et retardées par les téléphones qui tuent les tâches de fond |
-| Installation | un numéro de téléphone suffit | il faut **un compte Google pour la boutique**, plus long à l'installation |
+| Délai pour que le patron voie une vente | quelques secondes | **0 à 30 minutes** ; **alertes graves instantanées** grâce au relais Cloudflare gratuit |
+| Notifications ordinaires (stock bas, résumé) | instantanées | **locales**, après chaque relève, et retardées par les téléphones qui coupent les tâches de fond |
+| Installation | un numéro de téléphone suffit | il faut **un compte Google pour la boutique**, environ 10 minutes de plus (§2.5) |
 | Révocation d'une licence | immédiate | seulement quand l'application va sur Internet (liste noire) |
-| Téléphones compatibles | tous | seulement ceux qui ont les **services Google**. Les Huawei récents n'en ont pas. |
+| Téléphones compatibles | tous | seulement ceux qui ont les **services Google** (Huawei récents non pris en charge en V1 : **décision validée**) |
 
 ### Ce qui est impossible à 0 F
 
-1. **Une vue d'ensemble pour vous** : combien de boutiques utilisent vraiment l'application, leurs chiffres, les erreurs. Vous ne voyez **rien** des boutiques, car les données sont chez elles. C'est bon pour la confidentialité, mauvais pour le suivi commercial.
+1. **Une vue d'ensemble pour vous** : combien de boutiques utilisent vraiment l'application, leurs chiffres, les erreurs. Vous ne voyez **rien** des boutiques, car les données sont chez elles. C'est bon pour la confidentialité, mauvais pour le suivi commercial. Le relais Cloudflare pourrait compter les téléphones actifs, sans aucune donnée commerciale, si vous le souhaitez.
 2. **Une assistance à distance sur les données** : vous ne pouvez pas corriger une erreur dans les données d'un client sans son téléphone ou sans qu'il vous envoie un export.
 3. **La confirmation automatique des paiements Mobile Money** : les agrégateurs envoient la confirmation à un serveur web. De plus, ils prélèvent une commission.
-4. **L'envoi automatique de messages WhatsApp** (résumé du soir, rappel de crédit sans toucher l'écran) : l'API WhatsApp Business est payante. Le partage reste **manuel, en un geste**.
-5. **Une garantie « gratuit pour toujours »** : aucun fournisseur (Google, Cloudflare…) ne s'y engage. Google a déjà annoncé un nouveau modèle de quotas pour 2026. Le risque est **réduit**, parce que la charge est répartie sur les comptes des boutiques, mais **pas nul**.
-6. **Les statistiques multi-boutiques côté serveur** (un patron avec plusieurs boutiques, prévu en V2) : elles restent faisables sur le téléphone du patron en lisant plusieurs comptes, mais c'est plus lourd.
+4. **L'envoi automatique de messages WhatsApp** : l'API WhatsApp Business est payante. Le partage reste **manuel, en un geste**.
+5. **Une garantie « gratuit pour toujours »** : aucun fournisseur (Google, Cloudflare…) ne s'y engage. Le risque est **réduit**, parce que la charge est répartie sur les comptes des boutiques, mais **pas nul**.
+6. **Les statistiques multi-boutiques côté serveur** (V2) : elles restent faisables sur le téléphone du patron, mais c'est plus lourd.
 
 ### Petits coûts possibles à surveiller (pas des abonnements)
 
-- **Nom de domaine** : environ 6 000 F par an, seulement si Google refuse l'adresse GitHub Pages pour la vérification de l'écran de consentement.
+- **Nom de domaine** : environ 6 000 F par an, seulement si Google refuse l'adresse gratuite pour la vérification de l'écran de consentement. La page de confidentialité peut aussi être hébergée sur **Cloudflare Pages** (`*.pages.dev`) : même question à vérifier à l'étape A6.
 - **Play Store** : 25 $ une seule fois, si un jour vous publiez sur le Play Store (pas prévu en V1).
 - **GitHub Actions** pour le dépôt privé : 2 000 minutes gratuites par mois, soit environ 200 fabrications d'APK. Largement suffisant.
 
 ---
 
-## 4. La personnalisation automatique
+## 4. Installation et personnalisation automatique
 
-### 4.1 L'assistant d'inscription (8 écrans, un geste par écran, voix pour guider)
+### 4.0 L'assistant d'installation guidé (utilisable seul, à distance)
+
+À Lomé, l'agent installe sur place. Ailleurs, le patron reçoit **l'APK et une vidéo** par WhatsApp et doit pouvoir **tout faire seul**. Règles de l'assistant :
+- **un seul geste par écran** ;
+- une **voix** lit chaque consigne (bouton haut-parleur toujours visible) ;
+- une **capture d'écran** montre ce que le patron doit voir sur son téléphone ;
+- un **bouton « J'ai besoin d'aide »** sur chaque écran ouvre WhatsApp vers le numéro d'assistance avec un **code de diagnostic** (étape bloquée, modèle du téléphone, version Android), **sans aucune donnée de la boutique** ;
+- on peut **reprendre où l'on s'est arrêté** si le téléphone s'éteint ou si l'appel coupe.
+
+| # | Étape | Ce que fait l'application |
+|---|---|---|
+| 0 | *(Avant l'application, dans la vidéo)* Autoriser l'installation depuis WhatsApp (« sources inconnues ») et installer l'APK | — |
+| 1 | **Vérification du téléphone** | Contrôle automatique : version d'Android, **services Google présents** (sinon message clair : « Ce téléphone n'est pas compatible »), place libre, voix française installée. Chaque point est affiché en vert ou en rouge, avec la solution. |
+| 2 | **Créer le compte de la boutique** | L'application explique les règles (numéro du **patron**, 18 ans ou plus) puis **ouvre elle-même l'écran Android « Ajouter un compte Google »**. Une voix guide les étapes 2 à 12 du §2.5. Au retour, elle vérifie que le nouveau compte existe. |
+| 3 | **Validation en deux étapes et codes de secours** | Ouvre la page Google correspondante, puis demande au patron de **photographier ou recopier ses codes de secours**. |
+| 4 | **Se connecter à Zéro Perte avec ce compte** | Choix du compte, autorisation `drive.appdata` (l'écran Google explique que l'application ne voit que ses propres données). |
+| 5 | **Activation** | Le patron touche le **lien d'activation** reçu sur WhatsApp, ou scanne le QR code. |
+| 6 à 12 | **Personnalisation** (§4.1) | — |
+| 13 | **Réglage batterie** | Guide **selon la marque** (Tecno, Infinix, Itel, Samsung, Xiaomi…) pour que Zéro Perte ne soit pas coupée en tâche de fond. L'application vérifie ensuite que le réglage est fait. |
+| 14 | **Ajouter le téléphone du vendeur** | Le téléphone du patron affiche un QR code. Sur le téléphone du vendeur, l'assistant (mode « vendeur ») fait ajouter le compte de la boutique : le **patron** tape le mot de passe et reçoit le code sur **son** téléphone. Ensuite, le vendeur scanne le QR code. |
+| 15 | **Test final** | « Faites une vente test de 100 F sur le téléphone du vendeur. » En moins d'une minute (relève forcée), la vente apparaît chez le patron, et une alerte test arrive par le relais. Tout est vert : l'installation est terminée. La vente test est annulée automatiquement, avec le motif « test ». |
+
+### 4.1 La personnalisation (dans l'assistant, un geste par écran, avec la voix)
 
 | # | Écran | Détail |
 |---|---|---|
-| 1 | **Langue et voix** | Français pour l'instant (voix pré-enregistrées en éwé, mina et kabiyè plus tard). Un haut-parleur sur chaque écran relit la consigne. |
-| 2 | **Activation** | Toucher le lien WhatsApp ou scanner le QR code reçu, puis connexion au compte Google de la boutique. |
-| 3 | **Type de boutique** | Grandes images : alimentation générale, boissons et buvette, quincaillerie, céréales et vivriers, cosmétiques, pièces détachées, téléphonie et accessoires, divers. Plusieurs choix possibles. |
-| 4 | **Nom de la boutique + logo ou photo** | Nom tapé ou **dicté** (reconnaissance vocale d'Android). Photo prise avec l'appareil photo et recadrée en rond. Sans photo, l'application génère un **logo avec les initiales** dans la couleur choisie. |
-| 5 | **Téléphone et adresse** | Numéro du patron (à afficher sur les reçus), ville choisie dans une liste, quartier en texte libre ou dicté, repère (« en face de la pharmacie… »). |
-| 6 | **Couleur** | 8 pastilles de couleur, avec un **aperçu en direct** de l'écran d'accueil. Le **vert et le rouge restent réservés** à « argent qui entre » et « argent qui sort », quelle que soit la couleur choisie. |
-| 7 | **Mes produits** | Le catalogue du type choisi s'affiche en **grille de photos**. Le patron touche « Je vends ça » sur chaque produit, puis entre **le prix** (ou plus tard : un produit sans prix ne peut pas être vendu). Les unités sont déjà réglées (sac → bol, casier → bouteille…) et modifiables. |
-| 8 | **Le reçu et les codes PIN** | **Aperçu du reçu** avec l'en-tête (logo, nom, téléphone, adresse) et un message de bas de page (« Merci, à bientôt ! », modifiable). Ensuite : PIN du patron, puis ajout des vendeurs. |
+| 6 | **Langue et voix** | Français pour l'instant (voix pré-enregistrées en éwé, mina et kabiyè plus tard). |
+| 7 | **Type de boutique** | Grandes images des **catégories de `categories.md`**. Plusieurs choix possibles (par ex. alimentation + boissons). |
+| 8 | **Nom de la boutique + logo ou photo** | Nom tapé ou **dicté** (reconnaissance vocale d'Android). Photo prise avec l'appareil photo et recadrée en rond. Sans photo, un **logo avec les initiales** dans la couleur choisie. |
+| 9 | **Téléphone et adresse** | Numéro du patron (pré-rempli), ville choisie dans une liste, quartier en texte libre ou dicté, repère (« en face de la pharmacie… »). |
+| 10 | **Couleur** | 8 pastilles, avec un **aperçu en direct**. Le **vert et le rouge restent réservés** à l'argent qui entre et qui sort. |
+| 11 | **Mes produits** | Le catalogue des types choisis s'affiche en **grille de photos**. Le patron touche « Je vends ça » sur chaque produit, puis entre **le prix** (ou plus tard). Les unités sont déjà réglées et modifiables. Il peut aussi passer cette étape et ajouter ses produits plus tard. |
+| 12 | **Le reçu et les codes PIN** | **Aperçu du reçu** (logo, nom, téléphone, adresse, message de bas de page). Ensuite : PIN du patron, puis nom et PIN du vendeur. |
 
 ### 4.2 Ce que la personnalisation change
 
 - **Dans l'application** : nom et logo de la boutique en haut de chaque écran, couleur de la boutique, écran de démarrage avec son logo.
 - **Reçus et messages WhatsApp** : en-tête et signature de la boutique.
-- **Raccourci sur l'écran d'accueil du téléphone** : Android permet de créer un **raccourci avec le logo et le nom de la boutique** (« Boutique Mama Ama »). Le commerçant voit son nom à lui sur son téléphone.
-- **Limite honnête** : l'**icône principale** de l'application et son nom dans la liste des applications restent « Zéro Perte ». On ne peut pas les changer sans fabriquer un APK par boutique, ce qui contredirait la décision « une seule application ».
+- **Raccourci sur l'écran d'accueil du téléphone** : un **raccourci avec le logo et le nom de la boutique** (« Boutique Mama Ama »).
+- **Limite honnête** : l'**icône principale** de l'application et son nom dans la liste des applications restent « Zéro Perte ». Les changer exigerait un APK par boutique, ce qui contredit la décision « une seule application ».
 - La personnalisation est enregistrée **dans le Drive de la boutique**. Elle revient donc automatiquement sur un nouveau téléphone.
 
 ### 4.3 Les catalogues préremplis
 
+- La **liste des types de boutiques et des unités** est dans **`docs/categories.md`**.
 - Un **fichier par type de boutique** : produits, noms courants (y compris les noms locaux), unités et conversions, catégorie et image.
-- Une copie est **intégrée à l'APK** (fonctionne sans Internet). Une version à jour est publiée dans le **dépôt public** : on peut enrichir les catalogues **sans nouvel APK**.
+- Une copie est **intégrée à l'APK** (fonctionne sans Internet). Une version à jour est publiée sur **Cloudflare Pages** (§2.2) : on peut enrichir les catalogues **sans nouvel APK**.
 - **Images** : illustrations simples et libres de droits, ou photos prises par votre équipe dans de vraies boutiques. On évite les logos de marques. Le patron peut remplacer chaque image par **sa propre photo**.
-- **Prix** : **non préremplis**, car ils varient trop d'un quartier à l'autre. C'est le patron qui les fixe. On pourra plus tard proposer un « prix courant indicatif ».
-- **Contenu** : il nous faut **vos listes réelles** (30 à 80 produits par type), voir les questions.
+- **Prix** : **non préremplis**, car ils varient trop selon la ville et le quartier. C'est le patron qui les fixe.
 
 ---
 
@@ -265,18 +427,19 @@ C'est gratuit : GitHub ne fait pas payer le téléchargement des Releases publiq
 
 ```
  Téléphone VENDEUR                    Google Drive de la BOUTIQUE                 Téléphone PATRON
- (base locale complète)               (dossier caché de l'application)            (base locale complète)
- ┌─────────────────────┐   envoi     ┌────────────────────────────────┐  relève    ┌─────────────────────┐
- │ ventes, caisse,     │ ──────────▶ │ journal-vendeur-A-*.json.gz     │ ─────────▶ │ tableau de bord,    │
- │ dépenses, stock     │             │ journal-patron-P-*.json.gz      │ ◀───────── │ alertes locales,    │
- │ (on ajoute, on ne   │ ◀────────── │ reglages.json, licence, photos  │   envoi    │ prix, arrivages     │
- │  modifie jamais)    │   relève    └────────────────────────────────┘            └─────────────────────┘
- └─────────┬───────────┘                                                                   ▲
-           │ (option D7) alerte urgente : quelques octets                                  │ notification
-           └──────────▶ relais Cloudflare gratuit ──▶ Firebase Cloud Messaging (gratuit) ─┘ instantanée
-           (option D8) SMS de secours sans Internet, payé par la boutique ─────────────────▶ patron
+ (base locale complète)               (dossier caché de l'application)            (base locale complète, jamais effacée)
+ ┌─────────────────────┐   envoi     ┌────────────────────────────────┐  relève    ┌──────────────────────────┐
+ │ ventes, caisse,     │ ──────────▶ │ journal-A-*.json.gz (signés,    │ ─────────▶ │ tableau de bord,         │
+ │ dépenses, stock     │             │   numérotés, chaînés)           │ ◀───────── │ contrôle des trous,      │
+ │ (on ajoute, on ne   │ ◀────────── │ journal-P-*, vie-A.json,        │  envoi /   │ re-dépôt si Drive vidé,  │
+ │  modifie jamais)    │   relève    │ telephones.json, réglages       │  re-dépôt  │ alertes locales          │
+ └─────────┬───────────┘             └────────────────────────────────┘            └──────────────────────────┘
+           │ alerte grave (code court chiffré, ne dépend PAS du compte Google)                   ▲
+           └──────────▶ relais Cloudflare Worker (gratuit) ──▶ Firebase Cloud Messaging (gratuit) ┘ instantanée
+           (option, désactivée par défaut) SMS de secours sans Internet, payé par la boutique ──────▶ patron
 
- Dépôt GitHub PRIVÉ (code)  ──GitHub Actions──▶  Dépôt GitHub PUBLIC (APK, version.json, catalogues, liste noire)
+ Dépôt GitHub PRIVÉ (code) ──GitHub Actions──▶ Cloudflare Pages : APK arm64 + armv7, version.json signé,
+                                               catalogues, liste noire (lien fixe, 0 F, sans carte bancaire)
 ```
 
 ---
@@ -289,8 +452,14 @@ C'est gratuit : GitHub ne fait pas payer le téléchargement des Releases publiq
 - Limites de l'API Drive : [Usage limits](https://developers.google.com/workspace/drive/api/guides/limits)
 - Nouveau modèle de quotas Google Workspace (2026) : [Google Workspace API tiering model](https://developers.google.com/workspace/tools-safety)
 - Sauvegarde automatique Android (25 Mo, 24 h) : [Back up user data with Auto Backup](https://developer.android.com/identity/data/autobackup)
+- Limite d'utilisation d'un numéro pour vérifier un compte Google : [Verify your account (Google)](https://support.google.com/accounts/answer/114129), [étude universitaire, 2 par jour et environ 10 au total](https://par.nsf.gov/servlets/purl/10356388), [forum Google : compteur non réinitialisable](https://support.google.com/accounts/thread/13443342/phone-number-limit?hl=en)
 - Firebase, offre gratuite : [Firebase pricing](https://firebase.google.com/pricing), [Realtime Database limits](https://firebase.google.com/docs/database/usage/limits)
+- Firebase Hosting (APK interdits sur Spark, fichiers de 2 Go max., 10 Go/mois) : [Hosting FAQ](https://firebase.google.com/docs/hosting/faq-and-troubleshooting)
+- Firebase App Distribution (500 testeurs, 150 jours) : [Troubleshooting](https://firebase.google.com/docs/app-distribution/troubleshooting)
+- Cloudflare Pages (25 Mio par fichier, 20 000 fichiers, 500 déploiements/mois) : [Pages limits](https://developers.cloudflare.com/pages/platform/limits) ; bande passante et usage commercial selon une source secondaire : [temps.sh](https://temps.sh/blog/cloudflare-pages-free-tier-limits-2026)
+- Cloudflare R2 (carte bancaire : informations contradictoires) : [R2](https://www.cloudflare.com/developer-platform/products/r2/), [R2 pricing](https://developers.cloudflare.com/r2/pricing)
+- Netlify (crédits, environ 15 Go/mois) : [Credit-based pricing](https://docs.netlify.com/manage/accounts-and-billing/billing/billing-for-credit-based-plans/credit-based-pricing-plans/)
 - Supabase, offre gratuite : [Pricing](https://supabase.com/pricing), [Project pausing](https://supabase.com/docs/guides/platform/free-project-pausing), [Egress](https://www.supabase.com/docs/guides/platform/manage-your-usage/egress)
-- Cloudflare : [Workers pricing](https://developers.cloudflare.com/workers/about/pricing), [D1 limits](https://developers.cloudflare.com/d1/platform/limits), [D1 : application des limites gratuites (sept. 2026)](https://developers.cloudflare.com/changelog/post/2026-09-01-d1-free-tier-limit-enforcement/)
+- Cloudflare Workers et D1 : [Workers pricing](https://developers.cloudflare.com/workers/about/pricing), [D1 limits](https://developers.cloudflare.com/d1/platform/limits), [D1 : application des limites gratuites (sept. 2026)](https://developers.cloudflare.com/changelog/post/2026-09-01-d1-free-tier-limit-enforcement/)
 
-*Certaines limites diffèrent d'une page à l'autre chez Google et Cloudflare : elles seront revérifiées au moment de coder les étapes concernées. Les calculs ci-dessus sont des estimations prudentes, à confirmer pendant le pilote en mesurant le volume réel par boutique.*
+*Certaines limites diffèrent d'une page à l'autre chez Google et Cloudflare : elles seront revérifiées au moment de coder les étapes concernées. Les calculs sont des estimations prudentes, à confirmer pendant le pilote en mesurant le volume réel par boutique.*
