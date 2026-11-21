@@ -6,6 +6,7 @@ import '../caisse/fermeture.dart';
 import '../caisse/saisie_montant.dart';
 import '../communs.dart';
 import 'arrivages.dart';
+import 'sauvegarde.dart';
 import 'tableau.dart';
 import 'vendeurs.dart';
 
@@ -63,6 +64,13 @@ final List<EntreePatron> entreesPatron = [
     'Argent pris',
     CouleursZp.argentSort,
     pageRetraitPatron,
+  ),
+  EntreePatron(
+    'sauvegarde',
+    Icons.backup_rounded,
+    'Sauvegarde',
+    CouleursZp.marque,
+    (etat) => PageSauvegarde(etat: etat),
   ),
 ];
 

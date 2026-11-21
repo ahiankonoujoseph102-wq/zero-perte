@@ -193,6 +193,10 @@ Future<Environnement> environnementDeTest(
           partages.add((png, texte));
           return ResultatPartage.whatsapp;
         },
+        partagerFichier: (octets, nom) async {
+          partages.add((octets, nom));
+          return ResultatPartage.autre;
+        },
       ),
     );
     if (preparer != null) await preparer(e);

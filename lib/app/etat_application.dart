@@ -6,6 +6,7 @@ import '../domaine/licence.dart';
 import '../domaine/operation.dart';
 import '../domaine/panier.dart';
 import '../domaine/quantites.dart';
+import '../domaine/sauvegarde.dart';
 import '../domaine/tableau.dart';
 import '../domaine/utilisateurs.dart';
 import '../donnees/journal_local.dart';
@@ -29,6 +30,7 @@ class ServicesZp {
     required this.prendrePhoto,
     required this.creerRaccourci,
     required this.partagerImage,
+    required this.partagerFichier,
   });
 
   final ServiceTelephone telephone;
@@ -54,6 +56,10 @@ class ServicesZp {
   /// Envoie une image (reçu) dans WhatsApp, ou par le menu de partage.
   final Future<ResultatPartage> Function(Uint8List png, String texte)
   partagerImage;
+
+  /// Partage un fichier (sauvegarde) par le menu de partage d'Android.
+  final Future<ResultatPartage> Function(Uint8List octets, String nom)
+  partagerFichier;
 }
 
 /// Étapes de l'assistant d'installation, dans l'ordre.
@@ -556,6 +562,36 @@ class EtatApplication extends ChangeNotifier {
       ],
       stockBas: bas,
     );
+  }
+
+  /// Fichier de sauvegarde chiffré avec le code secret du patron.
+  Future<Uint8List> creerSauvegarde(String codePatron) async =>
+      chiffrerSauvegarde(await journal.exporterJournal(), codePatron);
+
+  /// Nom du fichier de sauvegarde : « ZeroPerte-Boutique-Ama-2026-11-21.zps ».
+  String nomSauvegarde() {
+    final m = maintenant();
+    String n(int v) => v.toString().padLeft(2, '0');
+    final nom = config.nom
+        .replaceAll(RegExp(r'[^A-Za-z0-9]+'), '-')
+        .replaceAll(RegExp(r'^-+|-+$'), '');
+    return 'ZeroPerte-${nom.isEmpty ? 'boutique' : nom}-${m.year}-${n(m.month)}-${n(m.day)}.zps';
+  }
+
+  /// Restaure une sauvegarde sur un téléphone vide, puis recharge tout.
+  /// Renvoie le nombre d'opérations restaurées.
+  Future<int> restaurerSauvegarde(List<int> fichier, String codePatron) async {
+    final clair = await dechiffrerSauvegarde(fichier, codePatron);
+    final n = await journal.restaurerJournal(clair);
+    _codes
+      ..clear()
+      ..addAll(await journal.codesActives());
+    _config = await journal.configuration() ?? const ConfigBoutique();
+    _utilisateurs = await journal.utilisateurs();
+    _produits = await journal.produits();
+    _stocks = await journal.stocks();
+    notifyListeners();
+    return n;
   }
 
   /// La personne connectée est-elle le patron ?

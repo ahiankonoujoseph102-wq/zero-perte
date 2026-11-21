@@ -25,3 +25,19 @@ Future<ResultatPartage> partagerImageAndroid(
     return ResultatPartage.echec;
   }
 }
+
+/// Partage un fichier (sauvegarde) par le menu de partage d'Android.
+Future<ResultatPartage> partagerFichierAndroid(
+  Uint8List octets,
+  String nom,
+) async {
+  try {
+    final r = await _canal.invokeMethod<String>('partagerFichier', {
+      'octets': octets,
+      'nom': nom,
+    });
+    return r == 'autre' ? ResultatPartage.autre : ResultatPartage.echec;
+  } catch (_) {
+    return ResultatPartage.echec;
+  }
+}

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Zéro Perte : seuls les reçus (images temporaires) sont partagés. -->
+<!-- Zéro Perte : seuls les reçus et les sauvegardes (fichiers temporaires) sont partagés. -->
 <paths>
     <cache-path name="recus" path="recus/" />
+    <cache-path name="sauvegardes" path="sauvegardes/" />
 </paths>

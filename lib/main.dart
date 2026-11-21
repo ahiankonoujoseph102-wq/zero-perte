@@ -68,6 +68,7 @@ Future<EtatApplication> chargerEtatDuTelephone() async {
       prendrePhoto: prendrePhotoAndroid,
       creerRaccourci: creerRaccourciAndroid,
       partagerImage: partagerImageAndroid,
+      partagerFichier: partagerFichierAndroid,
     ),
   );
 }

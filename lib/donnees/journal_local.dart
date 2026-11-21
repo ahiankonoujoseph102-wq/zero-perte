@@ -11,6 +11,7 @@
 library;
 
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:sqflite/sqflite.dart';
 
@@ -177,15 +178,17 @@ class ResumeBenefice {
 }
 
 class JournalLocal implements ReglagesLocaux {
-  JournalLocal._(this._db, this.telephoneId, this.prefixeRecu, this._horloge);
+  JournalLocal._(this._db, this._telephoneId, this._prefixeRecu, this._horloge);
 
   final Database _db;
 
-  /// Identifiant unique de CE téléphone.
-  final String telephoneId;
+  /// Identifiant unique de CE téléphone (repris d'une sauvegarde restaurée).
+  String get telephoneId => _telephoneId;
+  String _telephoneId;
 
   /// Préfixe des reçus de ce téléphone (A, B, P…).
-  final String prefixeRecu;
+  String get prefixeRecu => _prefixeRecu;
+  String _prefixeRecu;
 
   final int Function() _horloge;
 
@@ -462,6 +465,111 @@ class JournalLocal implements ReglagesLocaux {
           signature: l['signature'] as String?,
         ),
     ];
+  }
+
+  // ---------------------------------------------------------------------------
+  // Sauvegarde
+  // ---------------------------------------------------------------------------
+
+  /// Tout le journal (JSON, en clair) : la seule source des calculs.
+  Future<Uint8List> exporterJournal() async {
+    final lignes = await _db.query(
+      'operations',
+      orderBy: 'telephone_id, numero',
+    );
+    return Uint8List.fromList(
+      utf8.encode(
+        jsonEncode({
+          'format': 1,
+          'telephone_id': telephoneId,
+          'prefixe_recu': prefixeRecu,
+          'operations': lignes,
+        }),
+      ),
+    );
+  }
+
+  /// Nombre d'opérations enregistrées.
+  Future<int> nombreOperations() async =>
+      (await _db.rawQuery('SELECT COUNT(*) AS n FROM operations')).first['n']
+          as int;
+
+  /// Restaure une sauvegarde dans un journal VIDE (nouveau téléphone).
+  /// Chaque chaîne est vérifiée avant d'écrire quoi que ce soit. Le téléphone
+  /// reprend l'identité (et le préfixe de reçu) du téléphone sauvegardé.
+  /// Renvoie le nombre d'opérations restaurées.
+  Future<int> restaurerJournal(List<int> json) async {
+    if (await nombreOperations() > 0) {
+      throw const ErreurZeroPerte(
+        'Ce téléphone contient déjà des ventes : restauration impossible.',
+      );
+    }
+    final Map<String, Object?> d;
+    try {
+      d = (jsonDecode(utf8.decode(json)) as Map).cast<String, Object?>();
+    } catch (_) {
+      throw const ErreurZeroPerte('Sauvegarde illisible.');
+    }
+    if (d['format'] != 1) {
+      throw const ErreurZeroPerte('Sauvegarde d\'une version inconnue.');
+    }
+    final ops = [
+      for (final l in (d['operations'] as List).cast<Map>())
+        Operation(
+          id: l['id'] as String,
+          telephoneId: l['telephone_id'] as String,
+          numero: l['numero'] as int,
+          type: l['type'] as String,
+          auteurId: l['auteur_id'] as String,
+          heureTelephone: l['heure_telephone'] as int,
+          donnees: (jsonDecode(l['donnees'] as String) as Map)
+              .cast<String, Object?>(),
+          empreintePrecedente: l['empreinte_precedente'] as String,
+          empreinte: l['empreinte'] as String,
+          signature: l['signature'] as String?,
+        ),
+    ];
+    final parTelephone = <String, List<Operation>>{};
+    for (final op in ops) {
+      parTelephone.putIfAbsent(op.telephoneId, () => []).add(op);
+    }
+    for (final liste in parTelephone.values) {
+      liste.sort((a, b) => a.numero.compareTo(b.numero));
+      if (verifierChaine(liste).isNotEmpty) {
+        throw const ErreurZeroPerte(
+          'Sauvegarde modifiée ou incomplète : restauration refusée.',
+        );
+      }
+    }
+    ops.sort(
+      (a, b) => a.heureTelephone != b.heureTelephone
+          ? a.heureTelephone.compareTo(b.heureTelephone)
+          : a.numero.compareTo(b.numero),
+    );
+    final idTelephone = d['telephone_id'] as String;
+    final prefixe = d['prefixe_recu'] as String;
+    await _db.transaction((t) async {
+      for (final op in ops) {
+        await t.insert('operations', {
+          'id': op.id,
+          'telephone_id': op.telephoneId,
+          'numero': op.numero,
+          'type': op.type,
+          'auteur_id': op.auteurId,
+          'heure_telephone': op.heureTelephone,
+          'donnees': jsonCanonique(op.donnees),
+          'empreinte_precedente': op.empreintePrecedente,
+          'empreinte': op.empreinte,
+          'signature': op.signature,
+        });
+        await projeter(t, op);
+      }
+      await _ecrireParametre(t, 'telephone_id', idTelephone);
+      await _ecrireParametre(t, 'prefixe_recu', prefixe);
+    });
+    _telephoneId = idTelephone;
+    _prefixeRecu = prefixe;
+    return ops.length;
   }
 
   /// Vérifie la chaîne des opérations de ce téléphone. Liste vide = tout est en ordre.

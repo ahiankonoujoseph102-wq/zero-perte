@@ -9,11 +9,11 @@ Il est mis à jour **à la fin de chaque étape**.
 
 | | |
 |---|---|
-| **Dernière étape terminée** | **B12** — Tableau du patron |
-| **Version publiée** | 0.13.0 (voir les Releases GitHub) |
-| **Prochaine étape** | **B13** — Export de sauvegarde chiffré |
+| **Dernière étape terminée** | **B13** — Sauvegarde chiffrée → **bloc B terminé** |
+| **Version publiée** | 0.14.0 (voir les Releases GitHub) |
+| **Prochaine étape** | Rapport de fin de bloc B au chef de projet, puis **C1** — Crédit client |
 | **Méthode** | Enchaîner les étapes de `docs/plan-v1.md` sans validation intermédiaire : B1→B13, puis C1, D, C2→C4, E. Rapport au chef de projet **à la fin de chaque bloc**, ou si une décision appartient au propriétaire, ou si on est bloqué. |
-| **Ordre des blocs** | A ✅ → **B (en cours)** → C1 → D → C2–C4 → E |
+| **Ordre des blocs** | A ✅ → B ✅ → **C1** → D → C2–C4 → E |
 
 ### Décisions en attente du propriétaire (à poser dans le rapport de fin de bloc B)
 
@@ -24,6 +24,9 @@ Il est mis à jour **à la fin de chaque étape**.
 | Q3 | **Jeton longue durée `ZP_JETON_CODES`** (1 an, écriture du coffre seulement) pour générer des codes après le 28 novembre ? | Sans lui, le workflow 4 utilise `ZP_JETON_COFFRE` (jusqu'au 28 novembre seulement) |
 | Q5 | **Facteurs « à vérifier » du catalogue** (ex. 1 sac de maïs de 100 kg = 40 bols, 1 casier = 12 grandes bouteilles) : les agents peuvent-ils les confirmer sur le terrain ? | Affichés « à vérifier » au patron, qui peut les corriger |
 | Q4 | **Texte du message d'activation** envoyé au patron (workflow 4, fichier dans le coffre) : à valider | « Bonjour, Voici le code d'activation Zéro Perte de votre boutique « NOM » (2 téléphones) : CODE. Pour l'activer : appuyez longtemps sur ce message, choisissez « Copier », puis ouvrez Zéro Perte et touchez « Coller le code ». Ce code est personnel : ne le donnez à personne. » |
+| Q6 | **Textes vus par les clients** : bas du reçu par défaut « Merci, à bientôt ! » et texte joint au reçu WhatsApp « Reçu n° A-000001 – NOM : 1 200 F. Merci, à bientôt ! » | Ces deux textes (le patron peut déjà changer le bas du reçu) |
+| Q7 | **Retour partiel** (le client rend une partie seulement) | Pas encore : on annule la vente entière puis on refait une vente |
+| Q8 | **Protection du fichier de sauvegarde** : code de 4 chiffres du patron (simple, mais faible contre un spécialiste) ou un mot de passe plus long choisi par le patron (plus sûr, mais à ne pas oublier) | Code de 4 chiffres du patron |
 
 ---
 
@@ -231,6 +234,23 @@ Police Atkinson Hyperlegible, marque bleu nuit, écran d'accueil vendeur à 4 gr
 - Sans seuil : **3 kg** restants alors que **10 kg** se sont vendus en 7 jours → « Moins d'une semaine de vente » ; 30 kg restants → pas d'alerte.
 
 **Problèmes restants :** pas encore d'écran pour régler le seuil d'alerte d'un produit (la règle automatique suffit pour le pilote) ; le tableau compte les ventes **de ce téléphone** jusqu'à la synchronisation (bloc D).
+
+### B13 — Sauvegarde chiffrée ✅ (version 0.14.0)
+**Fait :**
+- Espace patron → tuile **« Sauvegarde »** → « Créer une sauvegarde » → code secret du patron → fichier `ZeroPerte-<boutique>-<date>.zps` envoyé par le menu de partage d'Android (WhatsApp du patron, Google Drive, Bluetooth…). L'écran affiche la date de la dernière sauvegarde (en rouge s'il n'y en a jamais eu).
+- Le fichier contient **tout le journal** (la seule source des calculs), **compressé puis chiffré** (AES-256-GCM, clé tirée du code du patron par PBKDF2, 60 000 tours). Toute modification du fichier est détectée.
+- **Restauration** (code prêt et testé, `EtatApplication.restaurerSauvegarde`) : seulement sur un téléphone **vide** ; chaque chaîne d'opérations est vérifiée avant d'écrire quoi que ce soit ; le téléphone reprend l'identité et le préfixe de reçu de l'ancien, donc les reçus continuent (A-000002 après A-000001).
+- **Bonus Android** : sauvegarde automatique d'Android activée explicitement (`android:allowBackup="true"`) : avec le compte Google de la boutique, la base est remise sur un téléphone neuf.
+
+**Tests (209 au total, tous réussis)**, par exemple :
+- Boutique avec ventes, dépense et stock → sauvegarde → **téléphone neuf** → restauration avec le code **4827** : même nom de boutique, patron Ama, riz **98 kg**, dépenses **1 500 F**, chaîne intacte ; la vente suivante porte le reçu **A-000002**.
+- Mauvais code **0000** → refus, **aucune** opération écrite ; restaurer sur un téléphone qui a déjà des ventes → refus.
+- Sauvegarde trafiquée (vente de **2 000 F** changée en **200 F**) → « Sauvegarde modifiée ou incomplète : restauration refusée ».
+
+**Problèmes restants :**
+- **Pas encore d'écran pour restaurer** (choisir le fichier reçu) : il faut un accès aux fichiers du téléphone. Prévu avec le bloc D (la synchronisation Google Drive sera le moyen normal de tout retrouver) ; d'ici là la sauvegarde automatique d'Android couvre le cas du téléphone remplacé.
+- Le fichier est fermé avec le **code de 4 chiffres** du patron : il arrête un curieux, pas un spécialiste qui essaierait les 10 000 codes (question Q8).
+
 
 
 

@@ -190,4 +190,17 @@ void main() {
       );
     });
   }
+  for (final e in ecrans.entries) {
+    testWidgets('sauvegarde ${e.key}', (tester) async {
+      final env = await environnementDeTest(tester, preparer: journee);
+      await afficherApp(tester, env.etat, taille: e.value, densite: 2);
+      await ouvrirEspacePatron(tester);
+      await toucher(tester, find.byKey(const Key('patron-sauvegarde')));
+      await attendre(tester, tours: 8);
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('captures/sauvegarde_${e.key}.png'),
+      );
+    });
+  }
 }

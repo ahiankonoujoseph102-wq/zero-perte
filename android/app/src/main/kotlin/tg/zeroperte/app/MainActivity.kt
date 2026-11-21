@@ -38,6 +38,12 @@ class MainActivity : FlutterActivity() {
                             appel.argument<String>("texte") ?: "",
                         )
                     )
+                    "partagerFichier" -> resultat.success(
+                        partagerFichier(
+                            appel.argument<ByteArray>("octets"),
+                            appel.argument<String>("nom") ?: "sauvegarde.zps",
+                        )
+                    )
                     else -> resultat.notImplemented()
                 }
             }
@@ -98,6 +104,27 @@ class MainActivity : FlutterActivity() {
                 startActivity(Intent.createChooser(intention, "Envoyer le reçu"))
                 "autre"
             }
+        } catch (e: Exception) {
+            "echec"
+        }
+    }
+
+    /** Partage un fichier de sauvegarde par le menu de partage (WhatsApp, Drive, Bluetooth…). */
+    private fun partagerFichier(octets: ByteArray?, nom: String): String {
+        if (octets == null) return "echec"
+        return try {
+            val dossier = File(cacheDir, "sauvegardes").apply { mkdirs() }
+            dossier.listFiles()?.forEach { it.delete() }
+            val fichier = File(dossier, nom.replace(Regex("[^A-Za-z0-9._-]"), "-"))
+            fichier.writeBytes(octets)
+            val uri = FileProvider.getUriForFile(this, "$packageName.fichiers", fichier)
+            val intention = Intent(Intent.ACTION_SEND).apply {
+                type = "application/octet-stream"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            startActivity(Intent.createChooser(intention, "Garder la sauvegarde"))
+            "autre"
         } catch (e: Exception) {
             "echec"
         }
