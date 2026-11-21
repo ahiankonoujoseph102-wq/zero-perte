@@ -1,0 +1,4 @@
+# Petit outil à part (Dart seul) : règles par défaut.
+linter:
+  rules:
+    - avoid_print: false

@@ -431,6 +431,49 @@ void main() {
     expect(rouvert!.avertissementsInstallation, isEmpty);
   });
 
+  for (final (nom, taille, densite) in [
+    ('PC 1366×768', const Size(1366, 768), 1.0),
+    ('tablette 10 pouces paysage', const Size(1280, 800), 1.5),
+  ]) {
+    testWidgets(
+      '$nom avec le bandeau orange : tout le menu de gauche reste dans l\'écran',
+      (tester) async {
+        final env = await environnementDeTest(
+          tester,
+          preparer: (etat) async {
+            await boutiqueAvecStock(etat);
+            await etat.noterAvertissementsInstallation([
+              'Peu de place libre (250 Mo) : libérez de la place bientôt.',
+              'Pas de voix française : l\'application ne parlera pas.',
+            ]);
+          },
+        );
+        await afficherApp(tester, env.etat, taille: taille, densite: densite);
+        expect(find.byKey(const Key('bandeau-avertissements')), findsOneWidget);
+        for (final cle in [
+          'menu-accueil',
+          'bouton-vendre',
+          'menu-fournisseurs',
+          'menu-vendeurs',
+          'bouton-espace-patron',
+        ]) {
+          final r = tester.getRect(find.byKey(Key(cle)));
+          expect(
+            r.bottom <= taille.height,
+            isTrue,
+            reason: '$cle dans l\'écran',
+          );
+        }
+        // La personne connectée (bas du menu) aussi.
+        final bas = tester.getRect(
+          find.byKey(const Key('bouton-changer-utilisateur')),
+        );
+        expect(bas.bottom <= taille.height, isTrue);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
   // ---------------------------------------------------------------------------
   // Écran de retour sur 4 pouces
   // ---------------------------------------------------------------------------

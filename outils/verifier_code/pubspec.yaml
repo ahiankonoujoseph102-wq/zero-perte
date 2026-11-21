@@ -1,0 +1,7 @@
+name: verifier_code
+description: Vérifie un code d'activation avec le MÊME code que l'application (lib/domaine/licence.dart).
+publish_to: none
+environment:
+  sdk: ^3.8.0
+dependencies:
+  cryptography: 2.8.1

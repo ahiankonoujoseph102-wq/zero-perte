@@ -88,6 +88,30 @@ jobs:
           echo "::add-mask::$(cat "$RUNNER_TEMP/zpc/code.txt")"
           echo "Code signé."
 
+      - name: Vérifier le code comme l'application (même fichier licence.dart)
+        run: |
+          set -o pipefail
+          # Dart officiel (même version que Flutter 3.47.9), empreinte contrôlée.
+          curl -sSfL -o "$RUNNER_TEMP/dart.zip" \
+            https://storage.googleapis.com/dart-archive/channels/stable/release/3.13.7/sdk/dartsdk-linux-x64-release.zip
+          echo "eb99aed266efbcb615c6ae21c12f52cfe935b9f208bccc5fea7f64c21e867229  $RUNNER_TEMP/dart.zip" | sha256sum -c --quiet
+          unzip -q "$RUNNER_TEMP/dart.zip" -d "$RUNNER_TEMP"
+          cd outils/verifier_code
+          "$RUNNER_TEMP/dart-sdk/bin/dart" pub get >/dev/null
+          "$RUNNER_TEMP/dart-sdk/bin/dart" run bin/verifier.dart \
+            "$RUNNER_TEMP/zpc/code.txt" ../../assets/licence/cle_publique.txt | tee "$RUNNER_TEMP/verification.txt"
+
+      - name: Jeton utilisé pour le coffre (nom seulement, jamais la valeur)
+        env:
+          CODES_PRESENT: ${{ secrets.ZP_JETON_CODES != '' }}
+        run: |
+          if [ "$CODES_PRESENT" = "true" ]; then
+            echo "Jeton utilisé : ZP_JETON_CODES" | tee "$RUNNER_TEMP/jeton.txt"
+          else
+            echo "::warning::ZP_JETON_CODES absent : utilisation de ZP_JETON_COFFRE (expire le 28 novembre 2026)."
+            echo "Jeton utilisé : ZP_JETON_COFFRE" | tee "$RUNNER_TEMP/jeton.txt"
+          fi
+
       - name: Ranger le message et le registre dans le coffre privé
         env:
           GH_TOKEN: ${{ secrets.ZP_JETON_CODES || secrets.ZP_JETON_COFFRE }}
@@ -129,10 +153,13 @@ jobs:
             echo "Le message prêt à envoyer est dans votre **coffre privé** : \`$FICHIER\`."
             echo "Ouvrez-le, copiez tout le texte et transférez-le au patron sur WhatsApp."
             echo "La boutique est ajoutée au registre \`$REG\` (coffre privé)."
+            echo ""
+            echo "- $(cat "$RUNNER_TEMP/verification.txt")"
+            echo "- $(cat "$RUNNER_TEMP/jeton.txt")"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Effacer les fichiers temporaires
         if: always()
         run: |
           find "$RUNNER_TEMP/zpc" -type f -exec shred -u {} + 2>/dev/null || true
-          rm -rf "$RUNNER_TEMP/zpc"
+          rm -rf "$RUNNER_TEMP/zpc" "$RUNNER_TEMP/dart-sdk" "$RUNNER_TEMP/dart.zip"

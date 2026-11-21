@@ -509,14 +509,15 @@ class _AccueilGrandEcranState extends State<_AccueilGrandEcran> {
                     ),
                   ),
                   const Divider(height: 1, color: CouleursZp.ligne),
-                  // Toutes les rubriques tiennent sans défiler (PC 1366×768) :
-                  // la hauteur des lignes s'adapte à la place (40 à 50 points).
+                  // Toutes les rubriques tiennent sans défiler (PC 1366×768,
+                  // même avec un bandeau en haut) : la hauteur des lignes
+                  // s'adapte à la place (32 à 50 points).
                   Expanded(
                     child: LayoutBuilder(
                       builder: (context, c) {
                         final hauteur =
                             ((c.maxHeight - 16) / elements.length - 4).clamp(
-                              40.0,
+                              32.0,
                               50.0,
                             );
                         return SingleChildScrollView(

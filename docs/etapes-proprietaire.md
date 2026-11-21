@@ -107,10 +107,15 @@ rouge « Caisse fermée par … : il manque 2 000 F » et le dit à voix haute.
 
 ---
 
-## C. Jeton `ZP_JETON_CODES` — à créer **AVANT le 28 novembre**
+## C. Jeton `ZP_JETON_CODES` — ✅ FAIT (21 novembre 2026)
 
-⚠️ Le jeton actuel (`ZP_JETON_COFFRE`) expire le **28 novembre**. Si `ZP_JETON_CODES` n'existe pas avant
-cette date, **plus aucun code d'activation ne pourra être fabriqué**.
+✅ **Fait par le propriétaire** : secret `ZP_JETON_CODES` créé (accès au seul dépôt `zero-perte-coffre`,
+Contents en lecture et écriture, sans date d'expiration). L'action « 4 - Générer un code d'activation » l'utilise
+et l'écrit dans son résumé (« Jeton utilisé : ZP_JETON_CODES ») ; elle vérifie aussi chaque code avec le même
+programme que l'application. Rien d'autre à faire. *(Conseil : comme il n'expire pas, si un jour il est
+divulgué, supprimez-le dans GitHub → Settings → Developer settings → Fine-grained tokens et recréez-en un.)*
+
+Étapes suivies (pour mémoire) :
 
 1. GitHub (connecté avec votre compte) → photo en haut à droite → **Settings** → tout en bas **Developer
    settings** → **Personal access tokens** → **Fine-grained tokens** → **Generate new token**.

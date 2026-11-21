@@ -9,9 +9,9 @@ Il est mis à jour **à la fin de chaque étape**.
 
 | | |
 |---|---|
-| **Dernière étape terminée** | **0.28.0** : décisions Q1–Q4 du rapport 0.27, corrections devis / alertes / écran de retour |
-| **Version publiée** | 0.28.0 (Android et Windows, voir les Releases GitHub) |
-| **Prochaine étape** | Réponses du propriétaire aux questions du rapport 0.28 |
+| **Dernière étape terminée** | **0.28.1** : `ZP_JETON_CODES` vérifié, menu PC avec bandeau |
+| **Version publiée** | 0.28.1 (Android et Windows, voir les Releases GitHub) |
+| **Prochaine étape** | Étapes A, B, F du propriétaire (Google Cloud, Cloudflare, Firebase) puis pilote |
 | **Méthode** | Branche de travail, tests + captures sur 4 tailles, puis fusion dans `main` (= publication). Rien de non testé sur `main`. |
 | **Pour tout choix non décidé** | Prendre l'option la plus simple, la noter ici et la mettre dans le rapport avec une recommandation. |
 
@@ -734,3 +734,21 @@ valable) + `lot_e_captures_test.dart`, vérifiées sur 4 pouces, grand télépho
 
 **Publiée :** v0.28.0-n44 (Android et Windows réussis) — APK universel **17,6 Mo** (arm64 9,5 Mo, armv7 9,0 Mo),
 **ZeroPerte-Windows.zip 13,3 Mo**. (Ligne ajoutée sur les branches de travail seulement.)
+
+## Décisions du propriétaire sur le rapport 0.28 (toutes « (a) »)
+Q1 un devis vendu est fermé (déjà le cas). Q2 alertes en attente envoyées seulement application ouverte.
+**Le propriétaire a créé `ZP_JETON_CODES`** (seul dépôt `zero-perte-coffre`, Contents lecture/écriture, sans
+expiration) : partie C de `docs/etapes-proprietaire.md` marquée faite.
+
+### Version 0.28.1 ✅
+- **Action « 4 - Générer un code d'activation »** : écrit dans son journal et son résumé le **nom** du jeton
+  utilisé pour le coffre (« Jeton utilisé : ZP_JETON_CODES », avertissement si c'est `ZP_JETON_COFFRE`),
+  jamais sa valeur ; et **vérifie chaque code avec le même fichier que l'application**
+  (`lib/domaine/licence.dart`, clé publique de `assets/licence/cle_publique.txt`) grâce au petit outil
+  `outils/verifier_code` (Dart officiel 3.13.7 téléchargé avec contrôle d'empreinte). Le code et le nom de la
+  boutique restent masqués. Essai local : code signé avec la bonne clé → « Code accepté par l'application :
+  licence, 2 téléphone(s) » ; avec une autre clé → « Ce code n'est pas un vrai code Zéro Perte ».
+- **PC / tablette avec le bandeau orange** : les lignes du menu de gauche descendent jusqu'à 32 points si
+  besoin : tout le menu et la personne connectée restent dans l'écran (test sur PC 1366×768 et tablette
+  1280×800, capture vérifiée).
+**Tests : 399, tous réussis.**
