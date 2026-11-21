@@ -9,9 +9,9 @@ Il est mis à jour **à la fin de chaque étape**.
 
 | | |
 |---|---|
-| **Dernière étape terminée** | **B2** — Code d'activation signé |
-| **Version publiée** | 0.4.0 (voir les Releases GitHub) |
-| **Prochaine étape** | **B3** — Personnalisation |
+| **Dernière étape terminée** | **B3 + B4** — Personnalisation et catalogues |
+| **Version publiée** | 0.5.0 (voir les Releases GitHub) |
+| **Prochaine étape** | **B5** — Arrivages |
 | **Méthode** | Enchaîner les étapes de `docs/plan-v1.md` sans validation intermédiaire : B1→B13, puis C1, D, C2→C4, E. Rapport au chef de projet **à la fin de chaque bloc**, ou si une décision appartient au propriétaire, ou si on est bloqué. |
 | **Ordre des blocs** | A ✅ → **B (en cours)** → C1 → D → C2–C4 → E |
 
@@ -22,6 +22,7 @@ Il est mis à jour **à la fin de chaque étape**.
 | Q1 | Que peut faire une boutique **avant** d'avoir collé son code d'activation ? (a) rien : l'installation s'arrête à l'étape « Code d'activation » ; (b) une démonstration avec des produits fictifs ; (c) un essai de quelques jours | **(a) bloquée** (le plus simple, empêche le piratage). Pour changer : `EtapeAssistant.activation` dans `lib/app/etat_application.dart` |
 | Q2 | **Clé des licences** : le workflow « 3 - Créer la clé des licences » doit tourner **avant le 28 novembre** (expiration de `ZP_JETON_COFFRE`). Le propriétaire le lance-t-il, ou autorise-t-il Claude à le lancer ? | Pas encore lancé : `assets/licence/cle_publique.txt` = « ABSENTE » → l'application affiche « ne peut pas encore vérifier les codes » |
 | Q3 | **Jeton longue durée `ZP_JETON_CODES`** (1 an, écriture du coffre seulement) pour générer des codes après le 28 novembre ? | Sans lui, le workflow 4 utilise `ZP_JETON_COFFRE` (jusqu'au 28 novembre seulement) |
+| Q5 | **Facteurs « à vérifier » du catalogue** (ex. 1 sac de maïs de 100 kg = 40 bols, 1 casier = 12 grandes bouteilles) : les agents peuvent-ils les confirmer sur le terrain ? | Affichés « à vérifier » au patron, qui peut les corriger |
 | Q4 | **Texte du message d'activation** envoyé au patron (workflow 4, fichier dans le coffre) : à valider | « Bonjour, Voici le code d'activation Zéro Perte de votre boutique « NOM » (2 téléphones) : CODE. Pour l'activer : appuyez longtemps sur ce message, choisissez « Copier », puis ouvrez Zéro Perte et touchez « Coller le code ». Ce code est personnel : ne le donnez à personne. » |
 
 ---
@@ -30,7 +31,7 @@ Il est mis à jour **à la fin de chaque étape**.
 
 - **Dépôt** : `ahiankonoujoseph102-wq/zero-perte` (public). Travail sur `main` (décision du propriétaire), la branche `claude/pensive-einstein-jfps3a` est tenue au même niveau.
 - **Flutter 3.47.9** (stable), Java 17. Dans une session cloud vierge : télécharger Flutter dans `/opt/sdk/flutter` et le SDK Android (`cmdline-tools`, `platforms;android-36`, `build-tools;36.0.0`) dans `/opt/sdk/android`.
-- **Tests** : `flutter analyze` puis `flutter test` (tests dans `test/`, les outils communs dans `test/support/outils.dart`).
+- **Tests** : `flutter analyze` puis `flutter test` (tests dans `test/`, les outils communs dans `test/support/outils.dart`). Les tests d'écran utilisent une **vraie base SQLite en mémoire** : après un geste qui écrit dans la base, utiliser `toucher(tester, …)` ou `attendre(tester)` (jamais `pumpAndSettle` seul : il attend sans fin si un rond de chargement tourne). Toujours lancer `flutter test` avec `timeout 560`.
 - **Captures d'écran avec les vraies polices** : `flutter test test_captures --update-goldens` → images dans `test_captures/captures/` (non enregistrées dans git). Les regarder à chaque étape d'écran.
 - **Fabrication de l'APK** : uniquement sur GitHub Actions (« 2 - Fabriquer l'APK »), à chaque push. Sur `main`, publication d'une **Release** (officielle, signée). Dans le conteneur de Claude, la fabrication locale de l'APK échoue (Maven Central refuse : erreur 429) : ce n'est pas grave, GitHub fabrique.
 - **Suivre une fabrication** : API publique `https://api.github.com/repos/ahiankonoujoseph102-wq/zero-perte/actions/runs?branch=main&per_page=1`.
@@ -95,3 +96,20 @@ Police Atkinson Hyperlegible, marque bleu nuit, écran d'accueil vendeur à 4 gr
 - Une seule lettre changée dans le nom (« Ama » → « Amb ») : **signature refusée**.
 
 **Problèmes restants :** la clé des licences n'est pas encore créée (Q2) : tant qu'elle ne l'est pas, aucune boutique ne peut être activée.
+
+### B3 + B4 — Personnalisation et catalogues préremplis ✅ (version 0.5.0)
+*Livrées ensemble : l'écran des produits fait partie de l'assistant de personnalisation.*
+
+**Fait :**
+- 9 nouvelles étapes dans l'assistant (11 étapes comptées au total) : **type(s) de boutique** (grille d'images) → **nom + photo/logo** (appareil photo ou galerie, image réduite à 480 px) → **téléphone** (format togolais vérifié, « +228 90 12 34 56 ») **+ ville** (20 villes + « Autre ») **+ quartier + repère** → **couleur** (8 couleurs, sans vert/rouge/ambre, avec aperçu) → **produits** du catalogue (« Je vends ça ») → **prix** (prix de l'unité et de chaque conditionnement ; les nombres estimés sont marqués « à vérifier ») → **aperçu du reçu** + message du bas → **code secret du patron** (4 chiffres, confirmé 2 fois, codes trop faciles refusés, haché PBKDF2) → **fin** (raccourci « Boutique … » avec son logo sur l'écran du téléphone).
+- La **couleur de la boutique** colore l'application (boutons, barre de progression, « Fermer la caisse ») ; l'accueil affiche le **nom et le logo** de la boutique.
+- **Catalogue** : `assets/catalogues/catalogues.json`, **26 types de boutiques, 164 produits** (pharmacie et point Mobile Money exclus de la V1, voir décisions), avec unités, conditionnements, vente au montant et emballages consignés. Emoji choisis **compatibles Android 8** (un test interdit les emoji récents qui s'afficheraient en carrés vides).
+- Base locale **version 2** : colonnes ajoutées (emoji, catalogue, vente au montant, photo, « à vérifier ») avec **mise à niveau automatique** des téléphones déjà installés (testée).
+- Configuration de la boutique et utilisateurs enregistrés comme **opérations du journal** (synchronisées plus tard).
+
+**Tests (131 au total, tous réussis)**, par exemple :
+- Parcours complet automatique : alimentation + boissons → « Boutique Mama Ama » avec photo → « 90 12 34 56 » devient **« +228 90 12 34 56 »**, adresse **« Bè-Kpota, Lomé »** → couleur prune → riz et bière → riz **600 F le kg**, **sac de 50 kg à 28 000 F** → code **1234 refusé** (trop facile), 4827 puis 4828 refusés (différents), 4827 deux fois accepté → raccourci ajouté → accueil.
+- Initiales du logo : « Boutique Mama Ama » → **MA**, « Quincaillerie l'Espoir » → **QE**.
+- Mise à niveau : une base créée par la version 0.2.0 est ouverte par la 0.5.0 sans perte, puis accepte un produit avec emoji.
+
+**Problèmes restants :** les emoji n'apparaissent pas dans les captures d'écran de test (pas de police emoji dans l'outil), ils s'affichent sur Android. Le raccourci d'écran d'accueil dépend du lanceur du téléphone (certains refusent : un message le dit).

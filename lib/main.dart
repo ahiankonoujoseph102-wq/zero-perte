@@ -10,6 +10,8 @@ import 'donnees/journal_local.dart';
 import 'ecrans/accueil_vendeur.dart';
 import 'ecrans/assistant/assistant_installation.dart';
 import 'services/aide.dart';
+import 'services/photos.dart';
+import 'services/raccourci.dart';
 import 'services/telephone.dart';
 import 'services/voix.dart';
 import 'theme/couleurs.dart';
@@ -43,7 +45,6 @@ Future<JournalLocal> ouvrirJournalDuTelephone() async {
 Future<EtatApplication> chargerEtatDuTelephone() async {
   final journal = await ouvrirJournalDuTelephone();
   return EtatApplication.charger(
-    reglages: journal,
     journal: journal,
     services: ServicesZp(
       telephone: ServiceTelephoneAndroid(),
@@ -54,6 +55,10 @@ Future<EtatApplication> chargerEtatDuTelephone() async {
       clePublique: () async => lireClePublique(
         await rootBundle.loadString('assets/licence/cle_publique.txt'),
       ),
+      lireCatalogue: () =>
+          rootBundle.loadString('assets/catalogues/catalogues.json'),
+      prendrePhoto: prendrePhotoAndroid,
+      creerRaccourci: creerRaccourciAndroid,
     ),
   );
 }
@@ -115,7 +120,7 @@ class ZeroPerteApp extends StatelessWidget {
     return MaterialApp(
       title: 'Zéro Perte',
       debugShowCheckedModeBanner: false,
-      theme: themeZeroPerte(),
+      theme: themeZeroPerte(couleurMarque: Color(etat.config.couleur)),
       builder: (context, enfant) {
         final contenu = enfant ?? const SizedBox.shrink();
         if (estVersionOfficielle) return contenu;
@@ -137,12 +142,12 @@ class ZeroPerteApp extends StatelessWidget {
         listenable: etat,
         builder: (context, _) => etat.installationTerminee
             ? AccueilVendeur(
-                nomBoutique: 'Ma boutique',
-                nomVendeur: 'Vendeur',
+                config: etat.config,
+                nomVendeur: etat.patron?.nom ?? 'Vendeur',
                 maintenant: maintenant,
                 pied: PiedDePage(
                   infosPaquet: infosPaquet ?? PackageInfo.fromPlatform(),
-                  baseOuverte: etat.journal != null,
+                  baseOuverte: true,
                 ),
               )
             : AssistantInstallation(etat: etat),

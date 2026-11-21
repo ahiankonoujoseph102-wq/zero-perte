@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zero_perte/app/etat_application.dart';
 import 'package:zero_perte/domaine/verification_telephone.dart';
-import 'package:zero_perte/ecrans/accueil_vendeur.dart';
 import 'package:zero_perte/services/aide.dart';
 import 'package:zero_perte/services/telephone.dart';
 
@@ -65,18 +64,16 @@ void main() {
   });
 
   testWidgets('parcours : bienvenue → vérification → accueil', (tester) async {
-    final env = await environnementDeTest();
+    final env = await environnementDeTest(tester);
     await afficherApp(tester, env.etat);
     expect(find.text('Bienvenue dans Zéro Perte'), findsOneWidget);
     expect(env.voix.phrases.first, startsWith('Bienvenue dans Zéro Perte'));
 
-    await tester.tap(find.byKey(const Key('bouton-commencer')));
-    await tester.pumpAndSettle();
+    await toucher(tester, find.byKey(const Key('bouton-commencer')));
     expect(find.byKey(const Key('verification-ok')), findsOneWidget);
     expect(find.byKey(const Key('controle-google-ok')), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('bouton-continuer')));
-    await tester.pumpAndSettle();
+    await toucher(tester, find.byKey(const Key('bouton-continuer')));
     expect(env.etat.etape, EtapeAssistant.activation);
     expect(find.byKey(const Key('bouton-coller-code')), findsOneWidget);
   });
@@ -85,49 +82,59 @@ void main() {
     testWidgets('message WhatsApp copié → boutique activée → accueil', (
       tester,
     ) async {
-      final env = await environnementDeTest(etape: EtapeAssistant.activation);
+      final env = await environnementDeTest(
+        tester,
+        etape: EtapeAssistant.activation,
+      );
       env.pressePapiers.texte =
           'Bonjour, voici votre code :\n$codeLicence\nMerci';
       await afficherApp(tester, env.etat);
-      await tester.tap(find.byKey(const Key('bouton-coller-code')));
-      await tester.pumpAndSettle();
+      await toucher(tester, find.byKey(const Key('bouton-coller-code')));
       expect(find.byKey(const Key('activation-reussie')), findsOneWidget);
       expect(find.textContaining('Boutique Mama Ama'), findsOneWidget);
       expect(find.textContaining('2 téléphones'), findsOneWidget);
       expect(env.voix.phrases.last, contains('Code accepté'));
+      // Le nom du code devient le nom de la boutique.
+      expect(env.etat.config.nom, 'Boutique Mama Ama');
 
-      await tester.tap(find.byKey(const Key('bouton-continuer')));
-      await tester.pumpAndSettle();
-      expect(find.byType(AccueilVendeur), findsOneWidget);
+      await toucher(tester, find.byKey(const Key('bouton-continuer')));
+      expect(env.etat.etape, EtapeAssistant.typeBoutique);
+      expect(find.text('Que vendez-vous ?'), findsOneWidget);
     });
 
     testWidgets('code faux : message rouge, on reste bloqué', (tester) async {
-      final env = await environnementDeTest(etape: EtapeAssistant.activation);
+      final env = await environnementDeTest(
+        tester,
+        etape: EtapeAssistant.activation,
+      );
       env.pressePapiers.texte = codeLicence.replaceRange(20, 21, 'X');
       await afficherApp(tester, env.etat);
-      await tester.tap(find.byKey(const Key('bouton-coller-code')));
-      await tester.pumpAndSettle();
+      await toucher(tester, find.byKey(const Key('bouton-coller-code')));
       expect(find.byKey(const Key('activation-erreur')), findsOneWidget);
       expect(env.etat.licence, isNull);
       expect(find.byKey(const Key('bouton-continuer')), findsNothing);
     });
 
     testWidgets('rien de copié : message clair', (tester) async {
-      final env = await environnementDeTest(etape: EtapeAssistant.activation);
+      final env = await environnementDeTest(
+        tester,
+        etape: EtapeAssistant.activation,
+      );
       await afficherApp(tester, env.etat);
-      await tester.tap(find.byKey(const Key('bouton-coller-code')));
-      await tester.pumpAndSettle();
+      await toucher(tester, find.byKey(const Key('bouton-coller-code')));
       expect(find.textContaining('Aucun code Zéro Perte'), findsOneWidget);
     });
 
     testWidgets('extension « téléphone en plus » sans licence : refusée', (
       tester,
     ) async {
-      final env = await environnementDeTest(etape: EtapeAssistant.activation);
+      final env = await environnementDeTest(
+        tester,
+        etape: EtapeAssistant.activation,
+      );
       env.pressePapiers.texte = codeExtension;
       await afficherApp(tester, env.etat);
-      await tester.tap(find.byKey(const Key('bouton-coller-code')));
-      await tester.pumpAndSettle();
+      await toucher(tester, find.byKey(const Key('bouton-coller-code')));
       expect(
         find.textContaining('Activez d\'abord la licence'),
         findsOneWidget,
@@ -138,6 +145,7 @@ void main() {
       'version sans clé publique : activation impossible, message clair',
       (tester) async {
         final env = await environnementDeTest(
+          tester,
           etape: EtapeAssistant.activation,
           clePublique: 'ABSENTE',
         );
@@ -157,6 +165,7 @@ void main() {
     'téléphone sans services Google : bloqué, aide WhatsApp proposée',
     (tester) async {
       final env = await environnementDeTest(
+        tester,
         etape: EtapeAssistant.verification,
         telephone: sansGoogle,
       );
@@ -165,8 +174,7 @@ void main() {
       expect(find.byKey(const Key('controle-google-bloquant')), findsOneWidget);
       expect(find.text('Demander de l\'aide'), findsOneWidget);
 
-      await tester.tap(find.byKey(const Key('bouton-continuer')));
-      await tester.pumpAndSettle();
+      await toucher(tester, find.byKey(const Key('bouton-continuer')));
       expect(find.text('Besoin d\'aide ?'), findsOneWidget);
       for (final n in numerosAssistance) {
         expect(find.byKey(Key('aide-$n')), findsOneWidget);
@@ -189,17 +197,20 @@ void main() {
   testWidgets('reprise : l\'assistant repart à l\'étape mémorisée', (
     tester,
   ) async {
-    final env = await environnementDeTest(etape: EtapeAssistant.verification);
+    final env = await environnementDeTest(
+      tester,
+      etape: EtapeAssistant.verification,
+    );
     await afficherApp(tester, env.etat);
-    expect(find.text('Étape 2 sur 3'), findsOneWidget);
+    expect(find.text('Étape 2 sur 11'), findsOneWidget);
     expect(
-      await env.etat.reglages.lireParametre('assistant.etape'),
+      await tester.runAsync(() => env.journal.lireParametre('assistant.etape')),
       'verification',
     );
   });
 
   testWidgets('bouton « Écouter » : relit la consigne', (tester) async {
-    final env = await environnementDeTest();
+    final env = await environnementDeTest(tester);
     await afficherApp(tester, env.etat);
     await tester.tap(find.byKey(const Key('bouton-ecouter')));
     await tester.pump();
@@ -216,6 +227,7 @@ void main() {
         'assistant « ${etape.name} » sur ${e.key} (texte ×1,5) : rien ne déborde',
         (tester) async {
           final env = await environnementDeTest(
+            tester,
             etape: etape,
             voixFrancaise: false,
           );

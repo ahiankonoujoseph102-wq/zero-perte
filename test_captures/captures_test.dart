@@ -40,6 +40,15 @@ void main() {
     'assistant_verification_ok': (EtapeAssistant.verification, true),
     'assistant_verification_bloquee': (EtapeAssistant.verification, false),
     'assistant_activation': (EtapeAssistant.activation, true),
+    'b3_type': (EtapeAssistant.typeBoutique, true),
+    'b3_identite': (EtapeAssistant.identite, true),
+    'b3_contact': (EtapeAssistant.contact, true),
+    'b3_couleur': (EtapeAssistant.couleur, true),
+    'b4_produits': (EtapeAssistant.produits, true),
+    'b4_prix': (EtapeAssistant.prix, true),
+    'b3_recu': (EtapeAssistant.recu, true),
+    'b3_code_patron': (EtapeAssistant.codePatron, true),
+    'b3_fin': (EtapeAssistant.fin, true),
   };
 
   for (final e in ecrans.entries) {
@@ -48,11 +57,24 @@ void main() {
         final (taille, _) = e.value;
         final (etape, google) = scene.value;
         final env = await environnementDeTest(
+          tester,
           etape: etape,
           voixFrancaise: false,
           telephone: google
               ? telephoneCompatible
               : const InfosTelephoneSansGoogle(),
+          preparer: (etat) async {
+            await etat.enregistrerConfig(etat.config.copie(
+              nom: 'Boutique Mama Ama',
+              types: ['alimentation', 'boissons'],
+              telephone: '+228 90 12 34 56',
+              ville: 'Lomé',
+              quartier: 'Bè-Kpota',
+              couleur: 0xFF7A2E5C,
+            ));
+            await etat.ajouterDuCatalogue(
+                etat.catalogue.produitsDe(['alimentation']).take(3));
+          },
         );
         await afficherApp(tester, env.etat, taille: taille, densite: 2);
         await expectLater(

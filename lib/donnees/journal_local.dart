@@ -15,11 +15,13 @@ import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 
 import '../domaine/argent.dart';
+import '../domaine/boutique.dart';
 import '../domaine/calculs.dart';
 import '../domaine/licence.dart';
 import '../domaine/operation.dart';
 import '../domaine/quantites.dart';
 import '../domaine/recu.dart';
+import '../domaine/utilisateurs.dart';
 import 'reglages.dart';
 import 'schema.dart';
 
@@ -78,6 +80,11 @@ class Produit {
     required this.seuilAlerteMilliemes,
     this.emballage,
     this.consigne = 0,
+    this.emoji,
+    this.catalogueId,
+    this.auMontant = false,
+    this.photo,
+    this.actif = true,
   });
   final String id;
   final String nom;
@@ -88,6 +95,22 @@ class Produit {
   final int seuilAlerteMilliemes;
   final String? emballage;
   final int consigne;
+
+  /// Pictogramme (emoji) du catalogue, ou nul.
+  final String? emoji;
+
+  /// Identifiant du produit dans le catalogue prérempli, ou nul.
+  final String? catalogueId;
+
+  /// Vrai si on peut le vendre « au montant » (« donne pour 100 F »).
+  final bool auMontant;
+
+  /// Photo prise par le patron (JPEG en base64), ou nulle.
+  final String? photo;
+  final bool actif;
+
+  /// Vrai si le patron a fixé un prix (un produit sans prix ne peut pas être vendu).
+  bool get aUnPrix => prixUnitaire > 0;
 }
 
 /// Résultat d'une vente enregistrée.
@@ -155,6 +178,20 @@ class JournalLocal implements ReglagesLocaux {
           final lot = db.batch();
           for (final sql in [...creationTables, ...creationDeclencheurs]) {
             lot.execute(sql);
+          }
+          for (var v = 2; v <= version; v++) {
+            for (final sql in migrations[v] ?? const <String>[]) {
+              lot.execute(sql);
+            }
+          }
+          await lot.commit(noResult: true);
+        },
+        onUpgrade: (db, ancienne, nouvelle) async {
+          final lot = db.batch();
+          for (var v = ancienne + 1; v <= nouvelle; v++) {
+            for (final sql in migrations[v] ?? const <String>[]) {
+              lot.execute(sql);
+            }
           }
           await lot.commit(noResult: true);
         },
@@ -280,6 +317,10 @@ class JournalLocal implements ReglagesLocaux {
           'emballage': d['emballage'],
           'consigne': d['consigne'] ?? 0,
           'actif': (d['actif'] ?? true) == true ? 1 : 0,
+          'emoji': d['emoji'],
+          'catalogue_id': d['catalogue'],
+          'au_montant': d['au_montant'] == true ? 1 : 0,
+          'photo': d['photo'],
         });
       case TypeOperation.conditionnementDefini:
         await t.insert('conditionnements_versions', {
@@ -290,6 +331,7 @@ class JournalLocal implements ReglagesLocaux {
           'facteur_milliemes': d['facteur_milliemes'],
           'prix_vente': d['prix_vente'],
           'actif': (d['actif'] ?? true) == true ? 1 : 0,
+          'a_verifier': d['a_verifier'] == true ? 1 : 0,
         });
       case TypeOperation.arrivage:
       case TypeOperation.perte:
@@ -411,6 +453,11 @@ class JournalLocal implements ReglagesLocaux {
     int seuilAlerteMilliemes = 0,
     String? emballage,
     int consigne = 0,
+    String? emoji,
+    String? catalogueId,
+    bool auMontant = false,
+    String? photo,
+    bool actif = true,
     required String auteurId,
   }) async {
     if (prixUnitaire < 0 || consigne < 0) {
@@ -430,7 +477,11 @@ class JournalLocal implements ReglagesLocaux {
           'seuil_alerte_milliemes': seuilAlerteMilliemes,
           'emballage': emballage,
           'consigne': consigne,
-          'actif': true,
+          'actif': actif,
+          'emoji': emoji,
+          'catalogue': catalogueId,
+          'au_montant': auMontant,
+          'photo': photo,
         },
       ),
     );
@@ -444,6 +495,8 @@ class JournalLocal implements ReglagesLocaux {
     required String nom,
     required int facteurMilliemes,
     required int prixVente,
+    bool aVerifier = false,
+    bool actif = true,
     required String auteurId,
   }) async {
     if (facteurMilliemes <= 0) {
@@ -467,7 +520,8 @@ class JournalLocal implements ReglagesLocaux {
           'nom': nom,
           'facteur_milliemes': facteurMilliemes,
           'prix_vente': prixVente,
-          'actif': true,
+          'actif': actif,
+          'a_verifier': aVerifier,
         },
       );
     });
@@ -496,7 +550,45 @@ class JournalLocal implements ReglagesLocaux {
       seuilAlerteMilliemes: l['seuil_alerte_milliemes'] as int,
       emballage: l['emballage'] as String?,
       consigne: l['consigne'] as int,
+      emoji: l['emoji'] as String?,
+      catalogueId: l['catalogue_id'] as String?,
+      auMontant: l['au_montant'] == 1,
+      photo: l['photo'] as String?,
+      actif: l['actif'] == 1,
     );
+  }
+
+  static Produit _produitDepuisLigne(Map<String, Object?> l) => Produit(
+    id: l['produit_id'] as String,
+    nom: l['nom'] as String,
+    uniteBase: l['unite_base'] as String,
+    prixUnitaire: l['prix_unitaire'] as int,
+    seuilAlerteMilliemes: l['seuil_alerte_milliemes'] as int,
+    emballage: l['emballage'] as String?,
+    consigne: l['consigne'] as int,
+    emoji: l['emoji'] as String?,
+    catalogueId: l['catalogue_id'] as String?,
+    auMontant: l['au_montant'] == 1,
+    photo: l['photo'] as String?,
+    actif: l['actif'] == 1,
+  );
+
+  /// Tous les produits (version actuelle de chacun), actifs seulement par défaut,
+  /// triés par nom.
+  Future<List<Produit>> produits({bool memeInactifs = false}) async {
+    final r = await _db.rawQuery(
+      'SELECT pv.*, o.heure_telephone AS h, o.numero AS n FROM produits_versions pv '
+      'JOIN operations o ON o.id = pv.operation_id ORDER BY h, n',
+    );
+    final parId = <String, Map<String, Object?>>{};
+    for (final l in r) {
+      parId[l['produit_id'] as String] = l;
+    }
+    final liste = [
+      for (final l in parId.values)
+        if (memeInactifs || l['actif'] == 1) _produitDepuisLigne(l),
+    ]..sort((a, b) => a.nom.toLowerCase().compareTo(b.nom.toLowerCase()));
+    return liste;
   }
 
   /// Conditionnements actuels d'un produit.
@@ -526,6 +618,7 @@ class JournalLocal implements ReglagesLocaux {
             nom: l['nom'] as String,
             facteurMilliemes: l['facteur_milliemes'] as int,
             prixVente: l['prix_vente'] as int,
+            aVerifier: l['a_verifier'] == 1,
           ),
     ];
   }
@@ -972,6 +1065,72 @@ class JournalLocal implements ReglagesLocaux {
       [emballage],
     );
     return soldeEmballages(r.map((l) => l['q'] as int));
+  }
+
+  // ---------------------------------------------------------------------------
+  // Boutique et utilisateurs (patron, vendeurs)
+  // ---------------------------------------------------------------------------
+
+  /// Enregistre la configuration de la boutique (nouvelle version).
+  Future<Operation> configurerBoutique(
+    ConfigBoutique config, {
+    required String auteurId,
+  }) => _db.transaction(
+    (t) => _ajouter(
+      t,
+      type: TypeOperation.boutiqueConfiguree,
+      auteurId: auteurId,
+      donnees: config.versDonnees(),
+    ),
+  );
+
+  /// Configuration actuelle de la boutique (la plus récente), ou nulle.
+  Future<ConfigBoutique?> configuration() async {
+    final r = await _db.query(
+      'operations',
+      columns: ['donnees'],
+      where: 'type = ?',
+      whereArgs: [TypeOperation.boutiqueConfiguree],
+      orderBy: 'heure_telephone DESC, numero DESC',
+      limit: 1,
+    );
+    if (r.isEmpty) return null;
+    return ConfigBoutique.depuisDonnees(
+      (jsonDecode(r.first['donnees'] as String) as Map).cast<String, Object?>(),
+    );
+  }
+
+  /// Crée ou modifie un utilisateur (nouvelle version ; l'ancienne reste dans l'historique).
+  Future<Operation> definirUtilisateur(
+    Utilisateur u, {
+    required String auteurId,
+  }) => _db.transaction(
+    (t) => _ajouter(
+      t,
+      type: TypeOperation.utilisateurDefini,
+      auteurId: auteurId,
+      donnees: u.versDonnees(),
+    ),
+  );
+
+  /// Utilisateurs (version actuelle de chacun), patron d'abord.
+  Future<List<Utilisateur>> utilisateurs() async {
+    final r = await _db.query(
+      'operations',
+      columns: ['donnees'],
+      where: 'type = ?',
+      whereArgs: [TypeOperation.utilisateurDefini],
+      orderBy: 'heure_telephone, numero',
+    );
+    final parId = <String, Utilisateur>{};
+    for (final l in r) {
+      final u = Utilisateur.depuisDonnees(
+        (jsonDecode(l['donnees'] as String) as Map).cast<String, Object?>(),
+      );
+      parId[u.id] = u;
+    }
+    return parId.values.toList()
+      ..sort((a, b) => a.role.index.compareTo(b.role.index));
   }
 
   // ---------------------------------------------------------------------------

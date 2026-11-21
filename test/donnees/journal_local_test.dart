@@ -4,7 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:zero_perte/domaine/calculs.dart';
 import 'package:zero_perte/domaine/operation.dart';
+import 'package:zero_perte/domaine/boutique.dart';
+import 'package:zero_perte/domaine/utilisateurs.dart';
 import 'package:zero_perte/donnees/journal_local.dart';
+import 'package:zero_perte/donnees/schema.dart';
 
 void main() {
   sqfliteFfiInit();
@@ -329,4 +332,150 @@ void main() {
     );
     expect(TypeOperation.vente, 'vente');
   });
+
+  test('mise à niveau v1 → v2 : les données d\'avant sont gardées', () async {
+    final dossier = await Directory.systemTemp.createTemp('zp_migr_');
+    final chemin = '${dossier.path}/ancienne.db';
+    // Base créée par la version 0.2.0 (schéma 1).
+    final v1 = await databaseFactoryFfi.openDatabase(
+      chemin,
+      options: OpenDatabaseOptions(
+        version: 1,
+        onCreate: (db, _) async {
+          for (final sql in [...creationTables, ...creationDeclencheurs]) {
+            await db.execute(sql);
+          }
+        },
+      ),
+    );
+    await v1.close();
+    // Ouverture par la nouvelle version : migration automatique.
+    final j2 = await JournalLocal.ouvrir(
+      fabrique: databaseFactoryFfi,
+      chemin: chemin,
+    );
+    final id = await j2.definirProduit(
+      nom: 'Riz',
+      uniteBase: 'bol',
+      prixUnitaire: 650,
+      emoji: '🍚',
+      auMontant: true,
+      catalogueId: 'cereales.riz_local',
+      auteurId: 'patron',
+    );
+    final p = await j2.produit(id);
+    expect(p.emoji, '🍚');
+    expect(p.auMontant, isTrue);
+    expect((await j2.baseBrutePourTests.getVersion()), versionSchema);
+    await j2.fermer();
+    await dossier.delete(recursive: true);
+  });
+
+  test(
+    'configuration de la boutique : la dernière version l\'emporte',
+    () async {
+      expect(await j.configuration(), isNull);
+      await j.configurerBoutique(
+        const ConfigBoutique(nom: 'Boutique Mama Ama', ville: 'Lomé'),
+        auteurId: 'patron',
+      );
+      await j.configurerBoutique(
+        const ConfigBoutique(
+          nom: 'Boutique Mama Ama',
+          ville: 'Lomé',
+          quartier: 'Bè',
+          logo: [1, 2, 3],
+        ),
+        auteurId: 'patron',
+      );
+      final c = await j.configuration();
+      expect(c!.quartier, 'Bè');
+      expect(c.logo, [1, 2, 3]);
+      expect(c.adresse, 'Bè, Lomé');
+    },
+  );
+
+  test(
+    'utilisateurs : PIN haché, jamais en clair ; blocage = nouvelle version',
+    () async {
+      final sel = nouveauSel();
+      final patron = Utilisateur(
+        id: 'u1',
+        nom: 'Ama',
+        role: Role.patron,
+        sel: sel,
+        hachage: await hacherPin('4827', sel),
+      );
+      await j.definirUtilisateur(patron, auteurId: 'u1');
+      final ops = await j.operationsDuTelephone(j.telephoneId);
+      expect(ops.last.donnees.toString(), isNot(contains('4827')));
+      final lus = await j.utilisateurs();
+      expect(await pinCorrect(lus.single, '4827'), isTrue);
+      expect(await pinCorrect(lus.single, '4828'), isFalse);
+
+      await j.definirUtilisateur(
+        Utilisateur(
+          id: 'u2',
+          nom: 'Kossi',
+          role: Role.vendeur,
+          sel: sel,
+          hachage: 'x',
+        ),
+        auteurId: 'u1',
+      );
+      await j.definirUtilisateur(
+        Utilisateur(
+          id: 'u2',
+          nom: 'Kossi',
+          role: Role.vendeur,
+          sel: sel,
+          hachage: 'x',
+          actif: false,
+        ),
+        auteurId: 'u1',
+      );
+      final tous = await j.utilisateurs();
+      expect(tous.map((u) => u.nom), ['Ama', 'Kossi']);
+      expect(tous.last.actif, isFalse);
+    },
+  );
+
+  test(
+    'liste des produits : version actuelle, triés par nom, inactifs masqués',
+    () async {
+      final a = await j.definirProduit(
+        nom: 'Sucre',
+        uniteBase: 'paquet',
+        prixUnitaire: 800,
+        auteurId: 'p',
+      );
+      await j.definirProduit(
+        nom: 'Huile',
+        uniteBase: 'litre',
+        prixUnitaire: 1200,
+        auteurId: 'p',
+      );
+      await j.definirProduit(
+        produitId: a,
+        nom: 'Sucre',
+        uniteBase: 'paquet',
+        prixUnitaire: 850,
+        auteurId: 'p',
+      );
+      final liste = await j.produits();
+      expect(liste.map((p) => '${p.nom} ${p.prixUnitaire}'), [
+        'Huile 1200',
+        'Sucre 850',
+      ]);
+      await j.definirProduit(
+        produitId: a,
+        nom: 'Sucre',
+        uniteBase: 'paquet',
+        prixUnitaire: 850,
+        actif: false,
+        auteurId: 'p',
+      );
+      expect((await j.produits()).map((p) => p.nom), ['Huile']);
+    },
+  );
 }

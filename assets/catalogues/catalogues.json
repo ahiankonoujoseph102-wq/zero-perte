@@ -1,0 +1,1908 @@
+{
+ "version": 1,
+ "note": "Produits génériques (sans marque). Les conditionnements marqués a_verifier ont un nombre d'unités estimé : à confirmer par le patron.",
+ "categories": [
+  {
+   "id": "alimentation",
+   "nom": "Alimentation générale",
+   "emoji": "🛒",
+   "produits": [
+    {
+     "id": "alimentation.riz",
+     "nom": "Riz",
+     "emoji": "🍚",
+     "unite": "kg",
+     "conditionnements": [
+      {
+       "nom": "sac de 50 kg",
+       "unites": 50
+      },
+      {
+       "nom": "sac de 25 kg",
+       "unites": 25
+      }
+     ],
+     "au_montant": true
+    },
+    {
+     "id": "alimentation.sucre",
+     "nom": "Sucre en poudre",
+     "emoji": "🥄",
+     "unite": "paquet de 1 kg",
+     "conditionnements": [
+      {
+       "nom": "carton",
+       "unites": 10,
+       "a_verifier": true
+      }
+     ],
+     "au_montant": true
+    },
+    {
+     "id": "alimentation.sucre_morceaux",
+     "nom": "Sucre en morceaux",
+     "emoji": "🍬",
+     "unite": "boîte",
+     "conditionnements": [
+      {
+       "nom": "carton",
+       "unites": 48,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "alimentation.huile",
+     "nom": "Huile",
+     "emoji": "🌻",
+     "unite": "litre",
+     "conditionnements": [
+      {
+       "nom": "bidon de 25 L",
+       "unites": 25
+      },
+      {
+       "nom": "bidon de 5 L",
+       "unites": 5
+      }
+     ],
+     "au_montant": true
+    },
+    {
+     "id": "alimentation.lait_poudre",
+     "nom": "Lait en poudre",
+     "emoji": "🥛",
+     "unite": "sachet",
+     "conditionnements": [
+      {
+       "nom": "carton",
+       "unites": 50,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "alimentation.lait_concentre",
+     "nom": "Lait concentré",
+     "emoji": "🥫",
+     "unite": "boîte",
+     "conditionnements": [
+      {
+       "nom": "carton",
+       "unites": 48,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "alimentation.tomate_concentree",
+     "nom": "Concentré de tomate",
+     "emoji": "🍅",
+     "unite": "boîte",
+     "conditionnements": [
+      {
+       "nom": "carton",
+       "unites": 50,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "alimentation.cube",
+     "nom": "Cubes d'assaisonnement",
+     "emoji": "🥘",
+     "unite": "cube",
+     "conditionnements": [
+      {
+       "nom": "paquet",
+       "unites": 100,
+       "a_verifier": true
+      },
+      {
+       "nom": "carton",
+       "unites": 2000,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "alimentation.pates",
+     "nom": "Pâtes, spaghettis",
+     "emoji": "🍝",
+     "unite": "paquet",
+     "conditionnements": [
+      {
+       "nom": "carton",
+       "unites": 20,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "alimentation.sardines",
+     "nom": "Sardines",
+     "emoji": "🐟",
+     "unite": "boîte",
+     "conditionnements": [
+      {
+       "nom": "carton",
+       "unites": 50,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "alimentation.savon",
+     "nom": "Savon en morceau",
+     "emoji": "🛁",
+     "unite": "morceau",
+     "conditionnements": [
+      {
+       "nom": "carton",
+       "unites": 72,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "alimentation.lessive",
+     "nom": "Lessive en poudre",
+     "emoji": "👚",
+     "unite": "sachet",
+     "conditionnements": [
+      {
+       "nom": "carton",
+       "unites": 36,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "alimentation.biscuits",
+     "nom": "Biscuits",
+     "emoji": "🍪",
+     "unite": "paquet",
+     "conditionnements": [
+      {
+       "nom": "carton",
+       "unites": 24,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "alimentation.bonbons",
+     "nom": "Bonbons",
+     "emoji": "🍬",
+     "unite": "bonbon",
+     "conditionnements": [
+      {
+       "nom": "paquet",
+       "unites": 100,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "alimentation.allumettes",
+     "nom": "Allumettes",
+     "emoji": "🔥",
+     "unite": "boîte",
+     "conditionnements": [
+      {
+       "nom": "paquet",
+       "unites": 10,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "alimentation.bougies",
+     "nom": "Bougies",
+     "emoji": "🕯️",
+     "unite": "bougie",
+     "conditionnements": [
+      {
+       "nom": "paquet",
+       "unites": 6,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "alimentation.petrole",
+     "nom": "Pétrole lampant",
+     "emoji": "🛢️",
+     "unite": "litre",
+     "conditionnements": [
+      {
+       "nom": "bidon de 20 L",
+       "unites": 20
+      }
+     ],
+     "au_montant": true
+    },
+    {
+     "id": "alimentation.oeufs",
+     "nom": "Œufs",
+     "emoji": "🥚",
+     "unite": "œuf",
+     "conditionnements": [
+      {
+       "nom": "plateau",
+       "unites": 30
+      }
+     ]
+    },
+    {
+     "id": "alimentation.pain",
+     "nom": "Pain",
+     "emoji": "🍞",
+     "unite": "pièce",
+     "conditionnements": []
+    },
+    {
+     "id": "alimentation.eau_sachet",
+     "nom": "Eau en sachet",
+     "emoji": "💧",
+     "unite": "sachet",
+     "conditionnements": [
+      {
+       "nom": "paquet",
+       "unites": 30,
+       "a_verifier": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "boissons",
+   "nom": "Boissons (dépôt, bar, buvette)",
+   "emoji": "🍺",
+   "produits": [
+    {
+     "id": "boissons.biere_grande",
+     "nom": "Bière, grande bouteille",
+     "emoji": "🍺",
+     "unite": "bouteille",
+     "conditionnements": [
+      {
+       "nom": "casier",
+       "unites": 12,
+       "a_verifier": true
+      }
+     ],
+     "emballage": "casier bière (grandes)"
+    },
+    {
+     "id": "boissons.biere_petite",
+     "nom": "Bière, petite bouteille",
+     "emoji": "🍺",
+     "unite": "bouteille",
+     "conditionnements": [
+      {
+       "nom": "casier",
+       "unites": 24,
+       "a_verifier": true
+      }
+     ],
+     "emballage": "casier bière (petites)"
+    },
+    {
+     "id": "boissons.sucrerie",
+     "nom": "Sucrerie en bouteille",
+     "emoji": "🥤",
+     "unite": "bouteille",
+     "conditionnements": [
+      {
+       "nom": "casier",
+       "unites": 24,
+       "a_verifier": true
+      }
+     ],
+     "emballage": "casier sucrerie"
+    },
+    {
+     "id": "boissons.canette",
+     "nom": "Boisson en canette",
+     "emoji": "🥫",
+     "unite": "canette",
+     "conditionnements": [
+      {
+       "nom": "pack",
+       "unites": 6
+      },
+      {
+       "nom": "carton",
+       "unites": 24
+      }
+     ]
+    },
+    {
+     "id": "boissons.eau_minerale",
+     "nom": "Eau minérale 1,5 L",
+     "emoji": "💧",
+     "unite": "bouteille",
+     "conditionnements": [
+      {
+       "nom": "pack",
+       "unites": 6
+      }
+     ]
+    },
+    {
+     "id": "boissons.eau_sachet_b",
+     "nom": "Eau en sachet",
+     "emoji": "💧",
+     "unite": "sachet",
+     "conditionnements": [
+      {
+       "nom": "paquet",
+       "unites": 30,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "boissons.vin",
+     "nom": "Vin",
+     "emoji": "🍷",
+     "unite": "bouteille",
+     "conditionnements": [
+      {
+       "nom": "carton",
+       "unites": 12
+      }
+     ]
+    },
+    {
+     "id": "boissons.liqueur",
+     "nom": "Liqueur, whisky",
+     "emoji": "🥃",
+     "unite": "bouteille",
+     "conditionnements": [
+      {
+       "nom": "carton",
+       "unites": 12
+      }
+     ]
+    },
+    {
+     "id": "boissons.sodabi",
+     "nom": "Sodabi",
+     "emoji": "🥃",
+     "unite": "verre",
+     "conditionnements": [
+      {
+       "nom": "litre",
+       "unites": 10,
+       "a_verifier": true
+      },
+      {
+       "nom": "bidon de 5 L",
+       "unites": 50,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "boissons.tchoukoutou",
+     "nom": "Tchoukoutou",
+     "emoji": "🥣",
+     "unite": "calebasse",
+     "conditionnements": [
+      {
+       "nom": "bassine",
+       "unites": 20,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "boissons.vin_palme",
+     "nom": "Vin de palme",
+     "emoji": "🥥",
+     "unite": "verre",
+     "conditionnements": [
+      {
+       "nom": "litre",
+       "unites": 4,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "boissons.glace",
+     "nom": "Glace, glaçons",
+     "emoji": "❄️",
+     "unite": "sachet",
+     "conditionnements": []
+    }
+   ]
+  },
+  {
+   "id": "quincaillerie",
+   "nom": "Quincaillerie et matériaux",
+   "emoji": "🔨",
+   "produits": [
+    {
+     "id": "quincaillerie.ciment",
+     "nom": "Ciment",
+     "emoji": "🏗️",
+     "unite": "sac de 50 kg",
+     "conditionnements": []
+    },
+    {
+     "id": "quincaillerie.fer_8",
+     "nom": "Fer à béton de 8",
+     "emoji": "🔩",
+     "unite": "barre",
+     "conditionnements": [
+      {
+       "nom": "botte",
+       "unites": 100,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "quincaillerie.fer_10",
+     "nom": "Fer à béton de 10",
+     "emoji": "🔩",
+     "unite": "barre",
+     "conditionnements": [
+      {
+       "nom": "botte",
+       "unites": 70,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "quincaillerie.fer_12",
+     "nom": "Fer à béton de 12",
+     "emoji": "🔩",
+     "unite": "barre",
+     "conditionnements": [
+      {
+       "nom": "botte",
+       "unites": 50,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "quincaillerie.tole",
+     "nom": "Tôle",
+     "emoji": "🏠",
+     "unite": "feuille",
+     "conditionnements": [
+      {
+       "nom": "paquet",
+       "unites": 20,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "quincaillerie.pointes",
+     "nom": "Pointes, clous",
+     "emoji": "📌",
+     "unite": "kg",
+     "conditionnements": [
+      {
+       "nom": "carton",
+       "unites": 25,
+       "a_verifier": true
+      }
+     ],
+     "au_montant": true
+    },
+    {
+     "id": "quincaillerie.fil_electrique",
+     "nom": "Fil électrique",
+     "emoji": "🔌",
+     "unite": "mètre",
+     "conditionnements": [
+      {
+       "nom": "rouleau",
+       "unites": 100
+      }
+     ]
+    },
+    {
+     "id": "quincaillerie.tuyau_pvc",
+     "nom": "Tuyau PVC",
+     "emoji": "🚰",
+     "unite": "barre",
+     "conditionnements": []
+    },
+    {
+     "id": "quincaillerie.peinture",
+     "nom": "Peinture",
+     "emoji": "🎨",
+     "unite": "pot de 1 L",
+     "conditionnements": [
+      {
+       "nom": "seau de 20 L",
+       "unites": 20
+      }
+     ]
+    },
+    {
+     "id": "quincaillerie.contreplaque",
+     "nom": "Contreplaqué",
+     "emoji": "🌲",
+     "unite": "feuille",
+     "conditionnements": []
+    },
+    {
+     "id": "quincaillerie.sable",
+     "nom": "Sable",
+     "emoji": "🏖️",
+     "unite": "brouette",
+     "conditionnements": [
+      {
+       "nom": "chargement",
+       "unites": 40,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "quincaillerie.serrure",
+     "nom": "Serrure, cadenas",
+     "emoji": "🔒",
+     "unite": "pièce",
+     "conditionnements": []
+    },
+    {
+     "id": "quincaillerie.outils",
+     "nom": "Outils (marteau, pince…)",
+     "emoji": "🔧",
+     "unite": "pièce",
+     "conditionnements": []
+    }
+   ]
+  },
+  {
+   "id": "habits",
+   "nom": "Chaussures et habits",
+   "emoji": "👕",
+   "produits": [
+    {
+     "id": "habits.chaussures",
+     "nom": "Chaussures",
+     "emoji": "👟",
+     "unite": "paire",
+     "conditionnements": [
+      {
+       "nom": "douzaine",
+       "unites": 12
+      }
+     ]
+    },
+    {
+     "id": "habits.sandales",
+     "nom": "Sandales, tapettes",
+     "emoji": "👡",
+     "unite": "paire",
+     "conditionnements": [
+      {
+       "nom": "douzaine",
+       "unites": 12
+      }
+     ]
+    },
+    {
+     "id": "habits.chemise",
+     "nom": "Chemise",
+     "emoji": "👔",
+     "unite": "pièce",
+     "conditionnements": [
+      {
+       "nom": "douzaine",
+       "unites": 12
+      }
+     ]
+    },
+    {
+     "id": "habits.pantalon",
+     "nom": "Pantalon",
+     "emoji": "👖",
+     "unite": "pièce",
+     "conditionnements": [
+      {
+       "nom": "douzaine",
+       "unites": 12
+      }
+     ]
+    },
+    {
+     "id": "habits.robe",
+     "nom": "Robe",
+     "emoji": "👗",
+     "unite": "pièce",
+     "conditionnements": [
+      {
+       "nom": "douzaine",
+       "unites": 12
+      }
+     ]
+    },
+    {
+     "id": "habits.tshirt",
+     "nom": "T-shirt",
+     "emoji": "👕",
+     "unite": "pièce",
+     "conditionnements": [
+      {
+       "nom": "douzaine",
+       "unites": 12
+      }
+     ]
+    },
+    {
+     "id": "habits.friperie",
+     "nom": "Friperie (balle triée)",
+     "emoji": "👚",
+     "unite": "pièce",
+     "conditionnements": [
+      {
+       "nom": "balle",
+       "unites": 200,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "habits.pagne",
+     "nom": "Pagne (wax)",
+     "emoji": "🎀",
+     "unite": "yard",
+     "conditionnements": [
+      {
+       "nom": "pièce de 12 yards",
+       "unites": 12,
+       "a_verifier": true
+      },
+      {
+       "nom": "complet de 6 yards",
+       "unites": 6,
+       "a_verifier": true
+      },
+      {
+       "nom": "pagne de 2 yards",
+       "unites": 2,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "habits.sous_vetements",
+     "nom": "Sous-vêtements",
+     "emoji": "👙",
+     "unite": "pièce",
+     "conditionnements": [
+      {
+       "nom": "paquet",
+       "unites": 6,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "habits.sac",
+     "nom": "Sac à main",
+     "emoji": "👜",
+     "unite": "pièce",
+     "conditionnements": []
+    }
+   ]
+  },
+  {
+   "id": "pieces_motos",
+   "nom": "Pièces détachées de motos",
+   "emoji": "🏍️",
+   "produits": [
+    {
+     "id": "pieces_motos.bougie",
+     "nom": "Bougie",
+     "emoji": "⚡",
+     "unite": "pièce",
+     "conditionnements": [
+      {
+       "nom": "boîte",
+       "unites": 10,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "pieces_motos.plaquettes",
+     "nom": "Plaquettes de frein",
+     "emoji": "⭕",
+     "unite": "jeu",
+     "conditionnements": []
+    },
+    {
+     "id": "pieces_motos.kit_chaine",
+     "nom": "Kit chaîne",
+     "emoji": "⛓️",
+     "unite": "kit",
+     "conditionnements": []
+    },
+    {
+     "id": "pieces_motos.pneu",
+     "nom": "Pneu",
+     "emoji": "⭕",
+     "unite": "pièce",
+     "conditionnements": []
+    },
+    {
+     "id": "pieces_motos.chambre_air",
+     "nom": "Chambre à air",
+     "emoji": "⭕",
+     "unite": "pièce",
+     "conditionnements": []
+    },
+    {
+     "id": "pieces_motos.huile_moteur",
+     "nom": "Huile moteur",
+     "emoji": "🛢️",
+     "unite": "bidon de 1 L",
+     "conditionnements": [
+      {
+       "nom": "carton",
+       "unites": 12,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "pieces_motos.cable",
+     "nom": "Câble (frein, embrayage)",
+     "emoji": "➰",
+     "unite": "pièce",
+     "conditionnements": []
+    },
+    {
+     "id": "pieces_motos.ampoule",
+     "nom": "Ampoule, phare",
+     "emoji": "💡",
+     "unite": "pièce",
+     "conditionnements": []
+    },
+    {
+     "id": "pieces_motos.retroviseur",
+     "nom": "Rétroviseur",
+     "emoji": "🔍",
+     "unite": "pièce",
+     "conditionnements": [
+      {
+       "nom": "paire",
+       "unites": 2
+      }
+     ]
+    },
+    {
+     "id": "pieces_motos.batterie",
+     "nom": "Batterie",
+     "emoji": "🔋",
+     "unite": "pièce",
+     "conditionnements": []
+    },
+    {
+     "id": "pieces_motos.visserie",
+     "nom": "Visserie",
+     "emoji": "🔩",
+     "unite": "pièce",
+     "conditionnements": [
+      {
+       "nom": "paquet",
+       "unites": 50,
+       "a_verifier": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "cereales",
+   "nom": "Céréales et vivriers",
+   "emoji": "🌽",
+   "produits": [
+    {
+     "id": "cereales.mais",
+     "nom": "Maïs",
+     "emoji": "🌽",
+     "unite": "bol",
+     "conditionnements": [
+      {
+       "nom": "sac de 100 kg",
+       "unites": 40,
+       "a_verifier": true
+      }
+     ],
+     "au_montant": true
+    },
+    {
+     "id": "cereales.riz_local",
+     "nom": "Riz local",
+     "emoji": "🍚",
+     "unite": "bol",
+     "conditionnements": [
+      {
+       "nom": "sac de 50 kg",
+       "unites": 20,
+       "a_verifier": true
+      }
+     ],
+     "au_montant": true
+    },
+    {
+     "id": "cereales.haricot",
+     "nom": "Haricot",
+     "emoji": "🌰",
+     "unite": "bol",
+     "conditionnements": [
+      {
+       "nom": "sac de 100 kg",
+       "unites": 40,
+       "a_verifier": true
+      }
+     ],
+     "au_montant": true
+    },
+    {
+     "id": "cereales.gari",
+     "nom": "Gari",
+     "emoji": "🥣",
+     "unite": "bol",
+     "conditionnements": [
+      {
+       "nom": "sac de 50 kg",
+       "unites": 20,
+       "a_verifier": true
+      }
+     ],
+     "au_montant": true
+    },
+    {
+     "id": "cereales.sorgho",
+     "nom": "Sorgho, mil",
+     "emoji": "🌾",
+     "unite": "bol",
+     "conditionnements": [
+      {
+       "nom": "sac de 100 kg",
+       "unites": 40,
+       "a_verifier": true
+      }
+     ],
+     "au_montant": true
+    },
+    {
+     "id": "cereales.arachide",
+     "nom": "Arachide",
+     "emoji": "🥜",
+     "unite": "bol",
+     "conditionnements": [
+      {
+       "nom": "sac",
+       "unites": 30,
+       "a_verifier": true
+      }
+     ],
+     "au_montant": true
+    },
+    {
+     "id": "cereales.soja",
+     "nom": "Soja",
+     "emoji": "🌰",
+     "unite": "bol",
+     "conditionnements": [
+      {
+       "nom": "sac de 100 kg",
+       "unites": 40,
+       "a_verifier": true
+      }
+     ],
+     "au_montant": true
+    },
+    {
+     "id": "cereales.igname",
+     "nom": "Igname",
+     "emoji": "🍠",
+     "unite": "pièce",
+     "conditionnements": [
+      {
+       "nom": "tas",
+       "unites": 5,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "cereales.cossette",
+     "nom": "Cossettes de manioc",
+     "emoji": "🥔",
+     "unite": "bol",
+     "conditionnements": [
+      {
+       "nom": "sac",
+       "unites": 30,
+       "a_verifier": true
+      }
+     ],
+     "au_montant": true
+    }
+   ]
+  },
+  {
+   "id": "fruits_legumes",
+   "nom": "Fruits et légumes",
+   "emoji": "🍅",
+   "produits": [
+    {
+     "id": "fruits_legumes.tomate",
+     "nom": "Tomate",
+     "emoji": "🍅",
+     "unite": "tas",
+     "conditionnements": [
+      {
+       "nom": "panier",
+       "unites": 20,
+       "a_verifier": true
+      }
+     ],
+     "au_montant": true
+    },
+    {
+     "id": "fruits_legumes.oignon",
+     "nom": "Oignon",
+     "emoji": "🌰",
+     "unite": "tas",
+     "conditionnements": [
+      {
+       "nom": "sac de 25 kg",
+       "unites": 30,
+       "a_verifier": true
+      }
+     ],
+     "au_montant": true
+    },
+    {
+     "id": "fruits_legumes.piment",
+     "nom": "Piment",
+     "emoji": "🌶️",
+     "unite": "tas",
+     "conditionnements": [],
+     "au_montant": true
+    },
+    {
+     "id": "fruits_legumes.gombo",
+     "nom": "Gombo",
+     "emoji": "🥒",
+     "unite": "tas",
+     "conditionnements": [],
+     "au_montant": true
+    },
+    {
+     "id": "fruits_legumes.legumes_feuilles",
+     "nom": "Légumes-feuilles",
+     "emoji": "🥗",
+     "unite": "botte",
+     "conditionnements": []
+    },
+    {
+     "id": "fruits_legumes.banane",
+     "nom": "Banane, plantain",
+     "emoji": "🍌",
+     "unite": "régime",
+     "conditionnements": [],
+     "au_montant": true
+    },
+    {
+     "id": "fruits_legumes.orange",
+     "nom": "Orange",
+     "emoji": "🍊",
+     "unite": "pièce",
+     "conditionnements": [
+      {
+       "nom": "tas",
+       "unites": 5,
+       "a_verifier": true
+      },
+      {
+       "nom": "sac",
+       "unites": 100,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "fruits_legumes.ananas",
+     "nom": "Ananas",
+     "emoji": "🍍",
+     "unite": "pièce",
+     "conditionnements": []
+    }
+   ]
+  },
+  {
+   "id": "cosmetiques",
+   "nom": "Cosmétiques et beauté",
+   "emoji": "💄",
+   "produits": [
+    {
+     "id": "cosmetiques.creme",
+     "nom": "Crème, lait corporel",
+     "emoji": "💄",
+     "unite": "flacon",
+     "conditionnements": [
+      {
+       "nom": "carton",
+       "unites": 24,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "cosmetiques.pommade",
+     "nom": "Pommade",
+     "emoji": "🍯",
+     "unite": "boîte",
+     "conditionnements": [
+      {
+       "nom": "douzaine",
+       "unites": 12
+      }
+     ]
+    },
+    {
+     "id": "cosmetiques.savon_beaute",
+     "nom": "Savon de toilette",
+     "emoji": "🛁",
+     "unite": "pièce",
+     "conditionnements": [
+      {
+       "nom": "carton",
+       "unites": 72,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "cosmetiques.parfum",
+     "nom": "Parfum",
+     "emoji": "🌸",
+     "unite": "flacon",
+     "conditionnements": []
+    },
+    {
+     "id": "cosmetiques.deodorant",
+     "nom": "Déodorant",
+     "emoji": "💄",
+     "unite": "pièce",
+     "conditionnements": []
+    },
+    {
+     "id": "cosmetiques.vernis",
+     "nom": "Vernis à ongles",
+     "emoji": "💅",
+     "unite": "flacon",
+     "conditionnements": [
+      {
+       "nom": "douzaine",
+       "unites": 12
+      }
+     ]
+    },
+    {
+     "id": "cosmetiques.produit_cheveux",
+     "nom": "Produit pour cheveux",
+     "emoji": "💆",
+     "unite": "pot",
+     "conditionnements": []
+    }
+   ]
+  },
+  {
+   "id": "meches",
+   "nom": "Mèches et coiffure",
+   "emoji": "💇",
+   "produits": [
+    {
+     "id": "meches.meche",
+     "nom": "Mèche",
+     "emoji": "💇",
+     "unite": "paquet",
+     "conditionnements": []
+    },
+    {
+     "id": "meches.perruque",
+     "nom": "Perruque",
+     "emoji": "👩",
+     "unite": "pièce",
+     "conditionnements": []
+    },
+    {
+     "id": "meches.peigne",
+     "nom": "Peigne, brosse",
+     "emoji": "💈",
+     "unite": "pièce",
+     "conditionnements": [
+      {
+       "nom": "douzaine",
+       "unites": 12
+      }
+     ]
+    },
+    {
+     "id": "meches.elastiques",
+     "nom": "Élastiques, pinces",
+     "emoji": "🎀",
+     "unite": "paquet",
+     "conditionnements": []
+    },
+    {
+     "id": "meches.defrisant",
+     "nom": "Défrisant",
+     "emoji": "🍯",
+     "unite": "pot",
+     "conditionnements": []
+    }
+   ]
+  },
+  {
+   "id": "telephonie",
+   "nom": "Téléphonie et accessoires",
+   "emoji": "📱",
+   "produits": [
+    {
+     "id": "telephonie.telephone",
+     "nom": "Téléphone",
+     "emoji": "📱",
+     "unite": "pièce",
+     "conditionnements": []
+    },
+    {
+     "id": "telephonie.chargeur",
+     "nom": "Chargeur",
+     "emoji": "🔌",
+     "unite": "pièce",
+     "conditionnements": []
+    },
+    {
+     "id": "telephonie.ecouteurs",
+     "nom": "Écouteurs",
+     "emoji": "🎧",
+     "unite": "pièce",
+     "conditionnements": []
+    },
+    {
+     "id": "telephonie.coque",
+     "nom": "Coque, protection",
+     "emoji": "📱",
+     "unite": "pièce",
+     "conditionnements": []
+    },
+    {
+     "id": "telephonie.carte_memoire",
+     "nom": "Carte mémoire",
+     "emoji": "💾",
+     "unite": "pièce",
+     "conditionnements": []
+    },
+    {
+     "id": "telephonie.carte_recharge",
+     "nom": "Carte de recharge",
+     "emoji": "🎫",
+     "unite": "carte",
+     "conditionnements": []
+    },
+    {
+     "id": "telephonie.batterie_tel",
+     "nom": "Batterie externe",
+     "emoji": "🔋",
+     "unite": "pièce",
+     "conditionnements": []
+    }
+   ]
+  },
+  {
+   "id": "gaz",
+   "nom": "Gaz domestique",
+   "emoji": "🔥",
+   "produits": [
+    {
+     "id": "gaz.gaz_6",
+     "nom": "Recharge gaz 6 kg",
+     "emoji": "🔥",
+     "unite": "recharge",
+     "conditionnements": [],
+     "emballage": "bouteille de gaz 6 kg"
+    },
+    {
+     "id": "gaz.gaz_12",
+     "nom": "Recharge gaz 12,5 kg",
+     "emoji": "🔥",
+     "unite": "recharge",
+     "conditionnements": [],
+     "emballage": "bouteille de gaz 12,5 kg"
+    },
+    {
+     "id": "gaz.bruleur",
+     "nom": "Brûleur, détendeur",
+     "emoji": "🔥",
+     "unite": "pièce",
+     "conditionnements": []
+    }
+   ]
+  },
+  {
+   "id": "charbon",
+   "nom": "Charbon et bois",
+   "emoji": "⚫",
+   "produits": [
+    {
+     "id": "charbon.charbon",
+     "nom": "Charbon de bois",
+     "emoji": "⚫",
+     "unite": "tas",
+     "conditionnements": [
+      {
+       "nom": "grand sac",
+       "unites": 15,
+       "a_verifier": true
+      }
+     ],
+     "au_montant": true
+    },
+    {
+     "id": "charbon.bois",
+     "nom": "Bois de chauffe",
+     "emoji": "🌲",
+     "unite": "fagot",
+     "conditionnements": []
+    }
+   ]
+  },
+  {
+   "id": "poisson",
+   "nom": "Poissonnerie",
+   "emoji": "🐟",
+   "produits": [
+    {
+     "id": "poisson.poisson_congele",
+     "nom": "Poisson congelé",
+     "emoji": "🐟",
+     "unite": "kg",
+     "conditionnements": [
+      {
+       "nom": "carton de 20 kg",
+       "unites": 20,
+       "a_verifier": true
+      }
+     ],
+     "au_montant": true
+    },
+    {
+     "id": "poisson.poisson_fume",
+     "nom": "Poisson fumé",
+     "emoji": "🐠",
+     "unite": "tas",
+     "conditionnements": [],
+     "au_montant": true
+    },
+    {
+     "id": "poisson.poisson_frais",
+     "nom": "Poisson frais",
+     "emoji": "🐟",
+     "unite": "kg",
+     "conditionnements": [],
+     "au_montant": true
+    },
+    {
+     "id": "poisson.crevettes",
+     "nom": "Crevettes séchées",
+     "emoji": "🦐",
+     "unite": "tas",
+     "conditionnements": [],
+     "au_montant": true
+    }
+   ]
+  },
+  {
+   "id": "boucherie",
+   "nom": "Boucherie et volaille",
+   "emoji": "🍗",
+   "produits": [
+    {
+     "id": "boucherie.viande",
+     "nom": "Viande",
+     "emoji": "🥩",
+     "unite": "kg",
+     "conditionnements": [],
+     "au_montant": true
+    },
+    {
+     "id": "boucherie.poulet",
+     "nom": "Poulet",
+     "emoji": "🐔",
+     "unite": "pièce",
+     "conditionnements": []
+    },
+    {
+     "id": "boucherie.poulet_congele",
+     "nom": "Poulet congelé",
+     "emoji": "🍗",
+     "unite": "kg",
+     "conditionnements": [
+      {
+       "nom": "carton de 10 kg",
+       "unites": 10,
+       "a_verifier": true
+      }
+     ],
+     "au_montant": true
+    },
+    {
+     "id": "boucherie.oeufs_b",
+     "nom": "Œufs",
+     "emoji": "🥚",
+     "unite": "œuf",
+     "conditionnements": [
+      {
+       "nom": "plateau",
+       "unites": 30
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "boulangerie",
+   "nom": "Boulangerie et pâtisserie",
+   "emoji": "🥖",
+   "produits": [
+    {
+     "id": "boulangerie.baguette",
+     "nom": "Pain",
+     "emoji": "🥖",
+     "unite": "pièce",
+     "conditionnements": []
+    },
+    {
+     "id": "boulangerie.gateau",
+     "nom": "Gâteau, beignet",
+     "emoji": "🍩",
+     "unite": "pièce",
+     "conditionnements": [
+      {
+       "nom": "douzaine",
+       "unites": 12
+      }
+     ]
+    },
+    {
+     "id": "boulangerie.pain_mie",
+     "nom": "Pain de mie",
+     "emoji": "🍞",
+     "unite": "pièce",
+     "conditionnements": []
+    }
+   ]
+  },
+  {
+   "id": "restaurant",
+   "nom": "Restaurant, maquis, cantine",
+   "emoji": "🍲",
+   "produits": [
+    {
+     "id": "restaurant.plat",
+     "nom": "Plat du jour",
+     "emoji": "🍲",
+     "unite": "plat",
+     "conditionnements": []
+    },
+    {
+     "id": "restaurant.riz_sauce",
+     "nom": "Riz sauce",
+     "emoji": "🍛",
+     "unite": "plat",
+     "conditionnements": []
+    },
+    {
+     "id": "restaurant.pate",
+     "nom": "Pâte (akoumé), sauce",
+     "emoji": "🥣",
+     "unite": "plat",
+     "conditionnements": []
+    },
+    {
+     "id": "restaurant.brochettes",
+     "nom": "Brochettes",
+     "emoji": "🍢",
+     "unite": "pièce",
+     "conditionnements": []
+    },
+    {
+     "id": "restaurant.boisson_resto",
+     "nom": "Boisson",
+     "emoji": "🥤",
+     "unite": "bouteille",
+     "conditionnements": []
+    }
+   ]
+  },
+  {
+   "id": "papeterie",
+   "nom": "Papeterie et fournitures",
+   "emoji": "📚",
+   "produits": [
+    {
+     "id": "papeterie.cahier",
+     "nom": "Cahier",
+     "emoji": "📓",
+     "unite": "pièce",
+     "conditionnements": [
+      {
+       "nom": "douzaine",
+       "unites": 12
+      }
+     ]
+    },
+    {
+     "id": "papeterie.stylo",
+     "nom": "Stylo",
+     "emoji": "🖊️",
+     "unite": "pièce",
+     "conditionnements": [
+      {
+       "nom": "boîte",
+       "unites": 50,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "papeterie.crayon",
+     "nom": "Crayon",
+     "emoji": "✏️",
+     "unite": "pièce",
+     "conditionnements": [
+      {
+       "nom": "boîte",
+       "unites": 12,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "papeterie.rame",
+     "nom": "Papier (rame)",
+     "emoji": "📄",
+     "unite": "rame",
+     "conditionnements": [
+      {
+       "nom": "carton",
+       "unites": 5,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "papeterie.livre",
+     "nom": "Livre scolaire",
+     "emoji": "📘",
+     "unite": "pièce",
+     "conditionnements": []
+    },
+    {
+     "id": "papeterie.photocopie",
+     "nom": "Photocopie",
+     "emoji": "🖨️",
+     "unite": "page",
+     "conditionnements": []
+    }
+   ]
+  },
+  {
+   "id": "electricite",
+   "nom": "Électricité et électronique",
+   "emoji": "💡",
+   "produits": [
+    {
+     "id": "electricite.ampoule_e",
+     "nom": "Ampoule",
+     "emoji": "💡",
+     "unite": "pièce",
+     "conditionnements": [
+      {
+       "nom": "carton",
+       "unites": 100,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "electricite.piles",
+     "nom": "Piles",
+     "emoji": "🔋",
+     "unite": "pièce",
+     "conditionnements": [
+      {
+       "nom": "paquet",
+       "unites": 4,
+       "a_verifier": true
+      },
+      {
+       "nom": "boîte",
+       "unites": 48,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "electricite.rallonge",
+     "nom": "Rallonge, multiprise",
+     "emoji": "🔌",
+     "unite": "pièce",
+     "conditionnements": []
+    },
+    {
+     "id": "electricite.cable_e",
+     "nom": "Câble électrique",
+     "emoji": "➰",
+     "unite": "mètre",
+     "conditionnements": [
+      {
+       "nom": "rouleau",
+       "unites": 100
+      }
+     ]
+    },
+    {
+     "id": "electricite.torche",
+     "nom": "Torche, lampe",
+     "emoji": "🔦",
+     "unite": "pièce",
+     "conditionnements": []
+    },
+    {
+     "id": "electricite.ventilateur",
+     "nom": "Ventilateur",
+     "emoji": "🌀",
+     "unite": "pièce",
+     "conditionnements": []
+    }
+   ]
+  },
+  {
+   "id": "vaisselle",
+   "nom": "Vaisselle et articles ménagers",
+   "emoji": "🍽️",
+   "produits": [
+    {
+     "id": "vaisselle.assiette",
+     "nom": "Assiette",
+     "emoji": "🍽️",
+     "unite": "pièce",
+     "conditionnements": [
+      {
+       "nom": "douzaine",
+       "unites": 12
+      }
+     ]
+    },
+    {
+     "id": "vaisselle.verre_v",
+     "nom": "Verre",
+     "emoji": "🥛",
+     "unite": "pièce",
+     "conditionnements": [
+      {
+       "nom": "douzaine",
+       "unites": 12
+      }
+     ]
+    },
+    {
+     "id": "vaisselle.marmite",
+     "nom": "Marmite",
+     "emoji": "🍲",
+     "unite": "pièce",
+     "conditionnements": []
+    },
+    {
+     "id": "vaisselle.seau",
+     "nom": "Seau, bassine",
+     "emoji": "🥣",
+     "unite": "pièce",
+     "conditionnements": []
+    },
+    {
+     "id": "vaisselle.sachets",
+     "nom": "Sachets plastiques",
+     "emoji": "🛍️",
+     "unite": "paquet",
+     "conditionnements": []
+    },
+    {
+     "id": "vaisselle.balai",
+     "nom": "Balai",
+     "emoji": "🌿",
+     "unite": "pièce",
+     "conditionnements": []
+    }
+   ]
+  },
+  {
+   "id": "mercerie",
+   "nom": "Mercerie et couture",
+   "emoji": "✂️",
+   "produits": [
+    {
+     "id": "mercerie.tissu",
+     "nom": "Tissu",
+     "emoji": "➰",
+     "unite": "mètre",
+     "conditionnements": [],
+     "au_montant": true
+    },
+    {
+     "id": "mercerie.fil",
+     "nom": "Fil",
+     "emoji": "🎀",
+     "unite": "bobine",
+     "conditionnements": [
+      {
+       "nom": "boîte",
+       "unites": 10,
+       "a_verifier": true
+      }
+     ]
+    },
+    {
+     "id": "mercerie.boutons",
+     "nom": "Boutons",
+     "emoji": "🔘",
+     "unite": "bouton",
+     "conditionnements": [
+      {
+       "nom": "douzaine",
+       "unites": 12
+      }
+     ]
+    },
+    {
+     "id": "mercerie.fermeture",
+     "nom": "Fermeture éclair",
+     "emoji": "🤐",
+     "unite": "pièce",
+     "conditionnements": [
+      {
+       "nom": "douzaine",
+       "unites": 12
+      }
+     ]
+    },
+    {
+     "id": "mercerie.aiguilles",
+     "nom": "Aiguilles",
+     "emoji": "📍",
+     "unite": "paquet",
+     "conditionnements": []
+    }
+   ]
+  },
+  {
+   "id": "intrants",
+   "nom": "Intrants agricoles",
+   "emoji": "🌱",
+   "produits": [
+    {
+     "id": "intrants.engrais",
+     "nom": "Engrais",
+     "emoji": "🌱",
+     "unite": "kg",
+     "conditionnements": [
+      {
+       "nom": "sac de 50 kg",
+       "unites": 50
+      }
+     ],
+     "au_montant": true
+    },
+    {
+     "id": "intrants.semences",
+     "nom": "Semences",
+     "emoji": "🌾",
+     "unite": "sachet",
+     "conditionnements": []
+    },
+    {
+     "id": "intrants.pesticide",
+     "nom": "Produit phytosanitaire",
+     "emoji": "☠️",
+     "unite": "litre",
+     "conditionnements": [
+      {
+       "nom": "bidon de 5 L",
+       "unites": 5
+      }
+     ]
+    },
+    {
+     "id": "intrants.aliment_betail",
+     "nom": "Aliment pour bétail",
+     "emoji": "🐄",
+     "unite": "kg",
+     "conditionnements": [
+      {
+       "nom": "sac de 50 kg",
+       "unites": 50
+      }
+     ],
+     "au_montant": true
+    }
+   ]
+  },
+  {
+   "id": "bijoux",
+   "nom": "Bijoux, sacs, montres",
+   "emoji": "💍",
+   "produits": [
+    {
+     "id": "bijoux.bijou",
+     "nom": "Bijou",
+     "emoji": "💍",
+     "unite": "pièce",
+     "conditionnements": []
+    },
+    {
+     "id": "bijoux.montre",
+     "nom": "Montre",
+     "emoji": "⌚",
+     "unite": "pièce",
+     "conditionnements": []
+    },
+    {
+     "id": "bijoux.sac_b",
+     "nom": "Sac",
+     "emoji": "👜",
+     "unite": "pièce",
+     "conditionnements": []
+    },
+    {
+     "id": "bijoux.lunettes",
+     "nom": "Lunettes",
+     "emoji": "🕶️",
+     "unite": "pièce",
+     "conditionnements": []
+    }
+   ]
+  },
+  {
+   "id": "meubles",
+   "nom": "Meubles et literie",
+   "emoji": "🛏️",
+   "produits": [
+    {
+     "id": "meubles.matelas",
+     "nom": "Matelas",
+     "emoji": "🛏️",
+     "unite": "pièce",
+     "conditionnements": []
+    },
+    {
+     "id": "meubles.chaise",
+     "nom": "Chaise",
+     "emoji": "💺",
+     "unite": "pièce",
+     "conditionnements": []
+    },
+    {
+     "id": "meubles.table",
+     "nom": "Table",
+     "emoji": "🌲",
+     "unite": "pièce",
+     "conditionnements": []
+    },
+    {
+     "id": "meubles.drap",
+     "nom": "Drap, moustiquaire",
+     "emoji": "👚",
+     "unite": "pièce",
+     "conditionnements": []
+    }
+   ]
+  },
+  {
+   "id": "moulin",
+   "nom": "Moulin à grains",
+   "emoji": "⚙️",
+   "produits": [
+    {
+     "id": "moulin.mouture",
+     "nom": "Mouture",
+     "emoji": "⚙️",
+     "unite": "bol",
+     "conditionnements": [],
+     "au_montant": true
+    }
+   ]
+  },
+  {
+   "id": "services",
+   "nom": "Services (coiffure, couture, réparation)",
+   "emoji": "✂️",
+   "produits": [
+    {
+     "id": "services.coiffure",
+     "nom": "Coiffure",
+     "emoji": "💇",
+     "unite": "prestation",
+     "conditionnements": []
+    },
+    {
+     "id": "services.couture",
+     "nom": "Couture",
+     "emoji": "🎀",
+     "unite": "prestation",
+     "conditionnements": []
+    },
+    {
+     "id": "services.reparation_tel",
+     "nom": "Réparation de téléphone",
+     "emoji": "🛠️",
+     "unite": "prestation",
+     "conditionnements": []
+    },
+    {
+     "id": "services.reparation_moto",
+     "nom": "Réparation de moto",
+     "emoji": "🔧",
+     "unite": "prestation",
+     "conditionnements": []
+    },
+    {
+     "id": "services.photocopie_s",
+     "nom": "Photocopie, impression",
+     "emoji": "🖨️",
+     "unite": "page",
+     "conditionnements": []
+    }
+   ]
+  },
+  {
+   "id": "divers",
+   "nom": "Divers, bazar",
+   "emoji": "🛍️",
+   "produits": []
+  }
+ ]
+}

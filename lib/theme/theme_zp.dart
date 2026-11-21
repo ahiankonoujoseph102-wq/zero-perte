@@ -8,10 +8,10 @@ import 'couleurs.dart';
 const String policeZp = 'AtkinsonHyperlegible';
 
 /// Thème de Zéro Perte : grands textes, contrastes forts, coins arrondis.
-ThemeData themeZeroPerte() {
+ThemeData themeZeroPerte({Color couleurMarque = CouleursZp.marque}) {
   final schema = ColorScheme.fromSeed(
-    seedColor: CouleursZp.marque,
-    primary: CouleursZp.marque,
+    seedColor: couleurMarque,
+    primary: couleurMarque,
     surface: CouleursZp.surface,
     error: CouleursZp.argentSort,
   );

@@ -18,6 +18,7 @@ class Conditionnement {
     required this.nom,
     required this.facteurMilliemes,
     required this.prixVente,
+    this.aVerifier = false,
   }) : assert(facteurMilliemes > 0),
        assert(prixVente >= 0);
 
@@ -42,6 +43,9 @@ class Conditionnement {
 
   /// Prix de vente de ce conditionnement, en F.
   final int prixVente;
+
+  /// Vrai si le nombre d'unités vient du catalogue et n'a pas été confirmé.
+  final bool aVerifier;
 }
 
 /// Convertit un nombre de conditionnements en millièmes d'unité de base.

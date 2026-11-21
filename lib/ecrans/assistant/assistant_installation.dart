@@ -7,6 +7,7 @@ import '../../services/aide.dart';
 import '../../services/telephone.dart';
 import '../../theme/couleurs.dart';
 import '../accueil_vendeur.dart';
+import 'etapes_boutique.dart';
 
 /// Assistant d'installation : une étape par écran, une voix qui lit la consigne,
 /// un bouton d'aide toujours visible. Il reprend là où il s'était arrêté.
@@ -26,11 +27,10 @@ class _AssistantInstallationState extends State<AssistantInstallation> {
   EtatApplication get etat => widget.etat;
 
   /// Étapes visibles (sans « terminé ») pour la barre de progression.
-  static const _etapes = [
-    EtapeAssistant.bienvenue,
-    EtapeAssistant.verification,
-    EtapeAssistant.activation,
-  ];
+  /// Étapes comptées dans la barre de progression (« fin » et « terminé » exclues).
+  static final _etapes = EtapeAssistant.values
+      .where((e) => e.index <= EtapeAssistant.codePatron.index)
+      .toList();
 
   String? _erreurActivation;
   bool _activationEnCours = false;
@@ -74,7 +74,7 @@ class _AssistantInstallationState extends State<AssistantInstallation> {
     EtapeAssistant.activation =>
       'Code d\'activation. Ouvrez WhatsApp. Appuyez longtemps sur le message de Zéro Perte '
           'qui contient votre code, puis choisissez Copier. Revenez ici et touchez Coller le code.',
-    EtapeAssistant.termine => '',
+    _ => texteEtapeBoutique(e),
   };
 
   void _lireSiNouvelle(EtapeAssistant e) {
@@ -105,7 +105,7 @@ class _AssistantInstallationState extends State<AssistantInstallation> {
         final e = etat.etape;
         _lireSiNouvelle(e);
         if (e == EtapeAssistant.verification) _verification ??= _verifier();
-        final numero = _etapes.indexOf(e) + 1;
+        final numero = (_etapes.indexOf(e) + 1).clamp(1, _etapes.length);
         return Scaffold(
           body: SafeArea(
             child: Padding(
@@ -145,7 +145,7 @@ class _AssistantInstallationState extends State<AssistantInstallation> {
                       value: numero / _etapes.length,
                       minHeight: 10,
                       backgroundColor: CouleursZp.ligne,
-                      color: CouleursZp.marque,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -158,12 +158,16 @@ class _AssistantInstallationState extends State<AssistantInstallation> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Expanded(child: _contenu(e)),
-                  const SizedBox(height: 12),
-                  MediaQuery.withClampedTextScaling(
-                    maxScaleFactor: 1.3,
-                    child: _barreBas(e),
-                  ),
+                  if (e.index >= EtapeAssistant.typeBoutique.index)
+                    Expanded(child: pageEtapeBoutique(etat, e))
+                  else ...[
+                    Expanded(child: _contenu(e)),
+                    const SizedBox(height: 12),
+                    MediaQuery.withClampedTextScaling(
+                      maxScaleFactor: 1.3,
+                      child: _barreBas(e),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -203,7 +207,7 @@ class _AssistantInstallationState extends State<AssistantInstallation> {
       licence: etat.licence,
       erreur: _erreurActivation,
     ),
-    EtapeAssistant.termine => const SizedBox.shrink(),
+    _ => const SizedBox.shrink(),
   };
 
   Widget _barreBas(EtapeAssistant e) {

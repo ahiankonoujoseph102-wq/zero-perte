@@ -30,6 +30,8 @@ abstract final class TypeOperation {
   static const retraitPatron = 'caisse.retrait_patron';
   static const fermetureCaisse = 'caisse.fermeture';
   static const licenceActivee = 'licence.activee';
+  static const boutiqueConfiguree = 'boutique.configuree';
+  static const utilisateurDefini = 'utilisateur.defini';
 }
 
 /// Une opération du journal.

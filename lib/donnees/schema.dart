@@ -13,7 +13,19 @@
 /// n'utilise donc ni UPSERT, ni RETURNING, ni fonctions JSON, ni fonctions de fenêtre.
 library;
 
-const int versionSchema = 1;
+const int versionSchema = 2;
+
+/// Migrations : pour passer de la version N-1 à la version N.
+/// Uniquement des AJOUTS (ALTER TABLE … ADD COLUMN), compatibles SQLite 3.18.
+const Map<int, List<String>> migrations = {
+  2: [
+    'ALTER TABLE produits_versions ADD COLUMN emoji TEXT',
+    'ALTER TABLE produits_versions ADD COLUMN catalogue_id TEXT',
+    'ALTER TABLE produits_versions ADD COLUMN au_montant INTEGER NOT NULL DEFAULT 0',
+    'ALTER TABLE produits_versions ADD COLUMN photo TEXT',
+    'ALTER TABLE conditionnements_versions ADD COLUMN a_verifier INTEGER NOT NULL DEFAULT 0',
+  ],
+};
 
 /// Tables en « ajout seulement » (protégées par des déclencheurs).
 const List<String> tablesAjoutSeulement = [

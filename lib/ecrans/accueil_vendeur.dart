@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../domaine/boutique.dart';
 import '../theme/couleurs.dart';
+import 'logo_boutique.dart';
 import 'bouton_action.dart';
 
 /// Écran d'accueil du vendeur : 4 gros boutons, un geste chacun.
@@ -8,14 +10,14 @@ import 'bouton_action.dart';
 class AccueilVendeur extends StatelessWidget {
   const AccueilVendeur({
     super.key,
-    required this.nomBoutique,
+    required this.config,
     required this.nomVendeur,
     required this.pied,
     this.maintenant,
   });
 
-  /// Nom de la boutique (personnalisé à l'étape B3).
-  final String nomBoutique;
+  /// Configuration de la boutique (nom, logo, couleur).
+  final ConfigBoutique config;
   final String nomVendeur;
 
   /// Ligne du bas (version, état de la base).
@@ -61,7 +63,7 @@ class AccueilVendeur extends StatelessWidget {
                   MediaQuery.withClampedTextScaling(
                     maxScaleFactor: 1.3,
                     child: _EnTete(
-                      nomBoutique: nomBoutique,
+                      config: config,
                       nomVendeur: nomVendeur,
                       date: maintenant ?? DateTime.now(),
                       compact: bas,
@@ -142,13 +144,13 @@ class AccueilVendeur extends StatelessWidget {
 
 class _EnTete extends StatelessWidget {
   const _EnTete({
-    required this.nomBoutique,
+    required this.config,
     required this.nomVendeur,
     required this.date,
     this.compact = false,
   });
 
-  final String nomBoutique;
+  final ConfigBoutique config;
   final String nomVendeur;
   final DateTime date;
   final bool compact;
@@ -157,14 +159,14 @@ class _EnTete extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        LogoZp(taille: compact ? 44 : 56),
+        LogoBoutique(config: config, taille: compact ? 44 : 56),
         const SizedBox(width: 14),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                nomBoutique,
+                config.nom.isEmpty ? 'Ma boutique' : config.nom,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
