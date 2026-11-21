@@ -40,17 +40,25 @@ class _PageDevisState extends State<PageDevis> {
 
   Future<void> _vendre() async {
     final etat = widget.etat;
-    final (panier, prixChange) = await etat.panierDepuisDevis(widget.devis);
+    final r = await etat.panierDepuisDevis(widget.devis);
+    final panier = r.panier;
     if (!mounted) return;
     if (panier.vide) {
       annoncer(context, 'Ces produits n\'existent plus.', erreur: true);
       return;
     }
-    if (prixChange) {
+    if (!r.valable) {
       annoncer(
         context,
-        'Les prix ont changé depuis le devis : nouveau total '
-        '${formatFrancs(panier.total)}.',
+        r.totalChange
+            ? 'Devis expiré, nouveaux prix : ${formatFrancs(panier.total)}.'
+            : 'Devis expiré : prix du jour, total inchangé '
+                  '(${formatFrancs(panier.total)}).',
+      );
+    } else if (r.totalChange) {
+      annoncer(
+        context,
+        'Un produit du devis n\'existe plus : total ${formatFrancs(panier.total)}.',
       );
     }
     await ouvrirVenteAvec(context, etat, panier: panier, devis: widget.devis);
@@ -101,6 +109,33 @@ class _PageDevisState extends State<PageDevis> {
               'Le devis ne change ni le stock ni la caisse. Envoyez-le au '
               'client ; s\'il achète, touchez « Transformer en vente ».',
               style: TextStyle(fontSize: 17, color: CouleursZp.texteDoux),
+            ),
+            const SizedBox(height: 8),
+            Builder(
+              builder: (context) {
+                final valable = etat.devisValable(d);
+                final cree = DateTime.fromMillisecondsSinceEpoch(d.heure);
+                final fin = DateTime(
+                  cree.year,
+                  cree.month,
+                  cree.day + (jours as int),
+                );
+                final date =
+                    '${fin.day.toString().padLeft(2, '0')}/${fin.month.toString().padLeft(2, '0')}';
+                return Text(
+                  valable
+                      ? 'Valable jusqu\'au $date : les prix du devis sont gardés.'
+                      : 'Expiré depuis le $date : la vente prendra les prix du jour.',
+                  key: const Key('devis-validite'),
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: valable
+                        ? CouleursZp.argentEntreClair
+                        : CouleursZp.creditTexte,
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 12),
             DocumentPartageable(

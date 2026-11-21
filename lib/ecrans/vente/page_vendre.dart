@@ -147,8 +147,7 @@ class _PageVendreState extends State<PageVendre> {
     if (fini == true) {
       final d = _devis;
       if (d != null) {
-        final ventes = await etat.ventesDuJour();
-        if (ventes.isNotEmpty) await etat.devisVendu(d, ventes.first);
+        await etat.devisVendu(d);
         _devis = null;
       }
       if (mounted) setState(_panier.vider);

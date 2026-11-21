@@ -60,6 +60,7 @@ class LigneDemandee {
     required this.produitId,
     this.conditionnementId,
     required int this.nombre,
+    this.prixImpose,
   }) : montant = null;
 
   /// « Donne pour 100 F » : vente au montant.
@@ -67,9 +68,14 @@ class LigneDemandee {
     required this.produitId,
     required int this.montant,
   }) : nombre = null,
-       conditionnementId = null;
+       conditionnementId = null,
+       prixImpose = null;
 
   final String produitId;
+
+  /// Prix d'une unité imposé (devis encore valable : on garde son prix).
+  /// Nul : le prix du jour.
+  final int? prixImpose;
   final String? conditionnementId;
   final int? nombre;
   final int? montant;
@@ -467,13 +473,26 @@ class JournalLocal implements ReglagesLocaux {
           });
         }
         if (d['mode_paiement'] == ModePaiement.credit.code) {
-          if (d['client'] != null) {
+          // La dette baisse, jamais en dessous de zéro : ce qui dépasse la
+          // dette (le client avait déjà payé) est rendu en espèces.
+          final especes = d['rendu_especes'] as int? ?? 0;
+          final credit = (d['total'] as int) - especes;
+          if (d['client'] != null && credit > 0) {
             await t.insert('mouvements_credit', {
               'operation_id': op.id,
               'client_id': d['client'],
-              'montant': -(d['total'] as int),
+              'montant': -credit,
               'nature': 'retour',
               'mode_paiement': null,
+            });
+          }
+          if (especes > 0) {
+            await t.insert('mouvements_caisse', {
+              'operation_id': op.id,
+              'nature': op.type,
+              'mode_paiement': ModePaiement.especes.code,
+              'montant': especes,
+              'motif': d['motif'],
             });
           }
         } else {
@@ -1628,7 +1647,7 @@ class JournalLocal implements ReglagesLocaux {
           }
           if (l.conditionnementId == null) {
             milliemes = nombre * milliemesParUnite;
-            prix = nombre * p.prixUnitaire;
+            prix = nombre * (l.prixImpose ?? p.prixUnitaire);
           } else {
             final c = (await _conditionnements(
               t,
@@ -1638,7 +1657,7 @@ class JournalLocal implements ReglagesLocaux {
               throw const ErreurZeroPerte('Conditionnement introuvable.');
             }
             milliemes = versMilliemes(nombre, c);
-            prix = nombre * c.prixVente;
+            prix = nombre * (l.prixImpose ?? c.prixVente);
           }
         }
         details.add({
@@ -1870,6 +1889,14 @@ class JournalLocal implements ReglagesLocaux {
       if (!aCredit && modeRetour == ModePaiement.credit) {
         throw const ErreurZeroPerte('Choisissez la caisse qui rembourse.');
       }
+      // Vente à crédit : la dette baisse au plus jusqu'à zéro ; le reste
+      // (déjà payé par le client) lui est rendu en espèces.
+      var renduEspeces = 0;
+      if (aCredit && vente['client'] != null) {
+        final dette = await _solde(t, vente['client'] as String);
+        renduEspeces =
+            total - (dette < 0 ? 0 : (dette > total ? total : dette));
+      }
       return _ajouter(
         t,
         type: TypeOperation.venteRetour,
@@ -1881,11 +1908,19 @@ class JournalLocal implements ReglagesLocaux {
           'lignes': lignes,
           'total': total,
           'mode_paiement': modeRetour.code,
+          if (renduEspeces > 0) 'rendu_especes': renduEspeces,
           if (vente['client'] != null) 'client': vente['client'],
           'accord': ?accordPatronId,
         },
       );
     });
+  }
+
+  /// Pour un retour de [total] F sur une vente à crédit de [clientId] : ce
+  /// qui sera rendu en espèces (la dette ne descend jamais sous zéro).
+  Future<int> renduEspecesSiCredit(String clientId, int total) async {
+    final dette = await _solde(_db, clientId);
+    return total - (dette < 0 ? 0 : (dette > total ? total : dette));
   }
 
   /// Retours (les plus récents d'abord).

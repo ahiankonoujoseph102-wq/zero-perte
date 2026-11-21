@@ -22,6 +22,14 @@ const List<String> motifsRetour = [
   'Autre',
 ];
 
+/// Libellé court d'un motif sur les boutons (le motif enregistré reste
+/// complet).
+String motifCourt(String m) => switch (m) {
+  'Produit abîmé' => 'Abîmé',
+  'Le client a changé d\'avis' => 'Changé d\'avis',
+  _ => m,
+};
+
 /// Part d'une ligne rendue ([n] unités sur [vendu]) : même calcul que le journal.
 int partRendue(int valeur, int n, int vendu) =>
     n == vendu ? valeur : valeur * n ~/ vendu;
@@ -41,10 +49,16 @@ class PageRetour extends StatefulWidget {
 }
 
 class _PageRetourState extends State<PageRetour> {
-  late final Future<(List<LigneRecu>, Map<int, int>)> _donnees = () async {
+  /// Lignes de la vente, ce qui a déjà été rendu, et (vente à crédit) ce que
+  /// le client doit encore.
+  late final Future<(List<LigneRecu>, Map<int, int>, int)> _donnees = () async {
     final lignes = await lignesDuRecu(widget.etat, widget.vente.donnees);
     final deja = await widget.etat.journal.dejaRendus(widget.vente.operationId);
-    return (lignes, deja);
+    final client = v.donnees['client'] as String?;
+    final dette = _aCredit && client != null
+        ? await widget.etat.journal.soldeClient(client)
+        : 0;
+    return (lignes, deja, dette);
   }();
 
   final Map<int, int> _rendus = {};
@@ -52,6 +66,9 @@ class _PageRetourState extends State<PageRetour> {
   String? _motif;
   final _autre = TextEditingController();
   bool _enCours = false;
+
+  /// Ce que le client doit encore (vente à crédit), connu après chargement.
+  int _dette = 0;
 
   VenteResume get v => widget.vente;
   bool get _aCredit => v.mode == ModePaiement.credit;
@@ -77,6 +94,13 @@ class _PageRetourState extends State<PageRetour> {
           _vendu(e.key),
         ),
   );
+
+  /// Vente à crédit : part rendue en espèces (la dette ne passe jamais sous 0).
+  int get _especesSurCredit {
+    if (!_aCredit) return 0;
+    final d = _dette < 0 ? 0 : _dette;
+    return _total > d ? _total - d : 0;
+  }
 
   String? get _motifFinal => _motif == 'Autre'
       ? (_autre.text.trim().isEmpty ? null : _autre.text)
@@ -110,9 +134,12 @@ class _PageRetourState extends State<PageRetour> {
         motif: motif,
         accordPatronId: accord,
       );
+      final especes = op.donnees['rendu_especes'] as int? ?? 0;
       await etat.services.voix.dire(
         _aCredit
-            ? 'Retour enregistré.'
+            ? (especes > 0
+                  ? 'Retour enregistré. Rendez ${montantPourVoix(especes)} en espèces.'
+                  : 'Retour enregistré.')
             : 'Retour enregistré. Rendez ${montantPourVoix(op.total)}.',
       );
       if (!mounted) return;
@@ -129,46 +156,187 @@ class _PageRetourState extends State<PageRetour> {
     }
   }
 
+  ChoiceChip _puce(
+    String cle,
+    String texte,
+    bool choisi,
+    VoidCallback onTap, {
+    IconData? icone,
+  }) => ChoiceChip(
+    key: Key(cle),
+    avatar: icone == null ? null : Icon(icone, size: 18),
+    label: Text(texte, style: const TextStyle(fontSize: 16)),
+    visualDensity: VisualDensity.compact,
+    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    selected: choisi,
+    onSelected: (_) => onTap(),
+  );
+
+  /// Partie fixe en bas : total, caisse, motif et bouton toujours visibles,
+  /// même sur un téléphone de 4 pouces.
+  Widget _bas(BuildContext context) {
+    final etat = widget.etat;
+    final especes = _especesSurCredit;
+    // Petit écran (4 à 5 pouces) : libellés courts, sans icônes, pour laisser
+    // la place aux articles au-dessus.
+    final compact = MediaQuery.sizeOf(context).height < 700;
+    final titre = TextStyle(
+      fontSize: compact ? 14 : 16,
+      fontWeight: FontWeight.w700,
+    );
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'À rendre au client',
+                style: TextStyle(
+                  fontSize: compact ? 16 : 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            MontantGeant(
+              _total,
+              key: const Key('total-retour'),
+              couleur: CouleursZp.argentSortClair,
+              taille: compact ? 24 : 28,
+            ),
+          ],
+        ),
+        if (etat.retourDemandeAccord(_total))
+          const Text(
+            'Plus de ${seuilAlerteAnnulation ~/ 1000} 000 F : le patron doit donner son accord (son code).',
+            key: Key('retour-accord-patron'),
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: CouleursZp.creditTexte,
+            ),
+          ),
+        const SizedBox(height: 4),
+        if (_aCredit)
+          Text(
+            especes <= 0
+                ? 'Vente à crédit : ce que le client doit va diminuer.'
+                : _dette <= 0
+                ? 'Le client ne doit plus rien : vous lui rendez '
+                      '${formatFrancs(especes)} en espèces.'
+                : 'Sa dette tombe à 0 F et vous lui rendez '
+                      '${formatFrancs(especes)} en espèces.',
+            key: const Key('retour-credit-info'),
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: especes > 0 ? FontWeight.w700 : FontWeight.w400,
+              color: especes > 0 ? CouleursZp.creditTexte : null,
+            ),
+          )
+        else ...[
+          Text(
+            compact ? 'Rembourser depuis' : 'Rembourser depuis la caisse',
+            style: titre,
+          ),
+          const SizedBox(height: 2),
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            children: [
+              for (final m in ModePaiement.caisses)
+                _puce(
+                  'retour-mode-${m.code}',
+                  m == ModePaiement.mixx ? 'Mixx' : nomPaiement(m),
+                  _mode == m,
+                  () => setState(() => _mode = m),
+                  icone: compact ? null : iconePaiement(m),
+                ),
+            ],
+          ),
+        ],
+        const SizedBox(height: 4),
+        Text(
+          compact ? 'Pourquoi ?' : 'Pourquoi ? (le patron le verra)',
+          style: titre,
+        ),
+        const SizedBox(height: 2),
+        Wrap(
+          spacing: 6,
+          runSpacing: 4,
+          children: [
+            for (final m in motifsRetour)
+              _puce(
+                'motif-retour-$m',
+                compact ? motifCourt(m) : m,
+                _motif == m,
+                () => setState(() => _motif = m),
+              ),
+          ],
+        ),
+        if (_motif == 'Autre') ...[
+          const SizedBox(height: 6),
+          TextField(
+            key: const Key('champ-motif-retour'),
+            controller: _autre,
+            style: const TextStyle(fontSize: 18),
+            decoration: decorationChamp('Écrivez le motif'),
+            onChanged: (_) => setState(() {}),
+          ),
+        ],
+        SizedBox(height: compact ? 6 : 8),
+        GrosBouton(
+          key: const Key('bouton-valider-retour'),
+          hauteur: compact ? 52 : 56,
+          texte: _total > 0
+              ? 'Rendre ${formatFrancs(_total)}'
+              : 'Choisissez ce qui revient',
+          icone: Icons.assignment_return_rounded,
+          couleur: CouleursZp.argentSort,
+          onPressed: _total > 0 && _motifFinal != null && !_enCours
+              ? _valider
+              : null,
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final etat = widget.etat;
     return PageZp(
       titre: 'Retour · ${v.recu}',
       icone: Icons.assignment_return_rounded,
-      bas: GrosBouton(
-        key: const Key('bouton-valider-retour'),
-        texte: _total > 0
-            ? 'Rendre ${formatFrancs(_total)}'
-            : 'Choisissez ce qui revient',
-        icone: Icons.assignment_return_rounded,
-        couleur: CouleursZp.argentSort,
-        onPressed: _total > 0 && _motifFinal != null && !_enCours
-            ? _valider
-            : null,
-      ),
-      corps: FutureBuilder<(List<LigneRecu>, Map<int, int>)>(
+      bas: _bas(context),
+      corps: FutureBuilder<(List<LigneRecu>, Map<int, int>, int)>(
         future: _donnees,
         builder: (context, s) {
           if (!s.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
-          final (lignes, deja) = s.data!;
+          final (lignes, deja, dette) = s.data!;
+          if (_dette != dette) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) setState(() => _dette = dette);
+            });
+          }
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
             children: [
               Text(
                 'Vente de ${heureCourte(v.heure)} · ${nomPaiement(v.mode)} · ${formatFrancs(v.total)}',
                 style: const TextStyle(
-                  fontSize: 17,
+                  fontSize: 15,
                   color: CouleursZp.texteDoux,
                 ),
               ),
-              const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Qu\'est-ce que le client rend ?',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+                style: TextStyle(
+                  fontSize: MediaQuery.sizeOf(context).height < 700 ? 17 : 20,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               for (var i = 0; i < lignes.length; i++)
                 _LigneRetour(
                   index: i,
@@ -180,106 +348,6 @@ class _PageRetourState extends State<PageRetour> {
                   rendu: _rendus[i] ?? 0,
                   onChange: (n) => setState(() => _rendus[i] = n),
                 ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: CouleursZp.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: CouleursZp.ligne),
-                ),
-                child: Row(
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        'À rendre au client',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    MontantGeant(
-                      _total,
-                      key: const Key('total-retour'),
-                      couleur: CouleursZp.argentSortClair,
-                      taille: 34,
-                    ),
-                  ],
-                ),
-              ),
-              if (etat.retourDemandeAccord(_total))
-                const Padding(
-                  padding: EdgeInsets.only(top: 8),
-                  child: Text(
-                    'Plus de ${seuilAlerteAnnulation ~/ 1000} 000 F : le patron doit donner son accord (son code).',
-                    key: Key('retour-accord-patron'),
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: CouleursZp.creditTexte,
-                    ),
-                  ),
-                ),
-              const SizedBox(height: 16),
-              if (_aCredit)
-                const Text(
-                  'Vente à crédit : ce que le client doit va diminuer.',
-                  style: TextStyle(fontSize: 18),
-                )
-              else ...[
-                const Text(
-                  'Rembourser depuis la caisse',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final m in ModePaiement.caisses)
-                      ChoiceChip(
-                        key: Key('retour-mode-${m.code}'),
-                        avatar: Icon(iconePaiement(m)),
-                        label: Text(
-                          nomPaiement(m),
-                          style: const TextStyle(fontSize: 17),
-                        ),
-                        selected: _mode == m,
-                        onSelected: (_) => setState(() => _mode = m),
-                      ),
-                  ],
-                ),
-              ],
-              const SizedBox(height: 16),
-              const Text(
-                'Pourquoi ? (le patron le verra)',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 6),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final m in motifsRetour)
-                    ChoiceChip(
-                      key: Key('motif-retour-$m'),
-                      label: Text(m, style: const TextStyle(fontSize: 17)),
-                      selected: _motif == m,
-                      onSelected: (_) => setState(() => _motif = m),
-                    ),
-                ],
-              ),
-              if (_motif == 'Autre') ...[
-                const SizedBox(height: 8),
-                TextField(
-                  key: const Key('champ-motif-retour'),
-                  controller: _autre,
-                  style: const TextStyle(fontSize: 19),
-                  decoration: decorationChamp('Écrivez le motif'),
-                  onChanged: (_) => setState(() {}),
-                ),
-              ],
             ],
           );
         },
@@ -314,7 +382,7 @@ class _LigneRetour extends StatelessWidget {
     final reste = vendu - dejaRendu;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+      padding: const EdgeInsets.fromLTRB(12, 6, 8, 6),
       decoration: BoxDecoration(
         color: CouleursZp.surface,
         borderRadius: BorderRadius.circular(16),
@@ -400,6 +468,8 @@ class PageRetourTermine extends StatelessWidget {
     final mode = ModePaiement.depuisCode(
       retour.donnees['mode_paiement'] as String,
     );
+    final especes = retour.donnees['rendu_especes'] as int? ?? 0;
+    final baisseDette = retour.total - especes;
     // Lignes rendues décrites avec la quantité RENDUE (« 1 kg de Riz »), pas
     // celle de la vente.
     final rendues = {
@@ -431,20 +501,35 @@ class PageRetourTermine extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             children: [
               Text(
-                mode == ModePaiement.credit
-                    ? 'Le crédit du client diminue de'
-                    : 'Rendez au client (${nomPaiement(mode)})',
+                mode != ModePaiement.credit
+                    ? 'Rendez au client (${nomPaiement(mode)})'
+                    : especes > 0
+                    ? 'Rendez au client (Espèces)'
+                    : 'Le crédit du client diminue de',
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 20),
               ),
               Center(
                 child: MontantGeant(
-                  retour.total,
+                  especes > 0 ? especes : retour.total,
                   key: const Key('retour-a-rendre'),
                   couleur: CouleursZp.argentSortClair,
                   taille: 56,
                 ),
               ),
+              if (especes > 0)
+                Text(
+                  baisseDette > 0
+                      ? 'Sa dette baisse aussi de ${formatFrancs(baisseDette)} : il ne doit plus rien.'
+                      : 'Il ne devait plus rien : tout est rendu en espèces.',
+                  key: const Key('retour-especes-credit'),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: CouleursZp.creditTexte,
+                  ),
+                ),
               const SizedBox(height: 16),
               DocumentPartageable(
                 etat: etat,
@@ -464,9 +549,12 @@ class PageRetourTermine extends StatelessWidget {
                   ],
                   libelleTotal: 'RENDU',
                   paiement: '',
-                  mention: mode == ModePaiement.credit
-                      ? 'Déduit du crédit du client.'
-                      : 'Remboursé : ${nomPaiement(mode)}.',
+                  mention: mode != ModePaiement.credit
+                      ? 'Remboursé : ${nomPaiement(mode)}.'
+                      : especes > 0
+                      ? '${baisseDette > 0 ? 'Dette réduite de ${formatFrancs(baisseDette)}. ' : ''}'
+                            'Rendu en espèces : ${formatFrancs(especes)}.'
+                      : 'Déduit du crédit du client.',
                   demo: etat.estDemo,
                 ),
               ),

@@ -207,20 +207,26 @@ class ZeroPerteApp extends StatelessWidget {
         // en haut, sur l'appareil du patron.
         final contenu = ListenableBuilder(
           listenable: etat,
-          builder: (context, _) => etat.alertes.isEmpty || !etat.estPatron
-              ? page
-              : Column(
-                  children: [
-                    BandeauAlertes(etat: etat),
-                    Expanded(
-                      child: MediaQuery.removePadding(
-                        context: context,
-                        removeTop: true,
-                        child: page,
-                      ),
-                    ),
-                  ],
+          builder: (context, _) {
+            final alertes = etat.alertes.isNotEmpty && etat.estPatron;
+            final avertir =
+                etat.avertissementsInstallation.isNotEmpty &&
+                etat.utilisateurActuel != null;
+            if (!alertes && !avertir) return page;
+            return Column(
+              children: [
+                if (alertes) BandeauAlertes(etat: etat),
+                if (avertir) BandeauAvertissements(etat: etat),
+                Expanded(
+                  child: MediaQuery.removePadding(
+                    context: context,
+                    removeTop: true,
+                    child: page,
+                  ),
                 ),
+              ],
+            );
+          },
         );
         final quitter = quitterDemo;
         if (quitter != null) {
@@ -504,6 +510,59 @@ class BandeauAlertes extends StatelessWidget {
                 onPressed: etat.effacerAlertes,
                 style: TextButton.styleFrom(foregroundColor: Colors.white),
                 child: const Text('Vu', style: TextStyle(fontSize: 18)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Bandeau orange : avertissements non bloquants de l'installation (peu de
+/// place, pas de voix française), montrés une seule fois, jusqu'à « Compris ».
+class BandeauAvertissements extends StatelessWidget {
+  const BandeauAvertissements({super.key, required this.etat});
+
+  final EtatApplication etat;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: CouleursZp.credit,
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 6, 8, 6),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.info_rounded,
+                color: CouleursZp.texteSurCredit,
+                size: 28,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  etat.avertissementsInstallation.join('\n'),
+                  key: const Key('bandeau-avertissements'),
+                  maxLines: 6,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: CouleursZp.texteSurCredit,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: policeZp,
+                  ),
+                ),
+              ),
+              TextButton(
+                key: const Key('bouton-avertissements-compris'),
+                onPressed: etat.avertissementsVus,
+                style: TextButton.styleFrom(
+                  foregroundColor: CouleursZp.texteSurCredit,
+                ),
+                child: const Text('Compris', style: TextStyle(fontSize: 17)),
               ),
             ],
           ),

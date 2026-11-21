@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math' show Random;
 
 import 'package:flutter/foundation.dart';
@@ -141,8 +142,40 @@ class EtatApplication extends ChangeNotifier {
       await journal.produits(),
     );
     etat._stocks = await journal.stocks();
+    etat._avertissements = _lireListe(
+      await journal.lireParametre(_cleAvertissements),
+    );
     return etat;
   }
+
+  static List<String> _lireListe(String? brut) {
+    if (brut == null || brut.isEmpty) return const [];
+    try {
+      return [for (final x in jsonDecode(brut) as List) '$x'];
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  // --- Avertissements de l'installation (Q1) --------------------------------
+
+  static const _cleAvertissements = 'installation.avertissements';
+  List<String> _avertissements = const [];
+
+  /// Avertissements non bloquants trouvés à l'installation (peu de place,
+  /// pas de voix française) : montrés une seule fois dans un bandeau orange
+  /// après l'installation, jusqu'à « Compris ».
+  List<String> get avertissementsInstallation =>
+      installationTerminee ? _avertissements : const [];
+
+  Future<void> noterAvertissementsInstallation(List<String> liste) async {
+    _avertissements = List.unmodifiable(liste);
+    await journal.ecrireParametre(_cleAvertissements, jsonEncode(liste));
+    notifyListeners();
+  }
+
+  /// « Compris » : le bandeau ne revient plus.
+  Future<void> avertissementsVus() => noterAvertissementsInstallation(const []);
 
   final JournalLocal journal;
   final ServicesZp services;
@@ -558,6 +591,7 @@ class EtatApplication extends ChangeNotifier {
                   produitId: l.produitId,
                   conditionnementId: l.conditionnement?.id,
                   nombre: l.nombre!,
+                  prixImpose: l.prixDuDevis ? l.prixUnitaire : null,
                 ),
       ],
       mode: mode,
@@ -568,8 +602,13 @@ class EtatApplication extends ChangeNotifier {
       auteurId: auteurActuel,
     );
     await rechargerProduits();
+    derniereVente = vente;
     return vente;
   }
+
+  /// Dernière vente enregistrée sur cet appareil (pour marquer un devis
+  /// vendu).
+  VenteEnregistree? derniereVente;
 
   /// Début de la journée en cours (minuit, heure du téléphone).
   int get debutDuJour {
@@ -780,9 +819,20 @@ class EtatApplication extends ChangeNotifier {
     );
   }
 
-  /// Panier refait à partir d'un devis (aux prix d'aujourd'hui), et vrai si
-  /// le total a changé depuis le devis.
-  Future<(Panier, bool)> panierDepuisDevis(OperationLue devis) async {
+  /// Vrai si le devis est encore valable (7 jours par défaut, comptés
+  /// jusqu'à la fin du dernier jour).
+  bool devisValable(OperationLue devis) {
+    final jours = devis.donnees['validite_jours'] as int? ?? 7;
+    final cree = DateTime.fromMillisecondsSinceEpoch(devis.heure);
+    final fin = DateTime(cree.year, cree.month, cree.day + jours + 1);
+    return maintenant().isBefore(fin);
+  }
+
+  /// Panier refait à partir d'un devis. Devis encore valable : les prix du
+  /// devis sont gardés, même si les prix ont changé. Devis expiré : prix du
+  /// jour.
+  Future<PanierDevis> panierDepuisDevis(OperationLue devis) async {
+    final valable = devisValable(devis);
     final panier = Panier();
     for (final l in devis.lignes) {
       final p = _produits.where((p) => p.id == l['produit']).firstOrNull;
@@ -794,6 +844,9 @@ class EtatApplication extends ChangeNotifier {
                 .where((c) => c.id == condId)
                 .firstOrNull;
       final montant = l['montant'] as int?;
+      final nombre = montant == null ? (l['nombre'] as int? ?? 1) : null;
+      final prixDuJour = c?.prixVente ?? p.prixUnitaire;
+      final garderPrix = valable && nombre != null && nombre > 0;
       panier.ajouter(
         LignePanier(
           produitId: p.id,
@@ -801,9 +854,10 @@ class EtatApplication extends ChangeNotifier {
           uniteBase: p.uniteBase,
           emoji: p.emoji,
           conditionnement: c,
-          nombre: montant == null ? (l['nombre'] as int? ?? 1) : null,
+          nombre: nombre,
           montant: montant,
-          prixUnitaire: c?.prixVente ?? p.prixUnitaire,
+          prixUnitaire: garderPrix ? (l['prix'] as int) ~/ nombre : prixDuJour,
+          prixDuDevis: garderPrix,
         ),
       );
     }
@@ -812,15 +866,21 @@ class EtatApplication extends ChangeNotifier {
       final c = await journal.client(clientId);
       panier.choisirClient(clientId, c?.nom);
     }
-    return (panier, panier.total != devis.total);
+    return PanierDevis(
+      panier: panier,
+      valable: valable,
+      totalChange: panier.total != devis.total,
+    );
   }
 
-  /// Le devis est devenu une vente.
-  Future<void> devisVendu(OperationLue devis, VenteResume vente) async {
+  /// Le devis est devenu la dernière vente enregistrée.
+  Future<void> devisVendu(OperationLue devis) async {
+    final v = derniereVente;
+    if (v == null) return;
     await journal.marquerDevisVendu(
       devisId: devis.id,
-      venteOperationId: vente.operationId,
-      recu: vente.recu,
+      venteOperationId: v.operation.id,
+      recu: v.recu,
       auteurId: auteurActuel,
     );
     notifyListeners();
@@ -1320,6 +1380,8 @@ class EtatApplication extends ChangeNotifier {
       await journal.ecrireParametre('sync.erreur', '');
       await journal.ecrireParametre('sync.appareils', '${r.appareils.length}');
       if (r.recues > 0) await rechargerTout();
+      // Le réseau est là : on envoie aussi les alertes en attente.
+      unawaited(envoyerAlertesEnAttente());
       return r;
     } catch (e) {
       await journal.ecrireParametre('sync.erreur', '$e');
@@ -1358,21 +1420,107 @@ class EtatApplication extends ChangeNotifier {
   /// patron lui-même qui agit, ou en démonstration).
   Future<void> alerter(String type, String message) async {
     if (estDemo || estPatron) return;
+    // Pas de relais dans cette version : rien à envoyer, rien à garder.
+    if (transportAlertes == null) return;
+    // L'alerte est d'abord gardée sur l'appareil, puis envoyée : sans réseau,
+    // elle part dès que le réseau revient (même règle pour toutes les alertes
+    // graves : caisse, annulation, retour, codes faux).
+    final attente = await _alertesEnAttente();
+    attente.add({
+      'type': type,
+      'message': message,
+      'heure': maintenant().millisecondsSinceEpoch,
+    });
+    if (attente.length > maxAlertesEnAttente) attente.removeAt(0);
+    await _garderAlertes();
+    await envoyerAlertesEnAttente();
+  }
+
+  static const _cleAlertesAttente = 'alertes.attente';
+
+  /// Au plus ce nombre d'alertes gardées sans réseau (au-delà, la plus
+  /// ancienne est oubliée).
+  static const maxAlertesEnAttente = 50;
+
+  /// File des alertes pas encore parties : une seule liste en mémoire,
+  /// recopiée dans les réglages à chaque changement (rien ne se perd si
+  /// l'application est fermée).
+  List<Map<String, Object?>>? _attente;
+
+  Future<List<Map<String, Object?>>> _alertesEnAttente() async {
+    final deja = _attente;
+    if (deja != null) return deja;
+    final brut = await journal.lireParametre(_cleAlertesAttente);
+    var liste = <Map<String, Object?>>[];
+    if (brut != null && brut.isNotEmpty) {
+      try {
+        liste = [
+          for (final a in jsonDecode(brut) as List)
+            (a as Map).cast<String, Object?>(),
+        ];
+      } catch (_) {}
+    }
+    return _attente ??= liste;
+  }
+
+  Future<void> _garderAlertes() => journal.ecrireParametre(
+    _cleAlertesAttente,
+    jsonEncode(_attente ?? const []),
+  );
+
+  /// Nombre d'alertes graves pas encore parties (pas de réseau).
+  Future<int> nombreAlertesEnAttente() async =>
+      (await _alertesEnAttente()).length;
+
+  bool _envoiAlertesEnCours = false;
+
+  /// Envoie les alertes gardées sur l'appareil, dans l'ordre. S'arrête à la
+  /// première qui ne part pas (pas de réseau) : elle sera renvoyée plus tard.
+  /// Renvoie le nombre d'alertes envoyées.
+  Future<int> envoyerAlertesEnAttente() async {
+    if (_envoiAlertesEnCours || estDemo) return 0;
     final t = transportAlertes;
-    final jeton = await _jetonRelais();
-    if (t == null || jeton == null) return;
+    if (t == null) return 0;
+    _envoiAlertesEnCours = true;
+    var envoyees = 0;
     try {
-      await t.envoyer(
-        jeton,
-        Alerte(
-          type: type,
-          message: message,
-          heure: maintenant().millisecondsSinceEpoch,
-          appareil: journal.prefixeRecu,
-        ),
-      );
-    } catch (_) {
-      // Pas de réseau : l'alerte sera de toute façon visible par la synchronisation.
+      final attente = await _alertesEnAttente();
+      if (attente.isEmpty) return 0;
+      final jeton = await _jetonRelais();
+      if (jeton == null) return 0;
+      while (attente.isNotEmpty) {
+        final a = attente.first;
+        final heure = a['heure'] as int? ?? 0;
+        final maintenantMs = maintenant().millisecondsSinceEpoch;
+        var message = a['message'] as String? ?? '';
+        // Partie en retard : on dit à quelle heure c'est arrivé.
+        if (maintenantMs - heure > 60000) {
+          final h = DateTime.fromMillisecondsSinceEpoch(heure);
+          message +=
+              ' (le ${h.day.toString().padLeft(2, '0')}/${h.month.toString().padLeft(2, '0')} '
+              'à ${h.hour.toString().padLeft(2, '0')}:${h.minute.toString().padLeft(2, '0')}, '
+              'envoyée au retour du réseau)';
+        }
+        try {
+          await t.envoyer(
+            jeton,
+            Alerte(
+              type: a['type'] as String? ?? '',
+              message: message,
+              heure: maintenantMs,
+              appareil: journal.prefixeRecu,
+            ),
+          );
+        } catch (_) {
+          break; // pas de réseau : on garde la suite pour plus tard
+        }
+        attente.remove(a);
+        envoyees++;
+        await _garderAlertes();
+      }
+      return envoyees;
+    } finally {
+      _envoiAlertesEnCours = false;
     }
   }
 
@@ -1417,6 +1565,8 @@ class EtatApplication extends ChangeNotifier {
   void demarrerAlertesAuto({Duration periode = const Duration(minutes: 1)}) {
     _minuterieAlertes?.cancel();
     _minuterieAlertes = Timer.periodic(periode, (_) {
+      // Tout appareil : renvoie les alertes gardées faute de réseau.
+      envoyerAlertesEnAttente();
       if (estPatron) {
         releverAlertes();
         activerNotificationsPatron();
@@ -1677,4 +1827,21 @@ class Rapport {
 
   /// Marchandise manquante (−) ou en trop (+) constatée aux inventaires.
   int get ecartsInventaires => inventaires.fold(0, (s, i) => s + i.ecartFrancs);
+}
+
+/// Panier refait depuis un devis.
+class PanierDevis {
+  const PanierDevis({
+    required this.panier,
+    required this.valable,
+    required this.totalChange,
+  });
+  final Panier panier;
+
+  /// Devis encore valable : ses prix sont gardés.
+  final bool valable;
+
+  /// Le total n'est plus celui du devis (devis expiré et prix changés, ou
+  /// produit disparu).
+  final bool totalChange;
 }

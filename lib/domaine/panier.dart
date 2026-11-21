@@ -14,7 +14,12 @@ class LignePanier {
     this.nombre,
     this.montant,
     required this.prixUnitaire,
+    this.prixDuDevis = false,
   }) : assert((nombre == null) != (montant == null));
+
+  /// Vrai si [prixUnitaire] vient d'un devis encore valable (il est gardé
+  /// même si le prix du produit a changé depuis).
+  final bool prixDuDevis;
 
   final String produitId;
   final String nomProduit;
@@ -51,7 +56,8 @@ class LignePanier {
       !auMontant &&
       !autre.auMontant &&
       autre.produitId == produitId &&
-      autre.conditionnement?.id == conditionnement?.id;
+      autre.conditionnement?.id == conditionnement?.id &&
+      autre.prixDuDevis == prixDuDevis;
 
   LignePanier avecNombre(int n) => LignePanier(
     produitId: produitId,
@@ -61,6 +67,7 @@ class LignePanier {
     conditionnement: conditionnement,
     nombre: n,
     prixUnitaire: prixUnitaire,
+    prixDuDevis: prixDuDevis,
   );
 }
 

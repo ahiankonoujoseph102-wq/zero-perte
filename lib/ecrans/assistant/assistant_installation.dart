@@ -71,6 +71,19 @@ class _AssistantInstallationState extends State<AssistantInstallation> {
       infos,
       evaluerTelephone(infos, voixFrancaise: voix),
     );
+    // Avertissements non bloquants (peu de place, pas de voix française) :
+    // gardés pour le bandeau orange montré une fois après l'installation.
+    await etat.noterAvertissementsInstallation([
+      for (final c in r.controles)
+        if (c.niveau == NiveauControle.attention)
+          switch (c.cle) {
+            'espace' =>
+              'Peu de place libre (${infos.espaceLibreMo} Mo) : '
+                  'libérez de la place bientôt.',
+            'voix' => 'Pas de voix française : l\'application ne parlera pas.',
+            _ => '${c.titre} : ${c.detail}',
+          },
+    ]);
     // Pas d'écran de « test » : si l'appareil convient, on passe tout seul à
     // l'étape suivante. L'écran ne s'affiche qu'en cas de vrai problème.
     if (peutContinuer(r.controles) &&

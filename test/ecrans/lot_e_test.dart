@@ -291,7 +291,7 @@ void main() {
 
   testWidgets(
     'devis de 2 kg de riz (1 200 F) : ni stock ni caisse ; envoyé ; le prix '
-    'passe à 650 F ; transformé en vente de 1 300 F',
+    'passe à 650 F ; transformé le jour même au prix du devis (1 200 F)',
     (tester) async {
       final env = await environnementDeTest(
         tester,
@@ -331,10 +331,8 @@ void main() {
 
       await toucher(tester, find.byKey(const Key('bouton-devis-en-vente')));
       await attendre(tester, tours: 10);
-      expect(
-        find.textContaining('nouveau total ${formatFrancs(1300)}'),
-        findsOneWidget,
-      );
+      // Devis encore valable : pas de message, le prix du devis est gardé.
+      expect(find.textContaining('Devis expiré'), findsNothing);
       expect(find.byType(PageVendre), findsWidgets);
       await tester.pump(const Duration(seconds: 6)); // le message s'en va
       await attendre(tester);
@@ -348,7 +346,7 @@ void main() {
       await tester.runAsync(() async {
         final ventes = await env.etat.ventesDuJour();
         expect(ventes.single.recu, 'A-000001');
-        expect(ventes.single.total, 1300);
+        expect(ventes.single.total, 1200);
         final devis = await env.journal.devis();
         expect(devis.single.$1.total, 1200);
         expect(devis.single.$2, 'A-000001'); // devis vendu

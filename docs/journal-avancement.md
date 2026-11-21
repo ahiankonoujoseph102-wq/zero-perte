@@ -9,9 +9,9 @@ Il est mis à jour **à la fin de chaque étape**.
 
 | | |
 |---|---|
-| **Dernière étape terminée** | **Lot E** (devis, retours partiels, rapports) + **sécurité de l'écran d'entrée** |
-| **Version publiée** | 0.27.0 (Android et Windows, voir les Releases GitHub) |
-| **Prochaine étape** | Réponses du propriétaire aux questions du rapport du lot E |
+| **Dernière étape terminée** | **0.28.0** : décisions Q1–Q4 du rapport 0.27, corrections devis / alertes / écran de retour |
+| **Version publiée** | 0.28.0 (Android et Windows, voir les Releases GitHub) |
+| **Prochaine étape** | Réponses du propriétaire aux questions du rapport 0.28 |
 | **Méthode** | Branche de travail, tests + captures sur 4 tailles, puis fusion dans `main` (= publication). Rien de non testé sur `main`. |
 | **Pour tout choix non décidé** | Prendre l'option la plus simple, la noter ici et la mettre dans le rapport avec une recommandation. |
 
@@ -683,3 +683,51 @@ après réouverture, écran « code du vendeur » sur 6 tailles.
 **Publiée :** v0.27.0-n42 (fabrication Android et Windows réussies) — APK universel **17,6 Mo** (arm64 9,5 Mo,
 armv7 9,0 Mo), **ZeroPerte-Windows.zip 13,3 Mo**. (Cette ligne est ajoutée sur la branche de travail seulement,
 pour ne pas publier une version de plus ; elle arrivera sur `main` avec la prochaine version.)
+
+## Décisions du propriétaire sur le rapport 0.27 (toutes « (a) »)
+Q1 avertissements non bloquants dans un bandeau orange après l'installation ; Q2 codes vendeurs tirés au
+hasard (gardé) ; Q3 retour sur une vente à crédit déjà payée : rendu en espèces, la dette ne devient jamais
+négative ; Q4 accord du patron au-dessus de 5 000 F (gardé).
+
+### Version 0.28.0 ✅
+**Fait :**
+- **Devis : prix gardés pendant la validité** (7 jours, jusqu'à la fin du 7e jour) : « Transformer en vente »
+  reprend les prix du devis même si les prix ont changé (la vente enregistre ce prix : `prixImpose` dans
+  `LigneDemandee`). Après expiration : message « Devis expiré, nouveaux prix : … » et prix du jour. La page du
+  devis dit « Valable jusqu'au 28/11 : les prix du devis sont gardés » ou « Expiré depuis le … ». Un même
+  produit ajouté en plus depuis la grille est compté au prix du jour (ligne séparée). Le devis est marqué
+  « vendu » à partir de la vente qui vient d'être enregistrée (plus de recherche dans les ventes du jour).
+- **Alertes graves sans réseau** (codes faux, écart de caisse, grosse annulation, retour : toutes passent par
+  la même fonction `alerter`) : l'alerte est d'abord **gardée sur l'appareil** (réglage `alertes.attente`,
+  50 au plus), puis envoyée ; sans réseau elle reste et part **dès que le réseau revient** (chaque minute
+  quand l'application est ouverte, et après chaque synchronisation réussie), dans l'ordre, une seule fois.
+  Partie en retard, elle porte l'heure réelle : « (le 21/11 à 10:00, envoyée au retour du réseau) ».
+- **Q1 — bandeau orange** après l'installation : « Peu de place libre (250 Mo) : libérez de la place
+  bientôt. » / « Pas de voix française : l'application ne parlera pas. », bouton « Compris » (ne revient plus).
+- **Q3 — retour sur une vente à crédit déjà payée** : la dette baisse au plus jusqu'à 0 F, le reste est rendu
+  en **espèces** (sort de la caisse espèces). Messages : « Sa dette tombe à 0 F et vous lui rendez 300 F en
+  espèces » / « Le client ne doit plus rien : vous lui rendez 600 F en espèces » ; reçu du retour « Dette
+  réduite de 300 F. Rendu en espèces : 300 F. ».
+- **Écran de retour sur 4 pouces** : total, choix de la caisse, motif et bouton sont **fixés en bas**, toujours
+  visibles sans défiler ; seule la liste des articles défile. Petits écrans : libellés courts (« Abîmé »,
+  « Changé d'avis », « Mixx »), le motif enregistré reste complet.
+- `docs/analyse-concurrent.md` mis à jour (devis, retours, inventaires, fournisseurs, allure, Windows faits).
+
+**Défauts vus sur les captures et corrigés :** bandeau orange trop haut sur 4 pouces (textes raccourcis) ;
+« Le client a déjà payé une partie » affiché alors qu'il ne devait plus rien ; « Dette réduite de 0 F » sur le
+reçu ; sur 4 pouces, la partie fixe du retour cachait les articles (rendue plus compacte).
+
+**Tests : 397 au total, tous réussis** (nouveau fichier `test/ecrans/version_028_test.dart`), par exemple :
+- Devis 2 kg de riz **1 200 F**, riz passé à 650 F : transformé **6 jours après → vente de 1 200 F** ;
+  **8 jours après → « Devis expiré, nouveaux prix : 1 300 F » → vente de 1 300 F** ; fin du 7e jour à 23 h 59 :
+  valable, 8e jour à 0 h 01 : expiré.
+- Kofi : 3 kg à crédit (1 800 F), rembourse 1 500 F (doit 300 F), rend 1 kg (600 F) → dette **0 F**, **300 F
+  rendus en espèces**, caisse attendue 1 200 F ; il rend encore 1 kg → 600 F en espèces, dette toujours 0 F.
+- Relais en panne : 5 codes faux, annulation de 28 000 F, retour, caisse fermée avec 2 000 F de manque → rien
+  ne part, **4 alertes gardées**, toujours 4 après fermeture/réouverture de l'application ; réseau revenu →
+  **4 envoyées dans l'ordre** (code, annulation, retour, écart), pas deux fois ; le patron les reçoit.
+- Installation avec 250 Mo et sans voix française → on passe au code d'activation, 2 avertissements gardés ;
+  après l'installation, bandeau orange, « Compris » le ferme pour de bon.
+- Écran de retour sur les 6 tailles : caisse, motif et bouton visibles sans défiler, retour validé.
+Captures : `test_captures/v028_captures_test.dart` (bandeau, retour crédit payé, retour en espèces, devis
+valable) + `lot_e_captures_test.dart`, vérifiées sur 4 pouces, grand téléphone, tablette 10" et PC 1366×768.
