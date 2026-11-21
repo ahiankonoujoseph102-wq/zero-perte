@@ -10,6 +10,14 @@ Le code de l'application est déjà prêt : ces étapes « branchent » les comp
 
 ## A. Google Cloud — pour que les téléphones s'échangent les ventes par Google Drive
 
+✅ **A1 à A4 et A6 faits par le propriétaire (21 novembre 2026)** : projet « Zero Perte »
+(ID `zero-perte-515421`), API Google Drive activée ; écran de consentement externe **en production**, seule
+autorisation `drive.appdata`, sans logo, avec les 3 pages publiques et le domaine
+`ahiankonoujoseph102-wq.github.io` ; identifiant Android (package `tg.zeroperte.app`, SHA-1
+`49:27:0C:A9:FE:00:2B:55:14:08:5A:9E:AE:50:10:63:C9:CC:B1:A3`) ; identifiant PC (`ZP_GOOGLE_PC_ID` et
+`ZP_GOOGLE_PC_SECRET` dans GitHub — la fabrication Windows vérifie qu'ils sont bien dans l'application, sans
+les afficher). **Reste : A5, l'essai sur un vrai téléphone.**
+
 Ce qu'on crée : un « projet » Google Cloud **gratuit**, avec la seule autorisation `drive.appdata`
 (classée « non sensible » par Google : pas de vérification payante, pas de limite de 100 utilisateurs).
 

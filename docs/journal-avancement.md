@@ -9,9 +9,9 @@ Il est mis à jour **à la fin de chaque étape**.
 
 | | |
 |---|---|
-| **Dernière étape terminée** | **0.28.1** : `ZP_JETON_CODES` vérifié, menu PC avec bandeau |
-| **Version publiée** | 0.28.1 (Android et Windows, voir les Releases GitHub) |
-| **Prochaine étape** | Étapes A, B, F du propriétaire (Google Cloud, Cloudflare, Firebase) puis pilote |
+| **Dernière étape terminée** | **0.29.0** : logo, Google Cloud branché (A1–A4, A6) |
+| **Version publiée** | 0.29.0 (Android et Windows, voir les Releases GitHub) |
+| **Prochaine étape** | Essai A5 (Google Drive sur un vrai téléphone et sur PC), puis étapes B et F (Cloudflare, Firebase) |
 | **Méthode** | Branche de travail, tests + captures sur 4 tailles, puis fusion dans `main` (= publication). Rien de non testé sur `main`. |
 | **Pour tout choix non décidé** | Prendre l'option la plus simple, la noter ici et la mettre dans le rapport avec une recommandation. |
 
@@ -799,3 +799,15 @@ ce jeton. Aucun secret ni code affiché (masqués). La ligne de test reste dans 
 - **Site** : logo en haut des 3 pages, grand logo sur l'accueil, icône d'onglet (SVG + PNG 32, icône Apple 180).
 - Le logo de chaque boutique (personnalisation, reçus, raccourci) n'a pas changé. Rien dans Google Cloud.
 - Test `test/domaine/icones_test.dart` (fichiers et tailles). **Tests : 403, tous réussis.**
+
+### Google Cloud branché (A1–A4, A6 faits par le propriétaire, 21/11)
+Projet `zero-perte-515421`, consentement externe en production (`drive.appdata` seule, 3 pages publiques,
+domaine `ahiankonoujoseph102-wq.github.io`), identifiant Android (SHA-1 49:27:…:B1:A3), identifiant PC.
+- **Fabrication Windows** : `ZP_GOOGLE_PC_ID` et `ZP_GOOGLE_PC_SECRET` passent maintenant par l'environnement
+  (plus jamais écrits dans la commande), et une étape **vérifie sans les afficher** que l'identifiant a le bon
+  format et que les deux valeurs sont bien dans l'application (`data/app.so`). Essai sur la branche
+  (exécution 44955019581) : « Identifiant et code secret bien présents dans l'application Windows », secret
+  masqué `***`. (L'identifiant client PC, lui, n'est pas un secret.)
+- Essai sur la branche avant `main` : fabrication Android avec le nouveau logo réussie (ressources adaptatives
+  et monochrome compilées), MSIX créé avec le logo PNG.
+- **Reste** : essai A5 par le propriétaire (téléphone, puis PC).
