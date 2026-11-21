@@ -72,7 +72,8 @@ jobs:
                 --arg type "$TYPE" --argjson t "$TEL" \
                 '{v: 1, b: $b, d: $d, i: $i, n: $n, t: $t, type: $type}' | tr -d '\n' > "$RUNNER_TEMP/zpc/charge.json"
           {
-            echo "NOM=$NOM"; echo "TYPE=$TYPE"; echo "TEL=$TEL"; echo "BQ=$BQ"; echo "CODE_ID=$CODE_ID"
+            # %q : valeurs protégées (espaces, guillemets, $… dans le nom de la boutique).
+            printf 'NOM=%q\nTYPE=%q\nTEL=%q\nBQ=%q\nCODE_ID=%q\n' "$NOM" "$TYPE" "$TEL" "$BQ" "$CODE_ID"
           } > "$RUNNER_TEMP/zpc/demande.env"
           echo "Demande valide : $TYPE, code $CODE_ID."
 
