@@ -4,7 +4,6 @@ import '../../app/etat_application.dart';
 import '../../domaine/utilisateurs.dart';
 import '../../theme/couleurs.dart';
 import '../assistant/etapes_boutique.dart' show decorationChamp;
-import '../clavier_pin.dart';
 import '../communs.dart';
 import '../connexion.dart';
 
@@ -153,7 +152,12 @@ class PageVendeurs extends StatelessWidget {
   }
 }
 
-/// Ajout d'un vendeur (prénom + code choisi par le vendeur), ou changement de son code.
+/// Ajout d'un vendeur, ou nouveau code pour un vendeur existant.
+///
+/// Le code n'est JAMAIS choisi par une personne : l'application le tire au
+/// hasard et l'affiche une seule fois au patron, qui le donne au vendeur en
+/// privé. Ainsi personne ne peut apprendre, en essayant un code « déjà
+/// pris », qu'il appartient à quelqu'un d'autre.
 class PageNouveauVendeur extends StatefulWidget {
   const PageNouveauVendeur({super.key, required this.etat, this.existant});
 
@@ -166,9 +170,11 @@ class PageNouveauVendeur extends StatefulWidget {
 
 class _PageNouveauVendeurState extends State<PageNouveauVendeur> {
   late final _nom = TextEditingController(text: widget.existant?.nom ?? '');
-  String? _premier;
   String? _erreur;
-  int _tour = 0;
+  bool _enCours = false;
+
+  /// Code tiré au hasard, affiché une seule fois.
+  String? _code;
 
   @override
   void dispose() {
@@ -176,63 +182,64 @@ class _PageNouveauVendeurState extends State<PageNouveauVendeur> {
     super.dispose();
   }
 
-  Future<void> _saisi(String pin) async {
-    if (_nom.text.trim().isEmpty) {
+  String get _prenom => widget.existant?.nom ?? _nom.text.trim();
+
+  Future<void> _creerCode() async {
+    if (_prenom.isEmpty) {
       setState(() => _erreur = 'Écrivez d\'abord le prénom.');
       return;
     }
-    if (_premier == null) {
-      final p = problemePin(pin);
-      setState(() {
-        _tour++;
-        _erreur = p;
-        if (p == null) _premier = pin;
-      });
-      return;
-    }
-    if (pin != _premier) {
-      setState(() {
-        _tour++;
-        _premier = null;
-        _erreur = 'Les deux codes sont différents. Recommencez.';
-      });
-      return;
-    }
+    setState(() {
+      _enCours = true;
+      _erreur = null;
+    });
     try {
-      if (widget.existant == null) {
-        await widget.etat.ajouterVendeur(nom: _nom.text, pin: pin);
-      } else {
-        await widget.etat.changerPin(widget.existant!, pin);
-      }
-      if (!mounted) return;
-      annoncer(
-        context,
-        widget.existant == null
-            ? '${_nom.text.trim()} est ajouté.'
-            : 'Code changé.',
-      );
-      Navigator.of(context).pop();
+      final code = widget.existant == null
+          ? (await widget.etat.ajouterVendeur(nom: _prenom)).code
+          : await widget.etat.nouveauCodeVendeur(widget.existant!);
+      if (mounted) setState(() => _code = code);
     } catch (e) {
-      setState(() {
-        _tour++;
-        _premier = null;
-        _erreur = messageErreur(e);
-      });
+      if (mounted) setState(() => _erreur = messageErreur(e));
+    } finally {
+      if (mounted) setState(() => _enCours = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final code = _code;
     return PageZp(
       titre: widget.existant == null
           ? 'Nouveau vendeur'
           : 'Code de ${widget.existant!.nom}',
       icone: Icons.person_add_rounded,
-      corps: Padding(
+      bas: code != null
+          ? GrosBouton(
+              key: const Key('bouton-code-note'),
+              texte: 'C\'est noté',
+              icone: Icons.check_rounded,
+              onPressed: () {
+                annoncer(
+                  context,
+                  widget.existant == null
+                      ? '$_prenom est ajouté.'
+                      : 'Code changé.',
+                );
+                Navigator.of(context).pop();
+              },
+            )
+          : GrosBouton(
+              key: const Key('bouton-creer-code'),
+              texte: widget.existant == null
+                  ? 'Ajouter et créer son code'
+                  : 'Créer un nouveau code',
+              icone: Icons.password_rounded,
+              onPressed: _enCours ? null : _creerCode,
+            ),
+      corps: ListView(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+        children: [
+          if (code == null) ...[
             if (widget.existant == null)
               MediaQuery.withClampedTextScaling(
                 maxScaleFactor: 1.3,
@@ -245,29 +252,97 @@ class _PageNouveauVendeurState extends State<PageNouveauVendeur> {
                     'Prénom du vendeur',
                     icone: Icons.person_rounded,
                   ),
+                  onChanged: (_) => setState(() => _erreur = null),
                 ),
               ),
-            const SizedBox(height: 6),
-            const Text(
-              'Le vendeur choisit lui-même son code, sans le montrer.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: CouleursZp.texteDoux),
+            const SizedBox(height: 14),
+            Text(
+              widget.existant == null
+                  ? 'L\'application va créer un code secret de 4 chiffres '
+                        'pour ce vendeur. Vous le lui donnerez en privé.'
+                  : 'L\'ancien code de ${widget.existant!.nom} ne marchera '
+                        'plus. L\'application va en créer un nouveau.',
+              style: const TextStyle(fontSize: 18),
             ),
-            Expanded(
-              child: MediaQuery.withClampedTextScaling(
-                maxScaleFactor: 1.2,
-                child: SaisiePin(
-                  key: ValueKey(_tour),
-                  titre: _premier == null
-                      ? 'Code du vendeur (4 chiffres)'
-                      : 'Encore le même code',
-                  erreur: _erreur,
-                  onComplet: _saisi,
+            if (_erreur != null) ...[
+              const SizedBox(height: 10),
+              Text(
+                _erreur!,
+                key: const Key('erreur-vendeur'),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: CouleursZp.argentSortClair,
                 ),
               ),
+            ],
+          ] else ...[
+            Text(
+              'Code secret de $_prenom',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              decoration: BoxDecoration(
+                color: CouleursZp.surface,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: CouleursZp.ligne, width: 2),
+              ),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  code.split('').join(' '),
+                  key: const Key('code-vendeur-cree'),
+                  style: const TextStyle(
+                    fontSize: 64,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 4,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const _Consigne(
+              Icons.visibility_off_rounded,
+              'Donnez ce code au vendeur en privé. Personne d\'autre ne '
+              'doit le voir.',
+            ),
+            const _Consigne(
+              Icons.history_toggle_off_rounded,
+              'Il ne sera plus jamais affiché. S\'il est oublié : « Changer '
+              'le code ».',
+            ),
+            const _Consigne(
+              Icons.login_rounded,
+              'Pour entrer, le vendeur tape ce code : l\'application le '
+              'reconnaît.',
             ),
           ],
-        ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Consigne extends StatelessWidget {
+  const _Consigne(this.icone, this.texte);
+
+  final IconData icone;
+  final String texte;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icone, size: 28, color: CouleursZp.texteDoux),
+          const SizedBox(width: 10),
+          Expanded(child: Text(texte, style: const TextStyle(fontSize: 18))),
+        ],
       ),
     );
   }

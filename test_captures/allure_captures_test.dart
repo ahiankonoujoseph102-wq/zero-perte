@@ -25,7 +25,7 @@ Future<void> _chargerPolices() async {
 
 /// Jours en arrière pour l'horloge du journal (ventes des jours passés).
 int _joursEnArriere = 0;
-int _horloge() => DateTime.now()
+int horlogeCaptures() => DateTime.now()
     .subtract(Duration(days: _joursEnArriere))
     .millisecondsSinceEpoch;
 
@@ -142,7 +142,7 @@ void main() {
       final env = await environnementDeTest(
         tester,
         preparer: boutiqueVivante,
-        horloge: _horloge,
+        horloge: horlogeCaptures,
       );
       await afficherApp(tester, env.etat, taille: taille, densite: densite);
       await attendre(tester, tours: 10);
@@ -197,7 +197,7 @@ void main() {
           await boutiqueVivante(etat);
           etat.deconnecter();
         },
-        horloge: _horloge,
+        horloge: horlogeCaptures,
       );
       await afficherApp(tester, env.etat, taille: taille, densite: densite);
       for (final c in ['5', '9', '1']) {

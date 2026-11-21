@@ -9,13 +9,11 @@ Il est mis à jour **à la fin de chaque étape**.
 
 | | |
 |---|---|
-| **Dernière étape terminée** | **B13** — Sauvegarde chiffrée → **bloc B terminé** |
-| **Version publiée** | 0.26.0 (Android et Windows, voir les Releases GitHub) |
-| **Dernière étape terminée (bis)** | **C1** — Crédit client |
-| **Prochaine étape** | Rapport de fin de bloc C1, puis bloc **D** (synchronisation) |
-| **Méthode** | Enchaîner les étapes de `docs/plan-v1.md` sans validation intermédiaire : B1→B13, puis C1, D, C2→C4, E. Rapport au chef de projet **à la fin de chaque bloc**, ou si une décision appartient au propriétaire, ou si on est bloqué. |
-| **Ordre des blocs** | A ✅ → B ✅ → C1 ✅ → **D** → C2–C4 → E |
-| **Pour tout choix non décidé** | Prendre l'option la plus simple et la lister dans le rapport de fin de bloc C1 avec une recommandation. |
+| **Dernière étape terminée** | **Lot E** (devis, retours partiels, rapports) + **sécurité de l'écran d'entrée** |
+| **Version publiée** | 0.27.0 (Android et Windows, voir les Releases GitHub) |
+| **Prochaine étape** | Réponses du propriétaire aux questions du rapport du lot E |
+| **Méthode** | Branche de travail, tests + captures sur 4 tailles, puis fusion dans `main` (= publication). Rien de non testé sur `main`. |
+| **Pour tout choix non décidé** | Prendre l'option la plus simple, la noter ici et la mettre dans le rapport avec une recommandation. |
 
 ### Décisions du propriétaire (validées le 21 novembre 2026, après le rapport de fin de bloc B)
 
@@ -595,16 +593,89 @@ gestion. Corrigé après vérification : logo de la boutique peu visible sur le 
 ajouté) ; « Vendre » trop petit sur 4" (icône à côté du mot) ; carte « Rendre » coupée dans la fenêtre
 d'encaissement (remplacée par les billets à rendre).
 
-### Étape 3b — Devis, retours partiels, rapports ⏳ (en cours, branche de travail seulement)
-**Écrit, pas encore testé ni publié :**
-- **Devis / facture proforma** : bouton « Devis » dans Vendre (panier → devis), image à envoyer sur WhatsApp
-  (« DEVIS n° DV-… », valable 7 jours), « Transformer en vente » en un geste (le panier est refait aux prix
-  du jour ; message si le total a changé). Ne touche ni le stock ni la caisse. Liste des devis pour le patron.
-- **Retours partiels** : depuis le détail d'une vente, bouton « Retour » : choisir ce qui revient, la caisse qui
-  rembourse (ou baisse du crédit pour une vente à crédit), le motif ; accord du patron (son code) au-delà de
-  5 000 F ; reçu du retour à envoyer ; le patron est prévenu de chaque retour fait par un vendeur et voit la
-  liste « Retours ». Les retours sont déduits des ventes, de la caisse, du bénéfice et remis en stock.
-- **Rapports** : jour / semaine / mois (et périodes précédentes) : ventes, bénéfice, dépenses, retours,
-  crédit accordé et remboursé, ce que les clients doivent, inventaires ; jour par jour ; produits les plus
-  vendus ; envoi en image (WhatsApp) ou en fichier Excel (CSV).
-**Reste à faire :** tests automatiques, captures sur les 4 tailles, publication (0.27.0) sur `main`.
+### Étape 3b — Devis, retours partiels, rapports ✅ (version 0.27.0)
+**Fait :**
+- **Devis / facture proforma** : icône « Devis » en haut de « Vendre » (panier → devis), image à envoyer sur
+  WhatsApp (« DEVIS n° DV-A-0001 », « Facture proforma, valable 7 jours. Ce n'est pas un reçu de paiement. »),
+  **« Transformer en vente »** en un geste : le panier est refait aux prix du jour (message si le total a
+  changé). Le devis ne touche ni le stock ni la caisse. Liste des devis (« à vendre » / « vendu (A-000001) »)
+  pour le patron.
+- **Retours partiels** : détail d'une vente → **« Retour »** (à côté de « Annuler ») : choisir ce qui revient
+  (− / +), la caisse qui rembourse (espèces / Flooz / Mixx ; pour une vente à crédit, la dette baisse), le motif
+  (Produit abîmé, Mauvais produit, Le client a changé d'avis, Autre) ; **code du patron demandé au vendeur
+  au-delà de 5 000 F** ; reçu du retour à envoyer ; le patron est prévenu (alerte) de chaque retour fait par un
+  vendeur et voit la liste « Retours ». Les retours sont déduits des ventes, de la caisse attendue et du
+  bénéfice, et la marchandise revient en stock. On peut faire plusieurs retours sur la même vente, jamais plus
+  que ce qui a été vendu.
+- **Rapports** : jour / semaine / mois et périodes précédentes (flèches) : ventes, bénéfice, dépenses, retours,
+  crédit accordé et remboursé, ce que les clients doivent, inventaires ; jour par jour ; produits qui
+  rapportent le plus ; envoi en image (WhatsApp) ou en fichier Excel (CSV).
+- Sur téléphone, Rapports / Devis / Retours sont dans « Gestion » ; sur tablette et PC, dans le menu de gauche.
+
+**Défauts trouvés par les tests et corrigés :**
+- Annuler une vente **après** un retour partiel remettait deux fois le stock et l'argent : c'est maintenant
+  refusé (« Cette vente a déjà eu un retour : faites « Retour » pour le reste »).
+- PC 1366×768 : avec 3 rubriques de plus, le bas du menu de gauche (Fournisseurs, Vendeurs, Gestion) sortait
+  de l'écran. Les lignes du menu s'adaptent maintenant à la hauteur (40 à 50 points) : tout tient sans défiler.
+- Après « Transformer en vente », le retour en arrière pouvait fermer une page de trop : corrigé.
+- Vu sur les captures : le reçu du retour écrivait « Rendu : 3 kg de Riz » (quantité vendue) au lieu de
+  « Rendu : 1 kg de Riz » (quantité rendue) : corrigé et testé. Sous chaque ligne du retour : « vendu : 3 ».
+- Vu sur les captures (4 pouces) : « Trop de codes faux. Réessayez à 19:20. » était coupé : il tient
+  maintenant sur une ligne.
+
+**Captures vérifiées** (4", grand téléphone, tablette 10" paysage, PC 1366×768) : détail d'une vente (boutons
+Retour / Annuler), retour, retour enregistré + reçu, devis, rapport de la semaine, liste des retours, code du
+vendeur créé, écran d'entrée bloqué. Fichier : `test_captures/lot_e_captures_test.dart`.
+**Total : 383 tests, tous réussis.**
+
+**Tests (lot E)**, par exemple :
+- Vente 3 kg de riz + 2 sucres = **3 400 F** (caisse ouverte avec 5 000 F) ; le client rend 1 kg + 1 sucre →
+  **1 400 F rendus** ; stock riz 97 → **98 kg** ; caisse attendue **7 000 F** ; rapport du jour : ventes
+  **2 000 F**, retours 1 400 F, bénéfice **200 F** ; rendre encore 3 kg → refusé (« On ne peut rendre que 2 ») ;
+  annuler toute la vente → refusé ; rendre le reste → caisse revenue à la seule mise de départ.
+- Kofi prend 3 kg à crédit (1 800 F), rend 1 kg → il doit **1 200 F**, aucune caisse ne bouge ; il rembourse
+  500 F → rapport : crédit accordé 1 200 F, remboursé 500 F, dû **700 F**.
+- Le vendeur Kossi rend un **sac de 50 kg (28 000 F)** → code du patron demandé ; faux code refusé ; bon code
+  → retour enregistré avec « accord : Ama » ; alerte « Kossi a fait un retour sur la vente A-000001 ».
+- **Devis 2 kg de riz = 1 200 F** (stock et caisse inchangés, « Devis n° DV-A-0001 … Valable 7 jours. »
+  envoyé) ; le riz passe à 650 F ; « Transformer en vente » → « nouveau total 1 300 F » → vente **A-000001 de
+  1 300 F**, stock 98 kg ; le devis affiche « Déjà vendu (reçu A-000001) ».
+- Rapport : 3 400 F vendus, 800 F rendus, 500 F de dépenses → **2 600 F**, et le fichier Excel contient
+  « Ventes (F);2600 ». Semaine et mois identiques, mois précédent 0 F.
+- Retour, devis, rapports, liste des retours sur les 6 tailles d'écran : rien ne déborde.
+
+### Sécurité de l'écran d'entrée ✅ (version 0.27.0)
+**Problème :** le code seul reconnaît la personne. Si un vendeur choisit lui-même son code et que l'application
+répond « ce code est déjà celui d'une autre personne », il apprend le code d'un collègue.
+**Solution choisie (la plus simple) : l'application tire le code du vendeur au hasard.** Le patron écrit
+seulement le prénom puis touche « Ajouter et créer son code » ; l'application affiche une seule fois un code
+de 4 chiffres, jamais trop facile (1111, 1234…) et jamais celui d'une autre personne, avec la consigne « Donnez
+ce code au vendeur en privé ». « Changer le code » donne de la même façon un nouveau code au hasard (si le
+vendeur l'a oublié). Personne ne choisit plus de code de vendeur : personne ne peut donc apprendre qu'un code
+« est déjà pris ». Le patron garde son code à 6 chiffres choisi par lui (il est le seul à 6 chiffres : aucune
+collision possible). Par précaution, le message d'erreur interne est devenu neutre (« Ce code ne peut pas être
+utilisé »).
+**Vérifié et renforcé :**
+- 5 codes faux à l'écran d'entrée → écran bloqué **5 minutes** (même le bon code est refusé), message « Trop de
+  codes faux. Réessayez à 10:05. » affiché **dès le 5e code** (avant, il n'apparaissait qu'au code suivant), et
+  la voix le dit.
+- L'alerte « 5 codes faux à l'entrée » part vers le patron (bandeau rouge + voix sur son téléphone).
+- **Fermer et rouvrir l'application ne remet plus le compte à zéro** (avant, il était gardé en mémoire
+  seulement : on pouvait essayer 4 codes, fermer, recommencer).
+- Un bon code remet le compte à zéro.
+**Tests :** tirage (un code déjà pris ou trop facile est sauté sans rien dire ; 30 tirages corrects), message
+neutre, ajout d'Afi et nouveau code de Kossi par l'écran (l'ancien code ne marche plus), 5 codes faux avec
+horloge simulée (bloqué à 10:00, bon code refusé, accepté à 10:06) + alerte reçue par le patron, compte gardé
+après réouverture, écran « code du vendeur » sur 6 tailles.
+
+### Vérification du téléphone à l'installation (explication, rien changé)
+- **Ce qu'elle vérifie** (`lib/domaine/verification_telephone.dart`) : version d'Android (8 ou plus), services
+  Google (sauvegarde, Drive, notifications), place libre (bloquant sous 100 Mo, avertissement sous 300 Mo),
+  voix française (avertissement seulement). Sur PC : déclaré compatible.
+- **Quand l'écran apparaît encore** : seulement en cas de problème **bloquant** : téléphone sans services
+  Google (ex. Huawei récents) ou moins de 100 Mo libres → écran rouge + « Demander de l'aide » (WhatsApp).
+  (Android 7 ou moins ne peut de toute façon pas installer l'APK.) Sinon on passe tout seul au code
+  d'activation.
+- **Ce qui est perdu en le cachant** : les deux **avertissements** non bloquants ne sont plus montrés au
+  patron : « place libre entre 100 et 300 Mo » et « pas de voix française (l'application ne parlera pas) ».
+  Question posée au propriétaire dans le rapport.

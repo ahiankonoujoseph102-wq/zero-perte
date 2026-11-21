@@ -1744,6 +1744,14 @@ class JournalLocal implements ReglagesLocaux {
         [venteOperationId, TypeOperation.vente],
       );
       if (v.isEmpty) throw const ErreurZeroPerte('Vente introuvable.');
+      // Une vente qui a déjà eu un retour ne s'annule plus en entier (le
+      // stock et l'argent rendus seraient comptés deux fois) : on fait un
+      // retour pour le reste.
+      if ((await _dejaRendus(t, venteOperationId)).isNotEmpty) {
+        throw const ErreurZeroPerte(
+          'Cette vente a déjà eu un retour : faites « Retour » pour le reste.',
+        );
+      }
       final vente =
           jsonDecode(v.first['donnees'] as String) as Map<String, Object?>;
       return _ajouter(

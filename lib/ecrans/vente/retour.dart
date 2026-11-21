@@ -339,9 +339,11 @@ class _LigneRetour extends StatelessWidget {
                 Text(
                   reste <= 0
                       ? 'Déjà rendu'
-                      : dejaRendu > 0
-                      ? '${formatFrancs(prix)} · déjà rendu : $dejaRendu'
-                      : formatFrancs(prix),
+                      : [
+                          formatFrancs(prix),
+                          if (!auMontant) 'vendu : $vendu',
+                          if (dejaRendu > 0) 'déjà rendu : $dejaRendu',
+                        ].join(' · '),
                   style: const TextStyle(
                     fontSize: 15,
                     color: CouleursZp.texteDoux,
@@ -398,8 +400,19 @@ class PageRetourTermine extends StatelessWidget {
     final mode = ModePaiement.depuisCode(
       retour.donnees['mode_paiement'] as String,
     );
-    final rendusParLigne = {
-      for (final l in retour.lignes) l['ligne'] as int: l['prix_total'] as int,
+    // Lignes rendues décrites avec la quantité RENDUE (« 1 kg de Riz »), pas
+    // celle de la vente.
+    final rendues = {
+      'lignes': [
+        for (final l in retour.lignes)
+          {
+            ...l,
+            'conditionnement':
+                vente.lignes[l['ligne'] as int]['conditionnement'],
+            if (vente.lignes[l['ligne'] as int]['au_montant'] == true)
+              'nombre': null,
+          },
+      ],
     };
     return PageZp(
       titre: 'Retour enregistré',
@@ -411,7 +424,7 @@ class PageRetourTermine extends StatelessWidget {
         onPressed: () => Navigator.of(context).pop(true),
       ),
       corps: FutureBuilder<List<LigneRecu>>(
-        future: lignesDuRecu(etat, vente.donnees),
+        future: lignesDuRecu(etat, rendues),
         builder: (context, s) {
           final lignes = s.data ?? const <LigneRecu>[];
           return ListView(
@@ -446,9 +459,8 @@ class PageRetourTermine extends StatelessWidget {
                   numero: vente.recu,
                   date: dateRecu(retour.heure),
                   lignes: [
-                    for (final e in rendusParLigne.entries)
-                      if (e.key < lignes.length)
-                        LigneRecu('Rendu : ${lignes[e.key].libelle}', e.value),
+                    for (final l in lignes)
+                      LigneRecu('Rendu : ${l.libelle}', l.montant),
                   ],
                   libelleTotal: 'RENDU',
                   paiement: '',

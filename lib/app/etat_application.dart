@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' show Random;
 
 import 'package:flutter/foundation.dart';
 
@@ -260,29 +261,54 @@ class EtatApplication extends ChangeNotifier {
   List<Utilisateur> get vendeurs =>
       _utilisateurs.where((u) => u.role == Role.vendeur).toList();
 
-  /// Ajoute un vendeur avec son code secret (choisi par lui).
-  Future<Utilisateur> ajouterVendeur({
+  /// Ajoute un vendeur. Son code est TIRÉ AU HASARD par l'application (jamais
+  /// choisi par une personne) : ainsi personne ne peut découvrir, en
+  /// essayant un code « déjà pris », qu'il appartient à quelqu'un d'autre.
+  /// [pin] ne sert qu'aux tests et aux reprises de données.
+  Future<({Utilisateur vendeur, String code})> ajouterVendeur({
     required String nom,
-    required String pin,
+    String? pin,
   }) async {
     if (nom.trim().isEmpty) {
       throw const ErreurZeroPerte('Écrivez le prénom du vendeur.');
     }
-    final probleme = problemePin(pin);
+    final code = pin ?? await tirerCodeVendeur();
+    final probleme = problemePin(code);
     if (probleme != null) throw ErreurZeroPerte(probleme);
-    await _verifierCodeLibre(pin);
+    await _verifierCodeLibre(code);
     final sel = nouveauSel();
     final u = Utilisateur(
       id: nouvelIdentifiant(),
       nom: nom.trim(),
       role: Role.vendeur,
       sel: sel,
-      hachage: await hacherPin(pin, sel),
+      hachage: await hacherPin(code, sel),
     );
     await journal.definirUtilisateur(u, auteurId: auteurActuel);
     _utilisateurs = await journal.utilisateurs();
     notifyListeners();
-    return u;
+    return (vendeur: u, code: code);
+  }
+
+  /// Tire au hasard un code de vendeur (4 chiffres) : pas trop facile
+  /// (1111, 1234…) et différent de celui de toutes les autres personnes.
+  Future<String> tirerCodeVendeur({String? sauf, Random? hasard}) async {
+    final r = hasard ?? Random.secure();
+    for (var essai = 0; essai < 200; essai++) {
+      final code = r.nextInt(10000).toString().padLeft(longueurPin, '0');
+      if (problemePin(code) != null) continue;
+      if (await codeDejaUtilise(code, sauf: sauf)) continue;
+      return code;
+    }
+    throw const ErreurZeroPerte('Impossible de créer un code. Réessayez.');
+  }
+
+  /// Donne au vendeur [u] un nouveau code tiré au hasard, et le renvoie
+  /// (à lui remettre en privé : il ne sera plus jamais affiché).
+  Future<String> nouveauCodeVendeur(Utilisateur u) async {
+    final code = await tirerCodeVendeur(sauf: u.id);
+    await changerPin(u, code);
+    return code;
   }
 
   /// Bloque ou débloque un vendeur (nouvelle version ; l'historique reste).
@@ -368,8 +394,11 @@ class EtatApplication extends ChangeNotifier {
 
   // --- Entrée directe par le code (comme sur un logiciel de caisse) ---------
 
+  /// Codes faux tapés à l'entrée depuis le dernier bon code. Gardé dans les
+  /// réglages : fermer et rouvrir l'application ne remet pas le compte à zéro.
   int _erreursCode = 0;
   static const _cleBlocageCode = 'pin.blocage.connexion';
+  static const _cleErreursCode = 'pin.erreurs.connexion';
 
   /// Écran d'entrée bloqué jusqu'à cette heure (après 5 codes faux), ou nul.
   Future<DateTime?> entreeBloqueeJusqua() async {
@@ -384,6 +413,8 @@ class EtatApplication extends ChangeNotifier {
   /// [dureeBlocagePin] (et alerte au patron).
   Future<Utilisateur?> connecterParCode(String code) async {
     if (await entreeBloqueeJusqua() != null) return null;
+    _erreursCode =
+        int.tryParse(await journal.lireParametre(_cleErreursCode) ?? '') ?? 0;
     for (final u in _utilisateurs.where((u) => u.longueurCode == code.length)) {
       if (await pinCorrect(u, code)) {
         if (!u.actif) {
@@ -392,6 +423,7 @@ class EtatApplication extends ChangeNotifier {
           );
         }
         _erreursCode = 0;
+        await journal.ecrireParametre(_cleErreursCode, '0');
         _utilisateurActuel = u;
         notifyListeners();
         return u;
@@ -400,6 +432,7 @@ class EtatApplication extends ChangeNotifier {
     _erreursCode++;
     if (_erreursCode >= essaisPin) {
       _erreursCode = 0;
+      await journal.ecrireParametre(_cleErreursCode, '0');
       await journal.ecrireParametre(
         _cleBlocageCode,
         '${maintenant().add(dureeBlocagePin).millisecondsSinceEpoch}',
@@ -410,6 +443,8 @@ class EtatApplication extends ChangeNotifier {
           '$essaisPin codes faux à l\'entrée (appareil ${journal.prefixeRecu}).',
         ),
       );
+    } else {
+      await journal.ecrireParametre(_cleErreursCode, '$_erreursCode');
     }
     return null;
   }
@@ -430,8 +465,9 @@ class EtatApplication extends ChangeNotifier {
 
   Future<void> _verifierCodeLibre(String code, {String? sauf}) async {
     if (await codeDejaUtilise(code, sauf: sauf)) {
+      // Message neutre : il ne dit jamais que le code est celui de quelqu'un.
       throw const ErreurZeroPerte(
-        'Ce code est déjà celui d\'une autre personne. Choisissez-en un autre.',
+        'Ce code ne peut pas être utilisé. Choisissez-en un autre.',
       );
     }
   }

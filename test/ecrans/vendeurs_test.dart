@@ -40,8 +40,16 @@ void main() {
         find.byKey(const Key('champ-nom-vendeur')),
         'Kossi',
       );
-      await taperPin(tester, '5913');
-      await taperPin(tester, '5913');
+      // Le code n'est pas choisi : l'application le tire au hasard et le
+      // montre une seule fois au patron.
+      await toucher(tester, find.byKey(const Key('bouton-creer-code')));
+      await attendre(tester, tours: 10);
+      final code = tester
+          .widget<Text>(find.byKey(const Key('code-vendeur-cree')))
+          .data!
+          .replaceAll(' ', '');
+      expect(code, matches(RegExp(r'^\d{4}$')));
+      await toucher(tester, find.byKey(const Key('bouton-code-note')));
       expect(find.textContaining('Kossi est ajouté'), findsOneWidget);
       expect(find.text('Peut vendre'), findsOneWidget);
 
@@ -57,9 +65,10 @@ void main() {
       // Écran d'entrée : on tape son code, il reconnaît la personne.
       expect(find.byType(PageConnexion), findsOneWidget);
       expect(find.text('Tapez votre code'), findsOneWidget);
-      await taperCode(tester, '4827'); // aucun code ne correspond
+      final faux = code == '4827' ? '4829' : '4827';
+      await taperCode(tester, faux); // aucun code ne correspond
       expect(find.textContaining('Code faux'), findsOneWidget);
-      await taperCode(tester, '5913');
+      await taperCode(tester, code);
       expect(find.byType(AccueilVendeur), findsOneWidget);
       expect(find.text('Kossi'), findsOneWidget);
 

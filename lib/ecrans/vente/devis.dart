@@ -54,7 +54,11 @@ class _PageDevisState extends State<PageDevis> {
       );
     }
     await ouvrirVenteAvec(context, etat, panier: panier, devis: widget.devis);
-    if (mounted) Navigator.of(context).pop();
+    // Retour de la vente : on ferme le devis (seulement s'il est encore
+    // l'écran affiché, pour ne jamais fermer une autre page).
+    if (mounted && (ModalRoute.of(context)?.isCurrent ?? false)) {
+      Navigator.of(context).pop();
+    }
   }
 
   @override

@@ -109,6 +109,17 @@ class _PageConnexionState extends State<PageConnexion> {
       }
       final u = await etat.connecterParCode(_code);
       if (u == null) {
+        // Le 5e code faux bloque l'écran tout de suite : on le dit.
+        final bloqueMaintenant = await etat.entreeBloqueeJusqua();
+        if (bloqueMaintenant != null) {
+          setState(() {
+            _code = '';
+            _erreur =
+                'Trop de codes faux. Réessayez à ${bloqueMaintenant.hour.toString().padLeft(2, '0')}:${bloqueMaintenant.minute.toString().padLeft(2, '0')}.';
+          });
+          await etat.services.voix.dire('Trop de codes faux.');
+          return;
+        }
         final reste = etat.essaisEntreeRestants;
         setState(() {
           _code = '';
@@ -216,14 +227,20 @@ class _PageConnexionState extends State<PageConnexion> {
                           height: 30,
                           child: _erreur == null
                               ? null
-                              : Text(
-                                  _erreur!,
-                                  key: const Key('code-erreur'),
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w700,
-                                    color: CouleursZp.argentSort,
+                              // Toujours en entier sur une ligne (le texte
+                              // rapetisse un peu sur un petit écran).
+                              : FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    _erreur!,
+                                    key: const Key('code-erreur'),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 1,
+                                    style: const TextStyle(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w700,
+                                      color: CouleursZp.argentSort,
+                                    ),
                                   ),
                                 ),
                         ),

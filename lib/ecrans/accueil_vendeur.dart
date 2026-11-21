@@ -445,7 +445,7 @@ class _AccueilGrandEcranState extends State<_AccueilGrandEcran> {
   Widget build(BuildContext context) {
     final etat = widget.etat;
     final u = etat.utilisateurActuel;
-    final elements = <Widget>[
+    final elements = <_LigneMenu>[
       if (etat.voitTout)
         _LigneMenu(
           cle: const Key('menu-accueil'),
@@ -509,13 +509,29 @@ class _AccueilGrandEcranState extends State<_AccueilGrandEcran> {
                     ),
                   ),
                   const Divider(height: 1, color: CouleursZp.ligne),
+                  // Toutes les rubriques tiennent sans défiler (PC 1366×768) :
+                  // la hauteur des lignes s'adapte à la place (40 à 50 points).
                   Expanded(
-                    child: ListView(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 8,
-                        horizontal: 8,
-                      ),
-                      children: elements,
+                    child: LayoutBuilder(
+                      builder: (context, c) {
+                        final hauteur =
+                            ((c.maxHeight - 16) / elements.length - 4).clamp(
+                              40.0,
+                              50.0,
+                            );
+                        return SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 8,
+                            horizontal: 8,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              for (final e in elements) e.avecHauteur(hauteur),
+                            ],
+                          ),
+                        );
+                      },
                     ),
                   ),
                   const Divider(height: 1, color: CouleursZp.ligne),
@@ -610,7 +626,20 @@ class _LigneMenu extends StatelessWidget {
     required this.couleur,
     required this.choisi,
     required this.onTap,
+    this.hauteur = 50,
   });
+
+  final double hauteur;
+
+  _LigneMenu avecHauteur(double h) => _LigneMenu(
+    cle: cle,
+    icone: icone,
+    titre: titre,
+    couleur: couleur,
+    choisi: choisi,
+    onTap: onTap,
+    hauteur: h,
+  );
 
   final Key cle;
   final IconData icone;
@@ -638,7 +667,7 @@ class _LigneMenu extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           onTap: onTap,
           child: SizedBox(
-            height: 50,
+            height: hauteur,
             child: Row(
               children: [
                 const SizedBox(width: 12),
