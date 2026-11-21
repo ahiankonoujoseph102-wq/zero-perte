@@ -679,3 +679,7 @@ après réouverture, écran « code du vendeur » sur 6 tailles.
 - **Ce qui est perdu en le cachant** : les deux **avertissements** non bloquants ne sont plus montrés au
   patron : « place libre entre 100 et 300 Mo » et « pas de voix française (l'application ne parlera pas) ».
   Question posée au propriétaire dans le rapport.
+
+**Publiée :** v0.27.0-n42 (fabrication Android et Windows réussies) — APK universel **17,6 Mo** (arm64 9,5 Mo,
+armv7 9,0 Mo), **ZeroPerte-Windows.zip 13,3 Mo**. (Cette ligne est ajoutée sur la branche de travail seulement,
+pour ne pas publier une version de plus ; elle arrivera sur `main` avec la prochaine version.)
