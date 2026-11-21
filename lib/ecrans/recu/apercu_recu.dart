@@ -28,7 +28,17 @@ class ApercuRecu extends StatelessWidget {
     this.paiement = 'Espèces',
     this.demo = false,
     this.credit,
+    this.titre = 'Reçu n°',
+    this.libelleTotal = 'TOTAL',
+    this.mention,
   });
+
+  /// « Reçu n° », « DEVIS n° », « Retour n° ».
+  final String titre;
+  final String libelleTotal;
+
+  /// Phrase en gras sous le total (« Devis valable 7 jours… »).
+  final String? mention;
 
   final ConfigBoutique config;
   final bool exemple;
@@ -121,7 +131,7 @@ class ApercuRecu extends StatelessWidget {
                     alignment: WrapAlignment.spaceBetween,
                     spacing: 12,
                     children: [
-                      Text('Reçu n° $numero', style: petit),
+                      Text('$titre $numero', style: petit),
                       Text(date, style: petit),
                     ],
                   ),
@@ -149,9 +159,9 @@ class ApercuRecu extends StatelessWidget {
                   const Divider(height: 20),
                   Row(
                     children: [
-                      const Text(
-                        'TOTAL',
-                        style: TextStyle(
+                      Text(
+                        libelleTotal,
+                        style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
                         ),
@@ -173,10 +183,23 @@ class ApercuRecu extends StatelessWidget {
                       ),
                     ],
                   ),
-                  Text(
-                    paiement == 'Crédit' ? 'À crédit' : 'Payé : $paiement',
-                    style: petit,
-                  ),
+                  if (paiement.isNotEmpty)
+                    Text(
+                      paiement == 'Crédit' ? 'À crédit' : 'Payé : $paiement',
+                      style: petit,
+                    ),
+                  if (mention != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(
+                        mention!,
+                        key: const Key('recu-mention'),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
                   if (credit != null)
                     Text(
                       credit!,

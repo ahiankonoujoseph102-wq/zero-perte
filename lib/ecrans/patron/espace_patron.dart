@@ -5,7 +5,10 @@ import '../../theme/couleurs.dart';
 import '../caisse/fermeture.dart';
 import '../caisse/saisie_montant.dart';
 import '../communs.dart';
+import '../vente/devis.dart';
+import '../vente/retour.dart';
 import 'arrivages.dart';
+import 'rapports.dart';
 import 'fournisseurs.dart';
 import 'inventaire.dart';
 import 'sauvegarde.dart';
@@ -33,6 +36,27 @@ class EntreePatron {
 
 /// Entrées du menu (les étapes suivantes en ajoutent).
 final List<EntreePatron> entreesPatron = [
+  EntreePatron(
+    'rapports',
+    Icons.summarize_rounded,
+    'Rapports',
+    CouleursZp.argentEntre,
+    (etat) => PageRapports(etat: etat),
+  ),
+  EntreePatron(
+    'devis',
+    Icons.request_quote_rounded,
+    'Devis',
+    CouleursZp.marque,
+    (etat) => PageListeDevis(etat: etat),
+  ),
+  EntreePatron(
+    'retours',
+    Icons.assignment_return_rounded,
+    'Retours',
+    CouleursZp.argentSort,
+    (etat) => PageRetours(etat: etat),
+  ),
   EntreePatron(
     'tableau',
     Icons.insights_rounded,

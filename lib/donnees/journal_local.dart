@@ -448,6 +448,43 @@ class JournalLocal implements ReglagesLocaux {
             'client_id': d['client'],
           });
         }
+      case TypeOperation.venteRetour:
+        // La marchandise rendue revient en stock ; l'argent sort de la caisse
+        // choisie (ou le crédit du client diminue).
+        final lignes = (d['lignes'] as List).cast<Map>();
+        for (var i = 0; i < lignes.length; i++) {
+          final l = lignes[i];
+          await t.insert('mouvements_stock', {
+            'operation_id': op.id,
+            'ligne': i + 1,
+            'produit_id': l['produit'],
+            'quantite_milliemes': l['quantite_milliemes'],
+            'nature': 'retour',
+            'prix_total': -(l['prix_total'] as int),
+            'cout_total': l['cout_total'] == null
+                ? null
+                : -(l['cout_total'] as int),
+          });
+        }
+        if (d['mode_paiement'] == ModePaiement.credit.code) {
+          if (d['client'] != null) {
+            await t.insert('mouvements_credit', {
+              'operation_id': op.id,
+              'client_id': d['client'],
+              'montant': -(d['total'] as int),
+              'nature': 'retour',
+              'mode_paiement': null,
+            });
+          }
+        } else {
+          await t.insert('mouvements_caisse', {
+            'operation_id': op.id,
+            'nature': op.type,
+            'mode_paiement': d['mode_paiement'],
+            'montant': d['total'],
+            'motif': d['motif'],
+          });
+        }
       case TypeOperation.emballage:
         await t.insert('mouvements_emballages', {
           'operation_id': op.id,
@@ -1726,6 +1763,212 @@ class JournalLocal implements ReglagesLocaux {
     });
   }
 
+  /// Ce qui a déjà été rendu pour chaque ligne d'une vente :
+  /// index de la ligne → nombre d'unités rendues (1 = tout, pour une ligne
+  /// vendue au montant).
+  Future<Map<int, int>> dejaRendus(String venteOperationId) =>
+      _dejaRendus(_db, venteOperationId);
+
+  static Future<Map<int, int>> _dejaRendus(
+    DatabaseExecutor t,
+    String venteOperationId,
+  ) async {
+    final r = await t.rawQuery(
+      'SELECT donnees FROM operations WHERE type = ?',
+      [TypeOperation.venteRetour],
+    );
+    final rendus = <int, int>{};
+    for (final l in r) {
+      final d = jsonDecode(l['donnees'] as String) as Map;
+      if (d['vente'] != venteOperationId) continue;
+      for (final x in (d['lignes'] as List).cast<Map>()) {
+        final i = x['ligne'] as int;
+        rendus[i] = (rendus[i] ?? 0) + (x['nombre'] as int);
+      }
+    }
+    return rendus;
+  }
+
+  /// Retour partiel d'une vente. [rendus] : index de la ligne → nombre
+  /// d'unités rendues (pour une ligne vendue au montant : 1 = toute la ligne).
+  /// La marchandise revient en stock ; le client est remboursé depuis la
+  /// caisse [mode] (pour une vente à crédit : son crédit diminue).
+  Future<Operation> enregistrerRetour({
+    required String venteOperationId,
+    required Map<int, int> rendus,
+    required ModePaiement mode,
+    required String motif,
+    String? accordPatronId,
+    required String auteurId,
+  }) {
+    if (motif.trim().isEmpty) {
+      throw const ErreurZeroPerte('Le motif est obligatoire.');
+    }
+    return _db.transaction((t) async {
+      final v = await t.rawQuery(
+        'SELECT o.donnees FROM operations o WHERE o.id = ? AND o.type = ?',
+        [venteOperationId, TypeOperation.vente],
+      );
+      if (v.isEmpty) throw const ErreurZeroPerte('Vente introuvable.');
+      final annulee = await t.query(
+        'ventes_annulees',
+        where: 'vente_operation_id = ?',
+        whereArgs: [venteOperationId],
+      );
+      if (annulee.isNotEmpty) {
+        throw const ErreurZeroPerte('Cette vente est annulée.');
+      }
+      final vente =
+          jsonDecode(v.first['donnees'] as String) as Map<String, Object?>;
+      final lignesVente = (vente['lignes'] as List).cast<Map>();
+      final deja = await _dejaRendus(t, venteOperationId);
+      final lignes = <Map<String, Object?>>[];
+      var total = 0;
+      for (final e in rendus.entries) {
+        if (e.value <= 0) continue;
+        if (e.key < 0 || e.key >= lignesVente.length) {
+          throw const ErreurZeroPerte('Ligne de vente introuvable.');
+        }
+        final l = lignesVente[e.key];
+        final vendu = l['au_montant'] == true ? 1 : (l['nombre'] as int);
+        final reste = vendu - (deja[e.key] ?? 0);
+        if (e.value > reste) {
+          throw ErreurZeroPerte(
+            reste <= 0
+                ? 'Cet article a déjà été rendu.'
+                : 'On ne peut rendre que $reste de cet article.',
+          );
+        }
+        // Part rendue : exacte si tout le reste de la ligne revient.
+        int part(int valeur) =>
+            e.value == vendu ? valeur : valeur * e.value ~/ vendu;
+        final cout = l['cout_total'] as int?;
+        final prix = part(l['prix_total'] as int);
+        lignes.add({
+          'ligne': e.key,
+          'produit': l['produit'],
+          'nombre': e.value,
+          'quantite_milliemes': part(l['quantite_milliemes'] as int),
+          'prix_total': prix,
+          'cout_total': cout == null ? null : part(cout),
+        });
+        total += prix;
+      }
+      if (lignes.isEmpty) {
+        throw const ErreurZeroPerte('Choisissez ce que le client rend.');
+      }
+      final aCredit = vente['mode_paiement'] == ModePaiement.credit.code;
+      final modeRetour = aCredit ? ModePaiement.credit : mode;
+      if (!aCredit && modeRetour == ModePaiement.credit) {
+        throw const ErreurZeroPerte('Choisissez la caisse qui rembourse.');
+      }
+      return _ajouter(
+        t,
+        type: TypeOperation.venteRetour,
+        auteurId: auteurId,
+        donnees: {
+          'vente': venteOperationId,
+          'recu': vente['recu'],
+          'motif': motif.trim(),
+          'lignes': lignes,
+          'total': total,
+          'mode_paiement': modeRetour.code,
+          if (vente['client'] != null) 'client': vente['client'],
+          'accord': ?accordPatronId,
+        },
+      );
+    });
+  }
+
+  /// Retours (les plus récents d'abord).
+  Future<List<OperationLue>> retours({int depuis = 0, int limite = 200}) =>
+      _operationsDuType(TypeOperation.venteRetour, depuis, limite);
+
+  Future<List<OperationLue>> _operationsDuType(
+    String type,
+    int depuis,
+    int limite,
+  ) async {
+    final r = await _db.query(
+      'operations',
+      columns: ['id', 'heure_telephone', 'auteur_id', 'donnees'],
+      where: 'type = ? AND heure_telephone >= ?',
+      whereArgs: [type, depuis],
+      orderBy: 'heure_telephone DESC, numero DESC',
+      limit: limite,
+    );
+    return [
+      for (final l in r)
+        OperationLue(
+          id: l['id'] as String,
+          heure: l['heure_telephone'] as int,
+          auteurId: l['auteur_id'] as String,
+          donnees: (jsonDecode(l['donnees'] as String) as Map)
+              .cast<String, Object?>(),
+        ),
+    ];
+  }
+
+  /// Nouveau devis (facture proforma). Ne touche ni le stock ni la caisse.
+  /// [lignes] : produit, conditionnement, nombre ou montant, libellé, prix.
+  Future<Operation> enregistrerDevis({
+    required List<Map<String, Object?>> lignes,
+    String? clientId,
+    int validiteJours = 7,
+    required String auteurId,
+  }) {
+    if (lignes.isEmpty) throw const ErreurZeroPerte('Le devis est vide.');
+    return _db.transaction((t) async {
+      final n = await t.rawQuery(
+        'SELECT COUNT(*) AS n FROM operations WHERE type = ? AND telephone_id = ?',
+        [TypeOperation.devisCree, telephoneId],
+      );
+      final numero = (n.first['n'] as int) + 1;
+      return _ajouter(
+        t,
+        type: TypeOperation.devisCree,
+        auteurId: auteurId,
+        donnees: {
+          'numero': numero,
+          'recu': 'DV-$prefixeRecu-${numero.toString().padLeft(4, '0')}',
+          'lignes': lignes,
+          'total': lignes.fold<int>(0, (s, l) => s + (l['prix'] as int)),
+          'validite_jours': validiteJours,
+          'client': ?clientId,
+        },
+      );
+    });
+  }
+
+  /// Devis (les plus récents d'abord), avec la vente qui l'a transformé.
+  Future<List<(OperationLue, String?)>> devis({int limite = 200}) async {
+    final liste = await _operationsDuType(TypeOperation.devisCree, 0, limite);
+    final vendus = await _operationsDuType(TypeOperation.devisVendu, 0, 100000);
+    final venteDe = {
+      for (final v in vendus)
+        v.donnees['devis'] as String: v.donnees['recu'] as String?,
+    };
+    return [
+      for (final d in liste)
+        (d, venteDe.containsKey(d.id) ? (venteDe[d.id] ?? '') : null),
+    ];
+  }
+
+  /// Le devis est devenu la vente [venteOperationId] (reçu [recu]).
+  Future<Operation> marquerDevisVendu({
+    required String devisId,
+    required String venteOperationId,
+    required String recu,
+    required String auteurId,
+  }) => _db.transaction(
+    (t) => _ajouter(
+      t,
+      type: TypeOperation.devisVendu,
+      auteurId: auteurId,
+      donnees: {'devis': devisId, 'vente': venteOperationId, 'recu': recu},
+    ),
+  );
+
   /// Ventes depuis une heure donnée (millisecondes), les plus récentes d'abord,
   /// avec leur état (annulée ou non).
   Future<List<VenteResume>> ventesDepuis(int depuis) async {
@@ -1753,13 +1996,15 @@ class JournalLocal implements ReglagesLocaux {
   /// déduites), et chiffre d'affaires par produit.
   Future<Map<String, ({int milliemes, int montant})>> ventesParProduit({
     required int depuis,
+    int? jusqua,
   }) async {
     final r = await _db.rawQuery(
       'SELECT m.produit_id AS p, -SUM(m.quantite_milliemes) AS q, SUM(m.prix_total) AS t '
       'FROM mouvements_stock m JOIN operations o ON o.id = m.operation_id '
-      "WHERE m.nature IN ('vente', 'annulation') AND o.heure_telephone >= ? "
+      "WHERE m.nature IN ('vente', 'annulation', 'retour') "
+      'AND o.heure_telephone >= ? AND o.heure_telephone < ? '
       'GROUP BY m.produit_id',
-      [depuis],
+      [depuis, jusqua ?? 9007199254740991],
     );
     return {
       for (final l in r)
@@ -1780,15 +2025,50 @@ class JournalLocal implements ReglagesLocaux {
 
   /// Chiffres des ventes depuis [depuis] : total encaissé (annulations
   /// déduites) et nombre de ventes non annulées.
-  Future<({int total, int nombre})> resumeVentes({required int depuis}) async {
+  Future<({int total, int nombre})> resumeVentes({
+    required int depuis,
+    int? jusqua,
+  }) async {
+    final fin = jusqua ?? 9007199254740991;
     final r = await _db.rawQuery(
       'SELECT COALESCE(SUM(v.total), 0) AS t, COUNT(*) AS n FROM ventes v '
       'JOIN operations o ON o.id = v.operation_id '
       'LEFT JOIN ventes_annulees an ON an.vente_operation_id = v.operation_id '
-      'WHERE o.heure_telephone >= ? AND an.operation_id IS NULL',
-      [depuis],
+      'WHERE o.heure_telephone >= ? AND o.heure_telephone < ? '
+      'AND an.operation_id IS NULL',
+      [depuis, fin],
     );
-    return (total: r.first['t'] as int, nombre: r.first['n'] as int);
+    // Les retours partiels sont déduits du jour où ils sont faits.
+    final rendus = await totalRetours(depuis: depuis, jusqua: fin);
+    return (total: (r.first['t'] as int) - rendus, nombre: r.first['n'] as int);
+  }
+
+  /// Argent rendu aux clients (retours partiels) entre deux heures.
+  Future<int> totalRetours({required int depuis, int? jusqua}) async {
+    final r = await _db.rawQuery(
+      'SELECT COALESCE(-SUM(m.prix_total), 0) AS s FROM mouvements_stock m '
+      'JOIN operations o ON o.id = m.operation_id '
+      "WHERE m.nature = 'retour' AND o.heure_telephone >= ? AND o.heure_telephone < ?",
+      [depuis, jusqua ?? 9007199254740991],
+    );
+    return r.first['s'] as int;
+  }
+
+  /// Crédit accordé (ventes à crédit non annulées) et remboursements reçus
+  /// entre deux heures.
+  Future<({int accorde, int rembourse})> mouvementsCredit({
+    required int depuis,
+    int? jusqua,
+  }) async {
+    final r = await _db.rawQuery(
+      'SELECT '
+      "COALESCE(SUM(CASE WHEN c.nature IN ('vente', 'annulation', 'retour') THEN c.montant ELSE 0 END), 0) AS a, "
+      "COALESCE(-SUM(CASE WHEN c.nature = 'remboursement' THEN c.montant ELSE 0 END), 0) AS r "
+      'FROM mouvements_credit c JOIN operations o ON o.id = c.operation_id '
+      'WHERE o.heure_telephone >= ? AND o.heure_telephone < ?',
+      [depuis, jusqua ?? 9007199254740991],
+    );
+    return (accorde: r.first['a'] as int, rembourse: r.first['r'] as int);
   }
 
   /// Ventes non annulées depuis [depuis] : (heure, total), pour les graphiques.
@@ -1800,16 +2080,25 @@ class JournalLocal implements ReglagesLocaux {
       'WHERE o.heure_telephone >= ? AND an.operation_id IS NULL',
       [depuis],
     );
-    return [for (final l in r) (l['h'] as int, l['t'] as int)];
+    final rendus = await _db.rawQuery(
+      'SELECT o.heure_telephone AS h, SUM(m.prix_total) AS t FROM mouvements_stock m '
+      'JOIN operations o ON o.id = m.operation_id '
+      "WHERE m.nature = 'retour' AND o.heure_telephone >= ? GROUP BY o.id",
+      [depuis],
+    );
+    return [
+      for (final l in r) (l['h'] as int, l['t'] as int),
+      for (final l in rendus) (l['h'] as int, l['t'] as int),
+    ];
   }
 
   /// Total des dépenses (tous moyens de paiement) depuis [depuis].
-  Future<int> totalDepenses({required int depuis}) async {
+  Future<int> totalDepenses({required int depuis, int? jusqua}) async {
     final r = await _db.rawQuery(
       'SELECT COALESCE(SUM(c.montant), 0) AS s FROM mouvements_caisse c '
       'JOIN operations o ON o.id = c.operation_id '
-      'WHERE c.nature = ? AND o.heure_telephone >= ?',
-      [TypeOperation.depense, depuis],
+      'WHERE c.nature = ? AND o.heure_telephone >= ? AND o.heure_telephone < ?',
+      [TypeOperation.depense, depuis, jusqua ?? 9007199254740991],
     );
     return r.first['s'] as int;
   }
@@ -1822,7 +2111,7 @@ class JournalLocal implements ReglagesLocaux {
       'COALESCE(SUM(m.cout_total), 0) AS couts, '
       'SUM(CASE WHEN m.cout_total IS NULL THEN 1 ELSE 0 END) AS sans_cout '
       'FROM mouvements_stock m JOIN operations o ON o.id = m.operation_id '
-      "WHERE m.nature IN ('vente', 'annulation') AND o.heure_telephone >= ? AND o.heure_telephone <= ?",
+      "WHERE m.nature IN ('vente', 'annulation', 'retour') AND o.heure_telephone >= ? AND o.heure_telephone <= ?",
       [depuis ?? 0, jusqua ?? 9007199254740991],
     );
     final l = r.first;
@@ -2082,7 +2371,7 @@ class JournalLocal implements ReglagesLocaux {
     }
     return MouvementsCaisse(
       fondsDeCaisse: await caisse(TypeOperation.fondsDeCaisse),
-      ventes: ventes - annulations,
+      ventes: ventes - annulations - await caisse(TypeOperation.venteRetour),
       remboursementsCredits: await caisse(TypeOperation.remboursementCredit),
       depenses:
           await caisse(TypeOperation.depense) +
@@ -2434,4 +2723,26 @@ class Fournisseur {
 
   /// Ce que la boutique doit encore à ce fournisseur (F).
   final int doit;
+}
+
+/// Une opération relue du journal (devis, retour…).
+class OperationLue {
+  const OperationLue({
+    required this.id,
+    required this.heure,
+    required this.auteurId,
+    required this.donnees,
+  });
+
+  final String id;
+  final int heure;
+  final String auteurId;
+  final Map<String, Object?> donnees;
+
+  String get recu => donnees['recu'] as String? ?? '';
+  int get total => donnees['total'] as int? ?? 0;
+  List<Map<String, Object?>> get lignes => [
+    for (final l in (donnees['lignes'] as List? ?? const []))
+      (l as Map).cast<String, Object?>(),
+  ];
 }

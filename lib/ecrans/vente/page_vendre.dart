@@ -10,21 +10,49 @@ import '../../theme/couleurs.dart';
 import '../clavier_montant.dart';
 import '../communs.dart';
 import '../credit/clients.dart';
+import 'devis.dart';
 import 'page_encaisser.dart';
 import 'ventes_du_jour.dart';
 
 /// Écran « Vendre » : grille des produits en haut, panier et total en bas.
 class PageVendre extends StatefulWidget {
-  const PageVendre({super.key, required this.etat});
+  const PageVendre({super.key, required this.etat, this.panier, this.devis});
 
   final EtatApplication etat;
+
+  /// Panier déjà rempli (devis transformé en vente).
+  final Panier? panier;
+
+  /// Devis d'où vient ce panier : marqué « vendu » après l'encaissement.
+  final OperationLue? devis;
 
   @override
   State<PageVendre> createState() => _PageVendreState();
 }
 
 class _PageVendreState extends State<PageVendre> {
-  final Panier _panier = Panier();
+  late final Panier _panier = widget.panier ?? Panier();
+  late OperationLue? _devis = widget.devis;
+
+  /// Devis (facture proforma) fait avec le panier : ni stock ni caisse.
+  Future<void> _faireDevis() async {
+    if (_panier.vide) {
+      annoncer(context, 'Ajoutez d\'abord les produits du devis.');
+      return;
+    }
+    try {
+      final d = await etat.creerDevis(_panier);
+      if (!mounted) return;
+      setState(_panier.vider);
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => PageDevis(etat: etat, devis: d),
+        ),
+      );
+    } catch (e) {
+      if (mounted) annoncer(context, messageErreur(e), erreur: true);
+    }
+  }
 
   /// Catégorie affichée (null = toutes).
   String? _categorie;
@@ -116,7 +144,15 @@ class _PageVendreState extends State<PageVendre> {
               builder: (_) => PageEncaisser(etat: etat, panier: _panier),
             ),
           );
-    if (fini == true) setState(_panier.vider);
+    if (fini == true) {
+      final d = _devis;
+      if (d != null) {
+        final ventes = await etat.ventesDuJour();
+        if (ventes.isNotEmpty) await etat.devisVendu(d, ventes.first);
+        _devis = null;
+      }
+      if (mounted) setState(_panier.vider);
+    }
   }
 
   @override
@@ -254,6 +290,13 @@ class _PageVendreState extends State<PageVendre> {
           ],
         );
         final actions = [
+          IconButton(
+            key: const Key('bouton-devis'),
+            tooltip: 'Faire un devis',
+            iconSize: 30,
+            onPressed: _faireDevis,
+            icon: const Icon(Icons.request_quote_rounded),
+          ),
           IconButton(
             key: const Key('bouton-ventes-du-jour'),
             tooltip: 'Ventes du jour',

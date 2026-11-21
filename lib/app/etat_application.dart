@@ -672,6 +672,205 @@ class EtatApplication extends ChangeNotifier {
     return f;
   }
 
+  // ---------------------------------------------------------------------------
+  // Retours partiels, devis, rapports
+  // ---------------------------------------------------------------------------
+
+  /// Retour partiel d'une vente. Au-delà du seuil d'alerte (5 000 F), il faut
+  /// l'accord du patron ([accordPatronId], obtenu avec son code) quand ce
+  /// n'est pas lui qui fait le retour. Le patron est prévenu de chaque retour
+  /// fait par un vendeur.
+  Future<OperationLue> retournerVente(
+    VenteResume vente, {
+    required Map<int, int> rendus,
+    required ModePaiement mode,
+    required String motif,
+    String? accordPatronId,
+  }) async {
+    final op = await journal.enregistrerRetour(
+      venteOperationId: vente.operationId,
+      rendus: rendus,
+      mode: mode,
+      motif: motif,
+      accordPatronId: accordPatronId ?? (estPatron ? patron?.id : null),
+      auteurId: auteurActuel,
+    );
+    await rechargerProduits();
+    final total = op.donnees['total'] as int;
+    if (!estPatron) {
+      unawaited(
+        alerter(
+          'retour',
+          '${nomDe(auteurActuel)} a fait un retour sur la vente ${vente.recu} : '
+              '${formatFrancs(total)} rendus (« $motif »).',
+        ),
+      );
+    }
+    notifyListeners();
+    return OperationLue(
+      id: op.id,
+      heure: op.heureTelephone,
+      auteurId: op.auteurId,
+      donnees: op.donnees,
+    );
+  }
+
+  /// Vrai si ce retour demande l'accord du patron.
+  bool retourDemandeAccord(int total) =>
+      !estPatron && total >= seuilAlerteAnnulation;
+
+  /// Devis (facture proforma) créé depuis le panier : ni stock ni caisse.
+  Future<OperationLue> creerDevis(Panier panier) async {
+    final op = await journal.enregistrerDevis(
+      clientId: panier.clientId,
+      auteurId: auteurActuel,
+      lignes: [
+        for (final l in panier.lignes)
+          {
+            'produit': l.produitId,
+            'conditionnement': l.conditionnement?.id,
+            'nombre': l.nombre,
+            'montant': l.montant,
+            'libelle': l.libelle,
+            'prix': l.prix,
+          },
+      ],
+    );
+    return OperationLue(
+      id: op.id,
+      heure: op.heureTelephone,
+      auteurId: op.auteurId,
+      donnees: op.donnees,
+    );
+  }
+
+  /// Panier refait à partir d'un devis (aux prix d'aujourd'hui), et vrai si
+  /// le total a changé depuis le devis.
+  Future<(Panier, bool)> panierDepuisDevis(OperationLue devis) async {
+    final panier = Panier();
+    for (final l in devis.lignes) {
+      final p = _produits.where((p) => p.id == l['produit']).firstOrNull;
+      if (p == null) continue;
+      final condId = l['conditionnement'] as String?;
+      final c = condId == null
+          ? null
+          : (await journal.conditionnements(p.id))
+                .where((c) => c.id == condId)
+                .firstOrNull;
+      final montant = l['montant'] as int?;
+      panier.ajouter(
+        LignePanier(
+          produitId: p.id,
+          nomProduit: p.nom,
+          uniteBase: p.uniteBase,
+          emoji: p.emoji,
+          conditionnement: c,
+          nombre: montant == null ? (l['nombre'] as int? ?? 1) : null,
+          montant: montant,
+          prixUnitaire: c?.prixVente ?? p.prixUnitaire,
+        ),
+      );
+    }
+    final clientId = devis.donnees['client'] as String?;
+    if (clientId != null) {
+      final c = await journal.client(clientId);
+      panier.choisirClient(clientId, c?.nom);
+    }
+    return (panier, panier.total != devis.total);
+  }
+
+  /// Le devis est devenu une vente.
+  Future<void> devisVendu(OperationLue devis, VenteResume vente) async {
+    await journal.marquerDevisVendu(
+      devisId: devis.id,
+      venteOperationId: vente.operationId,
+      recu: vente.recu,
+      auteurId: auteurActuel,
+    );
+    notifyListeners();
+  }
+
+  /// Rapport d'une période : [decalage] 0 = la période en cours, −1 = la
+  /// précédente…
+  Future<Rapport> rapport(Periode periode, {int decalage = 0}) async {
+    final m = maintenant();
+    final aujourdhui = DateTime(m.year, m.month, m.day);
+    late DateTime debut;
+    late DateTime fin;
+    switch (periode) {
+      case Periode.jour:
+        debut = DateTime(m.year, m.month, m.day + decalage);
+        fin = DateTime(debut.year, debut.month, debut.day + 1);
+      case Periode.semaine:
+        final lundi = aujourdhui.subtract(Duration(days: m.weekday - 1));
+        debut = DateTime(lundi.year, lundi.month, lundi.day + 7 * decalage);
+        fin = DateTime(debut.year, debut.month, debut.day + 7);
+      case Periode.mois:
+        debut = DateTime(m.year, m.month + decalage);
+        fin = DateTime(debut.year, debut.month + 1);
+    }
+    final d = debut.millisecondsSinceEpoch;
+    final f = fin.millisecondsSinceEpoch;
+    final jours = <JourRapport>[];
+    if (periode != Periode.jour) {
+      for (
+        var j = debut;
+        j.isBefore(fin);
+        j = DateTime(j.year, j.month, j.day + 1)
+      ) {
+        if (j.isAfter(aujourdhui)) break;
+        final a = j.millisecondsSinceEpoch;
+        final b = DateTime(j.year, j.month, j.day + 1).millisecondsSinceEpoch;
+        jours.add(
+          JourRapport(
+            jour: j,
+            ventes: (await journal.resumeVentes(depuis: a, jusqua: b)).total,
+            benefice: (await journal.beneficeEstime(
+              depuis: a,
+              jusqua: b - 1,
+            )).benefice,
+            depenses: await journal.totalDepenses(depuis: a, jusqua: b),
+          ),
+        );
+      }
+    }
+    final ventes = await journal.resumeVentes(depuis: d, jusqua: f);
+    final credit = await journal.mouvementsCredit(depuis: d, jusqua: f);
+    final parProduit = await journal.ventesParProduit(depuis: d, jusqua: f);
+    final classes =
+        parProduit.entries.where((e) => e.value.montant > 0).toList()
+          ..sort((a, b) => b.value.montant.compareTo(a.value.montant));
+    final inventaires = [
+      for (final i in await journal.inventaires(limite: 500))
+        if (i.heure >= d && i.heure < f) i,
+    ];
+    return Rapport(
+      periode: periode,
+      debut: debut,
+      fin: fin,
+      ventes: ventes.total,
+      nombreVentes: ventes.nombre,
+      benefice: (await journal.beneficeEstime(
+        depuis: d,
+        jusqua: f - 1,
+      )).benefice,
+      depenses: await journal.totalDepenses(depuis: d, jusqua: f),
+      retours: await journal.totalRetours(depuis: d, jusqua: f),
+      creditAccorde: credit.accorde,
+      creditRembourse: credit.rembourse,
+      creditsDus: await journal.totalCredits(),
+      inventaires: inventaires,
+      meilleurs: [
+        for (final e in classes.take(5))
+          (
+            _produits.where((p) => p.id == e.key).firstOrNull?.nom ?? 'Produit',
+            e.value.montant,
+          ),
+      ],
+      jours: jours,
+    );
+  }
+
   /// Chiffres du tableau du patron pour une période.
   Future<TableauPatron> tableau(Periode periode) async {
     final m = maintenant();
@@ -1378,4 +1577,68 @@ class EtatCaisseJour {
 
   /// Dernières caisses fermées (la plus récente d'abord).
   final List<FermetureCaisse> sessions;
+}
+
+/// Un jour d'un rapport (semaine ou mois).
+class JourRapport {
+  const JourRapport({
+    required this.jour,
+    required this.ventes,
+    required this.benefice,
+    required this.depenses,
+  });
+  final DateTime jour;
+  final int ventes;
+  final int benefice;
+  final int depenses;
+}
+
+/// Rapport du patron pour un jour, une semaine ou un mois.
+class Rapport {
+  const Rapport({
+    required this.periode,
+    required this.debut,
+    required this.fin,
+    required this.ventes,
+    required this.nombreVentes,
+    required this.benefice,
+    required this.depenses,
+    required this.retours,
+    required this.creditAccorde,
+    required this.creditRembourse,
+    required this.creditsDus,
+    required this.inventaires,
+    required this.meilleurs,
+    required this.jours,
+  });
+
+  final Periode periode;
+  final DateTime debut;
+
+  /// Fin exclue (minuit du jour suivant la période).
+  final DateTime fin;
+
+  /// Ventes encaissées (annulations et retours déduits).
+  final int ventes;
+  final int nombreVentes;
+  final int benefice;
+  final int depenses;
+
+  /// Argent rendu aux clients (retours partiels).
+  final int retours;
+
+  /// Crédit donné pendant la période (ventes à crédit, après retours).
+  final int creditAccorde;
+
+  /// Crédit remboursé par les clients pendant la période.
+  final int creditRembourse;
+
+  /// Ce que les clients doivent aujourd'hui.
+  final int creditsDus;
+  final List<Inventaire> inventaires;
+  final List<(String, int)> meilleurs;
+  final List<JourRapport> jours;
+
+  /// Marchandise manquante (−) ou en trop (+) constatée aux inventaires.
+  int get ecartsInventaires => inventaires.fold(0, (s, i) => s + i.ecartFrancs);
 }

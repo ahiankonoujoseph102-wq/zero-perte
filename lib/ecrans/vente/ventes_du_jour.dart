@@ -7,6 +7,7 @@ import '../../theme/couleurs.dart';
 import '../assistant/etapes_boutique.dart' show decorationChamp;
 import '../communs.dart';
 import '../recu/recu_vente.dart';
+import 'retour.dart';
 import 'page_encaisser.dart' show nomPaiement;
 
 String heureCourte(int ms) {
@@ -192,12 +193,32 @@ class PageDetailVente extends StatelessWidget {
       icone: Icons.receipt_rounded,
       bas: v.annulee
           ? null
-          : GrosBouton(
-              key: const Key('bouton-annuler-vente'),
-              texte: 'Annuler cette vente',
-              icone: Icons.undo_rounded,
-              couleur: CouleursZp.argentSort,
-              onPressed: () => _annuler(context),
+          : Row(
+              children: [
+                Expanded(
+                  child: GrosBouton(
+                    key: const Key('bouton-retour'),
+                    texte: 'Retour',
+                    icone: Icons.assignment_return_rounded,
+                    couleur: CouleursZp.credit,
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => PageRetour(etat: etat, vente: v),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: GrosBouton(
+                    key: const Key('bouton-annuler-vente'),
+                    texte: 'Annuler',
+                    icone: Icons.undo_rounded,
+                    couleur: CouleursZp.argentSort,
+                    onPressed: () => _annuler(context),
+                  ),
+                ),
+              ],
             ),
       corps: ListView(
         padding: const EdgeInsets.all(16),

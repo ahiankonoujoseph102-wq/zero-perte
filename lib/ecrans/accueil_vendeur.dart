@@ -16,7 +16,12 @@ import 'patron/inventaire.dart';
 import 'patron/tableau.dart';
 import 'patron/tableau_de_bord.dart';
 import 'patron/vendeurs.dart';
+import 'patron/rapports.dart';
+import 'vente/devis.dart';
 import 'vente/page_vendre.dart';
+import 'vente/retour.dart';
+import '../domaine/panier.dart';
+import '../donnees/journal_local.dart' show OperationLue;
 
 /// Largeur du menu fixe de gauche (tablette, PC).
 const double largeurMenuGauche = 220;
@@ -57,7 +62,16 @@ Future<void> _ouvrir(BuildContext context, Widget page) =>
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
 
 /// Vendre : la première vente depuis la fermeture ouvre d'abord la caisse.
-Future<void> ouvrirVente(BuildContext context, EtatApplication etat) async {
+Future<void> ouvrirVente(BuildContext context, EtatApplication etat) =>
+    ouvrirVenteAvec(context, etat);
+
+/// Vendre avec un panier déjà rempli (devis transformé en vente).
+Future<void> ouvrirVenteAvec(
+  BuildContext context,
+  EtatApplication etat, {
+  Panier? panier,
+  OperationLue? devis,
+}) async {
   if (!await etat.caisseOuverte()) {
     if (!context.mounted) return;
     final ouverte = await Navigator.of(context)
@@ -65,7 +79,7 @@ Future<void> ouvrirVente(BuildContext context, EtatApplication etat) async {
     if (ouverte != true) return;
   }
   if (!context.mounted) return;
-  await _ouvrir(context, PageVendre(etat: etat));
+  await _ouvrir(context, PageVendre(etat: etat, panier: panier, devis: devis));
 }
 
 /// Menu selon le rôle : le vendeur ne voit que Vendre, Ma caisse et Clients ;
@@ -116,6 +130,30 @@ List<EntreeMenu> menuPrincipal(EtatApplication etat) => [
       titre: 'Inventaire',
       couleur: const Color(0xFFB38CF0),
       ouvrir: (c) => _ouvrir(c, PageInventaires(etat: etat)),
+    ),
+    EntreeMenu(
+      cle: 'rapports',
+      icone: Icons.summarize_rounded,
+      titre: 'Rapports',
+      couleur: CouleursZp.argentEntreClair,
+      surTelephone: false,
+      ouvrir: (c) => _ouvrir(c, PageRapports(etat: etat)),
+    ),
+    EntreeMenu(
+      cle: 'devis',
+      icone: Icons.request_quote_rounded,
+      titre: 'Devis',
+      couleur: const Color(0xFF4FB3E8),
+      surTelephone: false,
+      ouvrir: (c) => _ouvrir(c, PageListeDevis(etat: etat)),
+    ),
+    EntreeMenu(
+      cle: 'retours',
+      icone: Icons.assignment_return_rounded,
+      titre: 'Retours',
+      couleur: CouleursZp.argentSortClair,
+      surTelephone: false,
+      ouvrir: (c) => _ouvrir(c, PageRetours(etat: etat)),
     ),
     EntreeMenu(
       cle: 'fournisseurs',

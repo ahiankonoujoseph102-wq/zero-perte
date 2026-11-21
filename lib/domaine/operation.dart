@@ -38,6 +38,15 @@ abstract final class TypeOperation {
   static const fournisseurDefini = 'fournisseur.defini';
   static const achatFournisseur = 'fournisseur.achat';
   static const paiementFournisseur = 'fournisseur.paiement';
+
+  /// Retour partiel d'une vente : marchandise remise en stock, client remboursé.
+  static const venteRetour = 'vente.retour';
+
+  /// Devis (facture proforma) : ne touche ni le stock ni la caisse.
+  static const devisCree = 'devis.cree';
+
+  /// Devis transformé en vente.
+  static const devisVendu = 'devis.vendu';
 }
 
 /// Une opération du journal.

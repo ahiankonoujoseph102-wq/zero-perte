@@ -594,3 +594,17 @@ accueil patron, accueil vendeur, vente, encaissement, Ma caisse (patron et vende
 gestion. Corrigé après vérification : logo de la boutique peu visible sur le fond sombre (liseré clair
 ajouté) ; « Vendre » trop petit sur 4" (icône à côté du mot) ; carte « Rendre » coupée dans la fenêtre
 d'encaissement (remplacée par les billets à rendre).
+
+### Étape 3b — Devis, retours partiels, rapports ⏳ (en cours, branche de travail seulement)
+**Écrit, pas encore testé ni publié :**
+- **Devis / facture proforma** : bouton « Devis » dans Vendre (panier → devis), image à envoyer sur WhatsApp
+  (« DEVIS n° DV-… », valable 7 jours), « Transformer en vente » en un geste (le panier est refait aux prix
+  du jour ; message si le total a changé). Ne touche ni le stock ni la caisse. Liste des devis pour le patron.
+- **Retours partiels** : depuis le détail d'une vente, bouton « Retour » : choisir ce qui revient, la caisse qui
+  rembourse (ou baisse du crédit pour une vente à crédit), le motif ; accord du patron (son code) au-delà de
+  5 000 F ; reçu du retour à envoyer ; le patron est prévenu de chaque retour fait par un vendeur et voit la
+  liste « Retours ». Les retours sont déduits des ventes, de la caisse, du bénéfice et remis en stock.
+- **Rapports** : jour / semaine / mois (et périodes précédentes) : ventes, bénéfice, dépenses, retours,
+  crédit accordé et remboursé, ce que les clients doivent, inventaires ; jour par jour ; produits les plus
+  vendus ; envoi en image (WhatsApp) ou en fichier Excel (CSV).
+**Reste à faire :** tests automatiques, captures sur les 4 tailles, publication (0.27.0) sur `main`.
