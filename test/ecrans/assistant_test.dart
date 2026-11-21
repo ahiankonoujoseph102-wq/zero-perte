@@ -63,17 +63,18 @@ void main() {
     });
   });
 
-  testWidgets('parcours : bienvenue → vérification → accueil', (tester) async {
+  testWidgets('parcours : bienvenue → (vérification silencieuse) → activation', (
+    tester,
+  ) async {
     final env = await environnementDeTest(tester);
     await afficherApp(tester, env.etat);
     expect(find.text('Bienvenue dans Zéro Perte'), findsOneWidget);
     expect(env.voix.phrases.first, startsWith('Bienvenue dans Zéro Perte'));
 
+    // Appareil compatible : pas d'écran de test, on arrive directement au code.
     await toucher(tester, find.byKey(const Key('bouton-commencer')));
-    expect(find.byKey(const Key('verification-ok')), findsOneWidget);
-    expect(find.byKey(const Key('controle-google-ok')), findsOneWidget);
-
-    await toucher(tester, find.byKey(const Key('bouton-continuer')));
+    await attendre(tester, tours: 8);
+    expect(find.byKey(const Key('verification-ok')), findsNothing);
     expect(env.etat.etape, EtapeAssistant.activation);
     expect(find.byKey(const Key('bouton-coller-code')), findsOneWidget);
   });
@@ -199,13 +200,13 @@ void main() {
   ) async {
     final env = await environnementDeTest(
       tester,
-      etape: EtapeAssistant.verification,
+      etape: EtapeAssistant.typeBoutique,
     );
     await afficherApp(tester, env.etat);
-    expect(find.text('Étape 2 sur 11'), findsOneWidget);
+    expect(env.etat.etape, EtapeAssistant.typeBoutique);
     expect(
       await tester.runAsync(() => env.journal.lireParametre('assistant.etape')),
-      'verification',
+      'typeBoutique',
     );
   });
 

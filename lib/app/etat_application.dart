@@ -15,6 +15,7 @@ import '../domaine/tableau.dart';
 import '../domaine/utilisateurs.dart';
 import '../donnees/journal_local.dart';
 import '../services/google.dart' show ConnexionStockage;
+import '../services/notifications.dart' show sujetAlertes;
 import '../services/partage.dart';
 import '../synchro/relais.dart';
 import '../synchro/synchro.dart';
@@ -40,6 +41,7 @@ class ServicesZp {
     required this.partagerFichier,
     this.connecterDrive,
     this.choisirFichier,
+    this.activerNotifications,
   });
 
   final ServiceTelephone telephone;
@@ -72,6 +74,9 @@ class ServicesZp {
 
   /// Connexion au Drive de la boutique (nul : pas possible ici).
   final Future<ConnexionStockage?> Function({bool silencieux})? connecterDrive;
+
+  /// Abonne ce téléphone aux notifications d'alertes (nul : pas possible ici).
+  final Future<bool> Function(String sujet)? activerNotifications;
 
   /// Choisit un fichier de sauvegarde sur l'appareil (nul si annulé).
   final Future<Uint8List?> Function()? choisirFichier;
@@ -232,6 +237,7 @@ class EtatApplication extends ChangeNotifier {
   }) async {
     final probleme = problemePin(pin, longueur: longueurPinPatron);
     if (probleme != null) throw ErreurZeroPerte(probleme);
+    await _verifierCodeLibre(pin, sauf: patron?.id);
     final sel = nouveauSel();
     final u = Utilisateur(
       id: patron?.id ?? nouvelIdentifiant(),
@@ -264,6 +270,7 @@ class EtatApplication extends ChangeNotifier {
     }
     final probleme = problemePin(pin);
     if (probleme != null) throw ErreurZeroPerte(probleme);
+    await _verifierCodeLibre(pin);
     final sel = nouveauSel();
     final u = Utilisateur(
       id: nouvelIdentifiant(),
@@ -301,6 +308,7 @@ class EtatApplication extends ChangeNotifier {
     final longueur = longueurPour(u.role);
     final probleme = problemePin(pin, longueur: longueur);
     if (probleme != null) throw ErreurZeroPerte(probleme);
+    await _verifierCodeLibre(pin, sauf: u.id);
     final sel = nouveauSel();
     final tours = toursPour(u.role);
     final nouveau = Utilisateur(
@@ -352,6 +360,76 @@ class EtatApplication extends ChangeNotifier {
 
   /// Horloge (remplaçable dans les tests).
   DateTime Function() maintenant = DateTime.now;
+
+  // --- Entrée directe par le code (comme sur un logiciel de caisse) ---------
+
+  int _erreursCode = 0;
+  static const _cleBlocageCode = 'pin.blocage.connexion';
+
+  /// Écran d'entrée bloqué jusqu'à cette heure (après 5 codes faux), ou nul.
+  Future<DateTime?> entreeBloqueeJusqua() async {
+    final ms = int.tryParse(await journal.lireParametre(_cleBlocageCode) ?? '');
+    if (ms == null) return null;
+    final fin = DateTime.fromMillisecondsSinceEpoch(ms);
+    return fin.isAfter(maintenant()) ? fin : null;
+  }
+
+  /// On tape son code et on entre : le code reconnaît la personne.
+  /// Nul si le code est faux. Après [essaisPin] codes faux : bloqué
+  /// [dureeBlocagePin] (et alerte au patron).
+  Future<Utilisateur?> connecterParCode(String code) async {
+    if (await entreeBloqueeJusqua() != null) return null;
+    for (final u in _utilisateurs.where((u) => u.longueurCode == code.length)) {
+      if (await pinCorrect(u, code)) {
+        if (!u.actif) {
+          throw ErreurZeroPerte(
+            'Le compte de ${u.nom} est bloqué. Voyez le patron.',
+          );
+        }
+        _erreursCode = 0;
+        _utilisateurActuel = u;
+        notifyListeners();
+        return u;
+      }
+    }
+    _erreursCode++;
+    if (_erreursCode >= essaisPin) {
+      _erreursCode = 0;
+      await journal.ecrireParametre(
+        _cleBlocageCode,
+        '${maintenant().add(dureeBlocagePin).millisecondsSinceEpoch}',
+      );
+      unawaited(
+        alerter(
+          'code',
+          '$essaisPin codes faux à l\'entrée (appareil ${journal.prefixeRecu}).',
+        ),
+      );
+    }
+    return null;
+  }
+
+  /// Codes faux restants avant le blocage de l'écran d'entrée.
+  int get essaisEntreeRestants => essaisPin - _erreursCode;
+
+  /// Vrai si ce code est déjà celui d'une autre personne (deux personnes ne
+  /// peuvent pas avoir le même code : c'est lui qui les reconnaît).
+  Future<bool> codeDejaUtilise(String code, {String? sauf}) async {
+    for (final u in _utilisateurs.where(
+      (u) => u.id != sauf && u.longueurCode == code.length,
+    )) {
+      if (await pinCorrect(u, code)) return true;
+    }
+    return false;
+  }
+
+  Future<void> _verifierCodeLibre(String code, {String? sauf}) async {
+    if (await codeDejaUtilise(code, sauf: sauf)) {
+      throw const ErreurZeroPerte(
+        'Ce code est déjà celui d\'une autre personne. Choisissez-en un autre.',
+      );
+    }
+  }
 
   /// Vérifie le PIN de [u]. Après [essaisPin] erreurs, bloque [dureeBlocagePin].
   /// Renvoie vrai si le PIN est bon (et connecte l'utilisateur si [connecter]).
@@ -1047,11 +1125,28 @@ class EtatApplication extends ChangeNotifier {
     }
   }
 
+  bool _notificationsActivees = false;
+
+  /// Téléphone du patron : abonnement aux notifications (application fermée).
+  Future<bool> activerNotificationsPatron() async {
+    if (_notificationsActivees || !estPatron || estDemo) {
+      return _notificationsActivees;
+    }
+    final f = services.activerNotifications;
+    final jeton = await _jetonRelais();
+    if (f == null || jeton == null) return false;
+    _notificationsActivees = await f(sujetAlertes(jeton));
+    return _notificationsActivees;
+  }
+
   /// Relève les alertes chaque minute tant que l'application est ouverte.
   void demarrerAlertesAuto({Duration periode = const Duration(minutes: 1)}) {
     _minuterieAlertes?.cancel();
     _minuterieAlertes = Timer.periodic(periode, (_) {
-      if (estPatron) releverAlertes();
+      if (estPatron) {
+        releverAlertes();
+        activerNotificationsPatron();
+      }
     });
   }
 

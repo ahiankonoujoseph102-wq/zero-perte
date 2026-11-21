@@ -10,6 +10,8 @@ import android.os.Build
 import android.os.Environment
 import android.os.StatFs
 import androidx.core.content.FileProvider
+import com.google.firebase.messaging.FirebaseMessaging
+import android.Manifest
 import java.io.File
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -42,6 +44,15 @@ class MainActivity : FlutterActivity() {
                         partagerFichier(
                             appel.argument<ByteArray>("octets"),
                             appel.argument<String>("nom") ?: "sauvegarde.zps",
+                        )
+                    )
+                    "notifications" -> resultat.success(
+                        activerNotifications(
+                            appel.argument<String>("cle"),
+                            appel.argument<String>("appli"),
+                            appel.argument<String>("projet"),
+                            appel.argument<String>("expediteur"),
+                            appel.argument<String>("sujet"),
                         )
                     )
                     else -> resultat.notImplemented()
@@ -127,6 +138,30 @@ class MainActivity : FlutterActivity() {
             "autre"
         } catch (e: Exception) {
             "echec"
+        }
+    }
+
+    /** Abonne ce téléphone (celui du patron) aux alertes graves de sa boutique. */
+    private fun activerNotifications(
+        cle: String?, appli: String?, projet: String?, expediteur: String?, sujet: String?,
+    ): Boolean {
+        if (cle.isNullOrEmpty() || appli.isNullOrEmpty() || projet.isNullOrEmpty() ||
+            expediteur.isNullOrEmpty() || sujet.isNullOrEmpty()) return false
+        getSharedPreferences(ZeroPerteApplication.PREFS, MODE_PRIVATE).edit()
+            .putString("cle", cle).putString("appli", appli)
+            .putString("projet", projet).putString("expediteur", expediteur)
+            .apply()
+        if (!ZeroPerteApplication.demarrerFirebase(this)) return false
+        if (Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 7)
+        }
+        return try {
+            FirebaseMessaging.getInstance().isAutoInitEnabled = true
+            FirebaseMessaging.getInstance().subscribeToTopic(sujet)
+            true
+        } catch (e: Exception) {
+            false
         }
     }
 

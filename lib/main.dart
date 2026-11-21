@@ -24,7 +24,9 @@ import 'ecrans/patron/espace_patron.dart';
 import 'ecrans/vente/page_vendre.dart';
 import 'services/aide.dart';
 import 'services/google.dart';
+import 'services/google_pc.dart' show connexionPcConfiguree;
 import 'synchro/relais.dart';
+import 'services/notifications.dart';
 import 'services/partage.dart';
 import 'services/photos.dart';
 import 'services/raccourci.dart';
@@ -108,8 +110,11 @@ Future<EtatApplication> chargerEtatDuTelephone() async {
           : partagerFichierAndroid,
       // Windows : connexion Google par le navigateur, pas encore branchée
       // (identifiant « Application de bureau » à créer : etapes-proprietaire A6).
-      connecterDrive: surWindows ? null : connecterDriveAndroid,
+      connecterDrive: surWindows
+          ? (connexionPcConfiguree ? connecterDriveWindows : null)
+          : connecterDriveAndroid,
       choisirFichier: choisirFichierSauvegarde,
+      activerNotifications: surWindows ? null : activerNotificationsAndroid,
     ),
   );
   // Relève des ventes des autres appareils (si le Drive est connecté).

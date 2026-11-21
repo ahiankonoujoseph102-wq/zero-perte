@@ -11,6 +11,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../app/etat_application.dart' show SourcePhoto;
+import 'google.dart' show ConnexionStockage;
+import 'google_pc.dart';
 import 'partage.dart';
 import 'telephone.dart';
 
@@ -92,4 +94,27 @@ Future<Uint8List?> prendrePhotoWindows(SourcePhoto source) async {
     imageQuality: 70,
   );
   return photo?.readAsBytes();
+}
+
+/// Connexion Google sur PC (si la fabrication a reçu l'identifiant
+/// « Application de bureau ») : jeton gardé dans le dossier de l'utilisateur.
+Future<ConnexionStockage?> connecterDriveWindows({
+  bool silencieux = false,
+}) async {
+  if (!connexionPcConfiguree) return null;
+  final dossier = (await getApplicationSupportDirectory()).path;
+  final fichierCompte = File(chemins.join(dossier, 'zp_google_compte.txt'));
+  final c = ConnexionGooglePc(
+    idClient: idClientPc,
+    secretClient: secretClientPc,
+    coffre: CoffreFichier(chemins.join(dossier, 'zp_google.txt')),
+    ouvrirNavigateur: (url) =>
+        launchUrl(url, mode: LaunchMode.externalApplication),
+  );
+  final connu = await fichierCompte.exists()
+      ? (await fichierCompte.readAsString()).trim()
+      : null;
+  final r = await c.ouvrir(silencieux: silencieux, compteConnu: connu);
+  if (r != null && !silencieux) await fichierCompte.writeAsString(r.compte);
+  return r;
 }

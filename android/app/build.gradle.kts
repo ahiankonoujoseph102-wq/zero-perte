@@ -79,4 +79,8 @@ flutter {
 dependencies {
     // FileProvider : partager l'image du reçu avec WhatsApp.
     implementation("androidx.core:core:1.13.1")
+    // Notifications des alertes graves (Firebase Cloud Messaging, gratuit). Démarré
+    // seulement si la fabrication a reçu les identifiants Firebase (aucun fichier
+    // google-services.json : les identifiants Firebase ne sont pas des secrets).
+    implementation("com.google.firebase:firebase-messaging:24.0.0")
 }

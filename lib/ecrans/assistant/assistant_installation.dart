@@ -67,10 +67,18 @@ class _AssistantInstallationState extends State<AssistantInstallation> {
   Future<_ResultatVerification> _verifier() async {
     final infos = await etat.services.telephone.infos();
     final voix = await etat.services.voix.francaisDisponible();
-    return _ResultatVerification(
+    final r = _ResultatVerification(
       infos,
       evaluerTelephone(infos, voixFrancaise: voix),
     );
+    // Pas d'écran de « test » : si l'appareil convient, on passe tout seul à
+    // l'étape suivante. L'écran ne s'affiche qu'en cas de vrai problème.
+    if (peutContinuer(r.controles) &&
+        r.controles.every((c) => c.niveau != NiveauControle.bloquant) &&
+        etat.etape == EtapeAssistant.verification) {
+      await etat.suivante();
+    }
+    return r;
   }
 
   String _texteALire(EtapeAssistant e) => switch (e) {

@@ -10,7 +10,7 @@ Il est mis à jour **à la fin de chaque étape**.
 | | |
 |---|---|
 | **Dernière étape terminée** | **B13** — Sauvegarde chiffrée → **bloc B terminé** |
-| **Version publiée** | 0.24.0 (Android et Windows, voir les Releases GitHub) |
+| **Version publiée** | 0.25.0 (Android et Windows, voir les Releases GitHub) |
 | **Dernière étape terminée (bis)** | **C1** — Crédit client |
 | **Prochaine étape** | Rapport de fin de bloc C1, puis bloc **D** (synchronisation) |
 | **Méthode** | Enchaîner les étapes de `docs/plan-v1.md` sans validation intermédiaire : B1→B13, puis C1, D, C2→C4, E. Rapport au chef de projet **à la fin de chaque bloc**, ou si une décision appartient au propriétaire, ou si on est bloqué. |
@@ -23,7 +23,7 @@ Il est mis à jour **à la fin de chaque étape**.
 |---|---|---|
 | Q1 | **Démonstration oui** avant le code d'activation, avec des produits fictifs ; elle ne doit jamais servir à tenir une vraie boutique, et ses données ne passent jamais dans une boutique activée. | Fait (0.15.0) : bouton « Voir une démonstration » à l'étape « Code d'activation » → base **à part**, **effacée à chaque ouverture**, reçus « D-… » marqués « DÉMONSTRATION — SANS VALEUR », pas de sauvegarde ni de restauration, aucun ajout de produit, bandeau permanent + « Quitter ». `lib/app/demo.dart`. |
 | Q2 | Claude lance l'action « 3 - Créer la clé des licences » avant le 28 novembre. | Fait le 21/11 : réussie, copie de secours chiffrée dans le coffre (`cle-licences/…run44909660257.pem.chiffre`), clé publique dans `assets/licence/cle_publique.txt`, un code de test (« TEST - ne pas utiliser ») fabriqué par l'action 4 est **accepté** par l'application, un code modifié est refusé. Aucun secret dans les journaux. La ligne de test reste dans `registre-clients.csv` du coffre (à ignorer). |
-| Q3 | Après le 28 novembre, le propriétaire crée `ZP_JETON_CODES` (1 an, écriture du coffre seulement). | L'action 4 utilise déjà `ZP_JETON_CODES` s'il existe, sinon `ZP_JETON_COFFRE`. Autorisations à cocher : voir le rapport. |
+| Q3 | AVANT le 28 novembre (date d'expiration de ZP_JETON_COFFRE), le propriétaire crée `ZP_JETON_CODES` (1 an, écriture du coffre seulement). | L'action 4 utilise déjà `ZP_JETON_CODES` s'il existe, sinon `ZP_JETON_COFFRE`. Autorisations à cocher : voir le rapport. |
 | Q4 | Garder le texte du message d'activation. | Rien à changer. |
 | Q5 | Garder les conversions « à vérifier » ; le patron peut les corriger ; les agents vérifieront sur le terrain. | Rien à changer. |
 | Q6 | Garder « Merci, à bientôt ! » et le texte joint au reçu WhatsApp. | Rien à changer. |
@@ -520,3 +520,37 @@ patron (ce n'est pas une dépense, c'est le paiement du stock), mais ils sortent
 annulée par GitHub (attente trop longue d'une machine) : son contenu (C3) est inclus dans **0.24.0**.
 Dernière version : **v0.24.0-n37** — APK universel **17,3 Mo** (arm64 9,4 Mo, armv7 8,8 Mo),
 **ZeroPerte-Windows.zip 13,2 Mo**. Prochaine étape : bloc **E** (mise en service), après le retour du propriétaire.
+
+## Décisions du propriétaire sur le rapport de la nuit (toutes « (a) »)
+1. Une seule caisse pour toute la boutique. 2. Seuils d'alerte gardés : manque ≥ 1 000 F, annulation ≥ 5 000 F.
+3. Synchronisation sur PC : branchée dès que l'identifiant « Application de bureau » existe (code prêt).
+4. Message de Windows accepté pour le pilote ; préparer le Microsoft Store (MSIX). 5. Inventaire du jour : proposé.
+**Nouvelle demande :** suivre de très près l'allure et le fonctionnement du logiciel concurrent (ouverture
+directe par le code, menu à gauche, tableau de bord, caisse, vente, encaissement), sur téléphone, tablette et
+PC — sans reprendre son nom, son logo ni ses écrans à l'identique (propriété du concurrent).
+
+### Étape 1 et 2 — Décisions, corrections, notifications, PC, Store, entrée par le code ✅ (version 0.25.0)
+**Fait :**
+- **Ouverture directe par le code**, comme le concurrent : un seul écran « Tapez votre code » (clavier, touche
+  ➜ ; Entrée au clavier du PC). Le code reconnaît la personne (patron 6 chiffres, vendeur 4). **Deux personnes
+  ne peuvent plus avoir le même code.** 5 codes faux → écran bloqué 5 minutes + alerte au patron.
+- **Pas d'écran de test à l'installation** : la vérification de l'appareil se fait en silence ; l'écran
+  n'apparaît qu'en cas de problème bloquant. La démonstration reste un bouton facultatif.
+- **Corrections** : `ZP_JETON_CODES` doit être créé **AVANT le 28 novembre** (docs, journal et rapport
+  corrigés, avec les étapes exactes). Tolérance de l'inventaire : **une seule valeur, 5 %** (code
+  `tolerancePourcent = 5`) ; nouveau test aux limites : 5 % → toléré, 6 % → « il manque ». (Le « 3 % » cité
+  pendant le travail était un exemple d'écart, pas une autre tolérance.)
+- **Notifications Firebase** (application du patron fermée) : code Android natif (bibliothèque
+  `firebase-messaging`, sans `google-services.json`, identifiants publics donnés à la fabrication), abonnement
+  du téléphone du patron au canal de sa boutique ; le relais Cloudflare envoie la notification (testé avec un
+  faux Google). Étapes exactes : `docs/etapes-proprietaire.md` partie F.
+- **Connexion Google sur PC** (`lib/services/google_pc.dart`) : navigateur + retour local + PKCE, reconnexion
+  silencieuse ; testée avec un faux Google. S'active avec la variable `ZP_GOOGLE_PC_ID` et le secret
+  `ZP_GOOGLE_PC_SECRET` (partie A6).
+- **Windows** : étapes « Exécuter quand même » (partie D) ; **paquet Microsoft Store `ZeroPerte-Store.msix`**
+  fabriqué à chaque version (artefact GitHub) + étapes du Partner Center (partie E).
+
+**Tests (356 au total, tous réussis)**, par exemple :
+- Écran d'entrée : « 4827 » (code de personne) → « Code faux » ; « 5913 » → Kossi entre directement.
+- Ajouter Afi avec le code de Kossi → refusé ; 5 codes faux → même le bon code est refusé 5 minutes.
+- Canal des alertes : même nom calculé par l'application et par le relais (`zp-` + SHA-256).

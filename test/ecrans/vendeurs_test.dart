@@ -5,6 +5,8 @@ import 'package:zero_perte/ecrans/accueil_vendeur.dart';
 import 'package:zero_perte/ecrans/connexion.dart';
 import 'package:zero_perte/ecrans/patron/espace_patron.dart';
 
+import 'package:zero_perte/donnees/journal_local.dart';
+
 import '../support/outils.dart';
 import 'vente_test.dart' show boutiqueAvecStock, ouvrirLaCaisseSiDemande;
 
@@ -44,17 +46,12 @@ void main() {
         tester,
         find.byKey(const Key('bouton-changer-utilisateur')),
       );
+      // Écran d'entrée : on tape son code, il reconnaît la personne.
       expect(find.byType(PageConnexion), findsOneWidget);
-      expect(find.text('Ama'), findsOneWidget);
-      expect(find.text('Kossi'), findsOneWidget);
-
-      await toucher(tester, find.byKey(const Key('connexion-Kossi')));
-      await taperPin(
-        tester,
-        '4827',
-      ); // le code du patron ne marche pas pour Kossi
+      expect(find.text('Tapez votre code'), findsOneWidget);
+      await taperCode(tester, '4827'); // aucun code ne correspond
       expect(find.textContaining('Code faux'), findsOneWidget);
-      await taperPin(tester, '5913');
+      await taperCode(tester, '5913');
       expect(find.byType(AccueilVendeur), findsOneWidget);
       expect(find.text('Kossi'), findsOneWidget);
 
@@ -95,7 +92,7 @@ void main() {
       await tester.pageBack();
       await attendre(tester);
       expect(find.byType(PageConnexion), findsOneWidget);
-      await toucher(tester, find.byKey(const Key('connexion-Kossi')));
+      await taperCode(tester, '5913');
       expect(find.textContaining('bloqué'), findsWidgets);
       expect(find.byType(AccueilVendeur), findsNothing);
 
@@ -103,15 +100,14 @@ void main() {
         () => env.etat.bloquer(env.etat.vendeurs.single, bloque: false),
       );
       await attendre(tester);
-      await toucher(tester, find.byKey(const Key('connexion-Kossi')));
-      await taperPin(tester, '5913');
+      await taperCode(tester, '5913');
       expect(find.byType(AccueilVendeur), findsOneWidget);
     },
   );
 
   for (final e in ecransDeTest.entries) {
     final (taille, densite) = e.value;
-    testWidgets('écran « Qui êtes-vous ? » sur ${e.key} : rien ne déborde', (
+    testWidgets('écran d\'entrée (code) sur ${e.key} : rien ne déborde', (
       tester,
     ) async {
       final env = await environnementDeTest(
@@ -128,4 +124,32 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets(
+    'deux personnes ne peuvent pas avoir le même code ; 5 codes faux → bloqué',
+    (tester) async {
+      final env = await environnementDeTest(
+        tester,
+        preparer: (etat) async {
+          await boutiqueAvecStock(etat);
+          await etat.ajouterVendeur(nom: 'Kossi', pin: '5913');
+        },
+      );
+      await tester.runAsync(() async {
+        await expectLater(
+          env.etat.ajouterVendeur(nom: 'Afi', pin: '5913'),
+          throwsA(isA<ErreurZeroPerte>()),
+        );
+        env.etat.deconnecter();
+        expect((await env.etat.connecterParCode('482713'))!.nom, 'Ama');
+        env.etat.deconnecter();
+        for (var i = 0; i < 5; i++) {
+          expect(await env.etat.connecterParCode('1111'), isNull);
+        }
+        expect(await env.etat.entreeBloqueeJusqua(), isNotNull);
+        // Même le bon code est refusé pendant le blocage.
+        expect(await env.etat.connecterParCode('5913'), isNull);
+      });
+    },
+  );
 }

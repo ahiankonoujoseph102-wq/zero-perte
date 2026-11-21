@@ -32,6 +32,16 @@ void main() {
         etatLigne(attendu: 100000, compte: 90000, tolerance: true),
         EtatLigneInventaire.manque,
       );
+      // Limite exacte : 5 % toléré, 6 % non (une seule valeur : 5 %).
+      expect(tolerancePourcent, 5);
+      expect(
+        etatLigne(attendu: 100000, compte: 95000, tolerance: true),
+        EtatLigneInventaire.tolere,
+      );
+      expect(
+        etatLigne(attendu: 100000, compte: 94000, tolerance: true),
+        EtatLigneInventaire.manque,
+      );
       expect(avecTolerance(uniteBase: 'bol', auMontant: false), isTrue);
       expect(avecTolerance(uniteBase: 'kg', auMontant: true), isTrue);
       expect(avecTolerance(uniteBase: 'kg', auMontant: false), isFalse);

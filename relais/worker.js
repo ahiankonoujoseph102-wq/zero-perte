@@ -21,6 +21,66 @@ async function empreinte(jeton) {
   return [...new Uint8Array(h)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+// --- Notifications Firebase (facultatif) -----------------------------------
+// Si le secret FCM_COMPTE (fichier JSON du « compte de service » Firebase) est
+// présent, chaque alerte est aussi envoyée en notification au téléphone du
+// patron, même application fermée. Canal = « zp- » + début de l'empreinte du
+// jeton (calculé de la même façon par l'application).
+
+function b64url(octets) {
+  let s = '';
+  for (const b of new Uint8Array(octets)) s += String.fromCharCode(b);
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function jetonGoogle(compte) {
+  const maintenant = Math.floor(Date.now() / 1000);
+  const entete = b64url(new TextEncoder().encode(JSON.stringify({ alg: 'RS256', typ: 'JWT' })));
+  const charge = b64url(new TextEncoder().encode(JSON.stringify({
+    iss: compte.client_email,
+    scope: 'https://www.googleapis.com/auth/firebase.messaging',
+    aud: 'https://oauth2.googleapis.com/token',
+    iat: maintenant,
+    exp: maintenant + 3600,
+  })));
+  const pem = compte.private_key.replace(/-----[^-]+-----/g, '').replace(/\s+/g, '');
+  const cle = await crypto.subtle.importKey(
+    'pkcs8',
+    Uint8Array.from(atob(pem), (c) => c.charCodeAt(0)),
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const signature = await crypto.subtle.sign(
+    'RSASSA-PKCS1-v1_5',
+    cle,
+    new TextEncoder().encode(`${entete}.${charge}`),
+  );
+  const r = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${entete}.${charge}.${b64url(signature)}`,
+  });
+  return (await r.json()).access_token;
+}
+
+async function notifier(env, boutique, alerte) {
+  if (!env.FCM_COMPTE) return;
+  const compte = JSON.parse(env.FCM_COMPTE);
+  const jeton = await jetonGoogle(compte);
+  await fetch(`https://fcm.googleapis.com/v1/projects/${compte.project_id}/messages:send`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${jeton}`, 'content-type': 'application/json' },
+    body: JSON.stringify({
+      message: {
+        topic: `zp-${boutique.slice(0, 32)}`,
+        notification: { title: 'Zéro Perte : alerte', body: alerte.message },
+        android: { priority: 'high' },
+      },
+    }),
+  });
+}
+
 function reponse(statut, corps) {
   return new Response(JSON.stringify(corps), {
     status: statut,
@@ -35,7 +95,7 @@ function jetonDe(requete) {
 }
 
 export default {
-  async fetch(requete, env) {
+  async fetch(requete, env, ctx) {
     const url = new URL(requete.url);
     if (url.pathname !== '/alertes') return reponse(404, { erreur: 'introuvable' });
     const jeton = jetonDe(requete);
@@ -64,6 +124,9 @@ export default {
       };
       const cle = `a:${boutique}:${String(alerte.heure).padStart(15, '0')}:${crypto.randomUUID()}`;
       await env.ALERTES.put(cle, JSON.stringify(alerte), { expirationTtl: SEPT_JOURS });
+      // Notification (sans faire attendre l'appareil qui envoie l'alerte).
+      const envoi = notifier(env, boutique, alerte).catch(() => {});
+      if (ctx && ctx.waitUntil) ctx.waitUntil(envoi);
       return reponse(201, { ok: true });
     }
 

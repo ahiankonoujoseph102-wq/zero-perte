@@ -335,6 +335,22 @@ Future<void> boutiqueInstallee(EtatApplication etat) async {
   await etat.allerA(EtapeAssistant.termine);
 }
 
+/// Écran d'entrée : taper son code puis « OK ».
+Future<void> taperCode(WidgetTester tester, String code) async {
+  for (final c in code.split('')) {
+    await tester.tap(find.byKey(Key('code-$c')));
+    await tester.pump();
+  }
+  await tester.tap(find.byKey(const Key('code-OK')));
+  // Le calcul du code est volontairement lent (sécurité) : on lui laisse le temps.
+  for (var i = 0; i < 6; i++) {
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 150)),
+    );
+    await attendre(tester);
+  }
+}
+
 Future<void> taperPin(WidgetTester tester, String pin) async {
   for (final c in pin.split('')) {
     await tester.tap(find.byKey(Key('pin-$c')));

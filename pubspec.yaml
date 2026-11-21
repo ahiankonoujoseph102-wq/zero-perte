@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 0.24.0+1
+version: 0.25.0+1
 
 environment:
   sdk: ^3.13.7
@@ -56,6 +56,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  msix: 3.16.12
 flutter:
 
   # The following line ensures that the Material Icons font is
@@ -108,3 +109,16 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# Paquet Microsoft Store (MSIX), fabriqué par GitHub Actions (tâche « windows »).
+# Les valeurs d'identité viennent du Partner Center (voir docs/etapes-proprietaire.md,
+# section E) et sont passées par des variables GitHub ; celles-ci servent par défaut.
+msix_config:
+  display_name: Zéro Perte
+  publisher_display_name: Zero Perte
+  identity_name: ZeroPerte.Caisse
+  publisher: CN=00000000-0000-0000-0000-000000000000
+  logo_path: windows/runner/resources/app_icon.ico
+  languages: fr-fr
+  capabilities: internetClient
+  store: true

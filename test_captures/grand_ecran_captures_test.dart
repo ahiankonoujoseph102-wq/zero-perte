@@ -74,4 +74,31 @@ void main() {
       );
     });
   }
+  const tous = {
+    '4pouces': (Size(320, 568), 2.0),
+    'telephone': (Size(412, 915), 2.625),
+    'tablette_paysage': (Size(1280, 800), 1.5),
+    'pc': (Size(1366, 768), 1.0),
+  };
+  for (final e in tous.entries) {
+    final (taille, densite) = e.value;
+    testWidgets('entree ${e.key}', (tester) async {
+      final env = await environnementDeTest(
+        tester,
+        preparer: (etat) async {
+          await boutiqueAvecKofi(etat);
+          etat.deconnecter();
+        },
+      );
+      await afficherApp(tester, env.etat, taille: taille, densite: densite);
+      for (final c in ['4', '8', '2']) {
+        await tester.tap(find.byKey(Key('code-$c')));
+        await tester.pump();
+      }
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('captures/entree_${e.key}.png'),
+      );
+    });
+  }
 }

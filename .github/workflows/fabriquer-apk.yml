@@ -121,7 +121,11 @@ jobs:
             --obfuscate --split-debug-info=build/symboles \
             --build-number ${{ steps.version.outputs.numero }} \
             --dart-define=ZP_CANAL=${{ steps.cle.outputs.canal }} \
-            --dart-define=ZP_RELAIS=${{ vars.ZP_RELAIS_URL }}
+            --dart-define=ZP_RELAIS=${{ vars.ZP_RELAIS_URL }} \
+            --dart-define=ZP_FIREBASE_CLE=${{ vars.ZP_FIREBASE_CLE }} \
+            --dart-define=ZP_FIREBASE_APPLI=${{ vars.ZP_FIREBASE_APPLI }} \
+            --dart-define=ZP_FIREBASE_PROJET=${{ vars.ZP_FIREBASE_PROJET }} \
+            --dart-define=ZP_FIREBASE_EXPEDITEUR=${{ vars.ZP_FIREBASE_EXPEDITEUR }}
           mkdir -p sortie
           cp build/app/outputs/flutter-apk/app-release.apk sortie/ZeroPerte.apk
 
@@ -134,7 +138,11 @@ jobs:
             --obfuscate --split-debug-info=build/symboles \
             --build-number ${{ steps.version.outputs.numero }} \
             --dart-define=ZP_CANAL=${{ steps.cle.outputs.canal }} \
-            --dart-define=ZP_RELAIS=${{ vars.ZP_RELAIS_URL }}
+            --dart-define=ZP_RELAIS=${{ vars.ZP_RELAIS_URL }} \
+            --dart-define=ZP_FIREBASE_CLE=${{ vars.ZP_FIREBASE_CLE }} \
+            --dart-define=ZP_FIREBASE_APPLI=${{ vars.ZP_FIREBASE_APPLI }} \
+            --dart-define=ZP_FIREBASE_PROJET=${{ vars.ZP_FIREBASE_PROJET }} \
+            --dart-define=ZP_FIREBASE_EXPEDITEUR=${{ vars.ZP_FIREBASE_EXPEDITEUR }}
           cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk sortie/ZeroPerte-arm64.apk
           cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk sortie/ZeroPerte-armv7.apk
 
@@ -270,7 +278,13 @@ jobs:
             --build-number ${{ needs.fabriquer.outputs.numero }} \
             --obfuscate --split-debug-info=build/symboles-windows \
             --dart-define=ZP_CANAL=${{ needs.fabriquer.outputs.canal }} \
-            --dart-define=ZP_RELAIS=${{ vars.ZP_RELAIS_URL }}
+            --dart-define=ZP_RELAIS=${{ vars.ZP_RELAIS_URL }} \
+            --dart-define=ZP_FIREBASE_CLE=${{ vars.ZP_FIREBASE_CLE }} \
+            --dart-define=ZP_FIREBASE_APPLI=${{ vars.ZP_FIREBASE_APPLI }} \
+            --dart-define=ZP_FIREBASE_PROJET=${{ vars.ZP_FIREBASE_PROJET }} \
+            --dart-define=ZP_FIREBASE_EXPEDITEUR=${{ vars.ZP_FIREBASE_EXPEDITEUR }} \
+            --dart-define=ZP_GOOGLE_PC_ID=${{ vars.ZP_GOOGLE_PC_ID }} \
+            --dart-define=ZP_GOOGLE_PC_SECRET=${{ secrets.ZP_GOOGLE_PC_SECRET }}
 
       - name: Mettre en ZIP
         shell: pwsh
@@ -278,6 +292,29 @@ jobs:
           New-Item -ItemType Directory -Force -Path sortie | Out-Null
           Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath sortie\ZeroPerte-Windows.zip -Force
           Get-ChildItem sortie | Format-Table Name, Length
+
+      - name: Fabriquer le paquet Microsoft Store (MSIX)
+        shell: bash
+        env:
+          IDENTITE: ${{ vars.ZP_MSIX_IDENTITE }}
+          EDITEUR: ${{ vars.ZP_MSIX_EDITEUR }}
+          EDITEUR_NOM: ${{ vars.ZP_MSIX_EDITEUR_NOM }}
+        run: |
+          # Signé par Microsoft lors de la publication dans le Store : rien à signer ici.
+          V="${{ needs.fabriquer.outputs.nom }}"
+          ARGS=(--store --build-windows false --version "$V.0" --output-path sortie --output-name ZeroPerte-Store)
+          [ -n "$IDENTITE" ] && ARGS+=(--identity-name "$IDENTITE")
+          [ -n "$EDITEUR" ] && ARGS+=(--publisher "$EDITEUR")
+          [ -n "$EDITEUR_NOM" ] && ARGS+=(--publisher-display-name "$EDITEUR_NOM")
+          dart run msix:create "${ARGS[@]}"
+          ls -la sortie
+
+      - name: Garder le paquet Store (à envoyer dans le Partner Center)
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ZeroPerte-Store-${{ needs.fabriquer.outputs.nom }}-${{ needs.fabriquer.outputs.numero }}
+          path: sortie/ZeroPerte-Store.msix
+          retention-days: 30
 
       - name: Garder le ZIP quelques jours
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
