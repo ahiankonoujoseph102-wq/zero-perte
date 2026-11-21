@@ -776,3 +776,8 @@ ce jeton. Aucun secret ni code affiché (masqués). La ligne de test reste dans 
   `docs/etapes-proprietaire.md`) : Claude n'a pas le droit de l'activer.
 - Adresse e-mail **principale** de contact ajoutée aux 3 pages : `contact@talkami.net` (l'adresse Gmail reste
   en seconde adresse). Pied de page : `contact@talkami.net`.
+- **En ligne (21/11, exécution 44952391190 de l'action 5)** après autorisation de GitHub Pages par le
+  propriétaire : les 3 adresses répondent 200 avec la feuille de style, vérifiées aussi dans Chromium sur
+  téléphone (fond bleu nuit, aucun débordement, liens du menu qui marchent) :
+  https://ahiankonoujoseph102-wq.github.io/zero-perte/ ,
+  …/confidentialite.html , …/conditions.html. Domaine autorisé Google : `ahiankonoujoseph102-wq.github.io`.

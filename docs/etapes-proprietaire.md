@@ -229,7 +229,7 @@ une notification « Zéro Perte : alerte — Caisse fermée par … : il manque 
 ## G. Pages publiques pour Google (accueil, confidentialité, conditions)
 
 Les 3 pages sont prêtes dans le dépôt (`docs/site/`) et se publient avec l'action « 5 - Publier le site ».
-Il faut seulement **autoriser GitHub Pages une fois** (Claude n'a pas ce droit).
+✅ **Fait** : GitHub Pages autorisé (source « GitHub Actions ») et pages en ligne depuis le 21 novembre 2026.
 
 ### G1. Activer GitHub Pages (une seule fois)
 1. Dans Chrome, ouvrez : **github.com/ahiankonoujoseph102-wq/zero-perte/settings/pages**
