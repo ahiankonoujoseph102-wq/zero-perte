@@ -752,3 +752,10 @@ expiration) : partie C de `docs/etapes-proprietaire.md` marquée faite.
   besoin : tout le menu et la personne connectée restent dans l'écran (test sur PC 1366×768 et tablette
   1280×800, capture vérifiée).
 **Tests : 399, tous réussis.**
+
+**Vérification de `ZP_JETON_CODES` (21/11, exécution 44948248668 de l'action 4, boutique « TEST - ne pas
+utiliser ») :** réussie. Journal de l'action : « Code accepté par l'application : licence, 2 téléphone(s) » et
+« Jeton utilisé : ZP_JETON_CODES » ; le message et la ligne du registre ont bien été écrits dans le coffre avec
+ce jeton. Aucun secret ni code affiché (masqués). La ligne de test reste dans `registre-clients.csv` du coffre
+(à ignorer).
+**Publiée :** v0.28.1-n46 — APK universel 17,6 Mo, Windows 13,3 Mo. (Ligne ajoutée sur les branches de travail.)
