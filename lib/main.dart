@@ -20,6 +20,8 @@ import 'ecrans/depense/page_depense.dart';
 import 'ecrans/patron/espace_patron.dart';
 import 'ecrans/vente/page_vendre.dart';
 import 'services/aide.dart';
+import 'services/google.dart';
+import 'synchro/relais.dart';
 import 'services/partage.dart';
 import 'services/photos.dart';
 import 'services/raccourci.dart';
@@ -65,7 +67,7 @@ Future<EtatApplication> creerDemoTelephone(ServicesZp services) async {
 /// Charge l'état complet de l'application sur le téléphone.
 Future<EtatApplication> chargerEtatDuTelephone() async {
   final journal = await ouvrirJournalDuTelephone();
-  return EtatApplication.charger(
+  final etat = await EtatApplication.charger(
     journal: journal,
     services: ServicesZp(
       telephone: ServiceTelephoneAndroid(),
@@ -82,8 +84,18 @@ Future<EtatApplication> chargerEtatDuTelephone() async {
       creerRaccourci: creerRaccourciAndroid,
       partagerImage: partagerImageAndroid,
       partagerFichier: partagerFichierAndroid,
+      connecterDrive: connecterDriveAndroid,
+      choisirFichier: choisirFichierSauvegarde,
     ),
   );
+  // Relève des ventes des autres appareils (si le Drive est connecté).
+  etat.demarrerSynchroAuto();
+  // Alertes graves par le relais (si cette version en a l'adresse).
+  if (adresseRelais.isNotEmpty) {
+    etat.transportAlertes = ClientRelais(adresseRelais);
+    etat.demarrerAlertesAuto();
+  }
+  return etat;
 }
 
 /// Écran de démarrage : attend l'ouverture de la base, puis lance l'application.
@@ -159,7 +171,26 @@ class ZeroPerteApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: themeZeroPerte(couleurMarque: Color(etat.config.couleur)),
       builder: (context, enfant) {
-        final contenu = enfant ?? const SizedBox.shrink();
+        final page = enfant ?? const SizedBox.shrink();
+        // Alertes graves (écart de caisse, grosse annulation…) : bandeau rouge
+        // en haut, sur l'appareil du patron.
+        final contenu = ListenableBuilder(
+          listenable: etat,
+          builder: (context, _) => etat.alertes.isEmpty || !etat.estPatron
+              ? page
+              : Column(
+                  children: [
+                    BandeauAlertes(etat: etat),
+                    Expanded(
+                      child: MediaQuery.removePadding(
+                        context: context,
+                        removeTop: true,
+                        child: page,
+                      ),
+                    ),
+                  ],
+                ),
+        );
         final quitter = quitterDemo;
         if (quitter != null) {
           return Column(
@@ -464,6 +495,53 @@ class BandeauDemo extends StatelessWidget {
                   foregroundColor: Colors.white,
                   minimumSize: const Size(0, 48),
                 ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Bandeau rouge : la dernière alerte grave et le nombre d'alertes.
+class BandeauAlertes extends StatelessWidget {
+  const BandeauAlertes({super.key, required this.etat});
+
+  final EtatApplication etat;
+
+  @override
+  Widget build(BuildContext context) {
+    final a = etat.alertes;
+    return Material(
+      color: CouleursZp.argentSort,
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 6, 8, 6),
+          child: Row(
+            children: [
+              const Icon(Icons.warning_rounded, color: Colors.white, size: 30),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  a.length > 1
+                      ? '${a.last.message} (+${a.length - 1})'
+                      : a.last.message,
+                  key: const Key('bandeau-alerte'),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: policeZp,
+                  ),
+                ),
+              ),
+              TextButton(
+                key: const Key('bouton-alerte-vue'),
+                onPressed: etat.effacerAlertes,
+                style: TextButton.styleFrom(foregroundColor: Colors.white),
+                child: const Text('Vu', style: TextStyle(fontSize: 18)),
               ),
             ],
           ),

@@ -7,7 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:zero_perte/services/google.dart' show ConnexionStockage;
 import 'package:zero_perte/services/partage.dart';
+import 'package:zero_perte/synchro/synchro.dart';
 import 'package:zero_perte/app/etat_application.dart';
 import 'package:zero_perte/domaine/licence.dart';
 import 'package:zero_perte/donnees/journal_local.dart';
@@ -132,8 +134,16 @@ class Environnement {
     this.liens,
     this.pressePapiers,
     this.raccourcis,
-    this.partages,
-  );
+    this.partages, {
+    required this.drive,
+    required this.fichiers,
+  });
+
+  /// Google Drive de la boutique (simulé).
+  final StockageMemoire drive;
+
+  /// Fichiers que « choisir un fichier » renverra, dans l'ordre.
+  final List<Uint8List> fichiers;
   final EtatApplication etat;
   final FausseVoix voix;
   final List<Uri> liens;
@@ -144,6 +154,8 @@ class Environnement {
   final List<(Uint8List, String)> partages;
   JournalLocal get journal => etat.journal;
 }
+
+int _compteurBases = 0;
 
 final String _catalogue = File('assets/catalogues/catalogues.json')
     .readAsStringSync();
@@ -157,7 +169,10 @@ Future<Environnement> environnementDeTest(
   bool voixFrancaise = true,
   String clePublique = clePubliqueDeTest,
   Future<void> Function(EtatApplication etat)? preparer,
+  StockageMemoire? drive,
 }) async {
+  final leDrive = drive ?? StockageMemoire();
+  final fichiers = <Uint8List>[];
   final voix = FausseVoix(francais: voixFrancaise);
   final liens = <Uri>[];
   final presse = PressePapiers();
@@ -165,9 +180,11 @@ Future<Environnement> environnementDeTest(
   final partages = <(Uint8List, String)>[];
   final etat = await tester.runAsync(() async {
     sqfliteFfiInit();
+    // Une base en mémoire PROPRE à cet environnement (deux appareils
+    // simulés dans le même test ne partagent pas leur base).
     final journal = await JournalLocal.ouvrir(
       fabrique: databaseFactoryFfi,
-      chemin: inMemoryDatabasePath,
+      chemin: 'file:zp${_compteurBases++}?mode=memory&cache=private',
     );
     if (etape != null) {
       await journal.ecrireParametre('assistant.etape', etape.name);
@@ -197,13 +214,28 @@ Future<Environnement> environnementDeTest(
           partages.add((octets, nom));
           return ResultatPartage.autre;
         },
+        connecterDrive: ({bool silencieux = false}) async => ConnexionStockage(
+          compte: 'boutique.ama@gmail.com',
+          stockage: leDrive,
+        ),
+        choisirFichier: () async =>
+            fichiers.isEmpty ? null : fichiers.removeAt(0),
       ),
     );
     if (preparer != null) await preparer(e);
     return e;
   });
   addTearDown(() => tester.runAsync(() => etat!.journal.fermer()));
-  return Environnement(etat!, voix, liens, presse, raccourcis, partages);
+  return Environnement(
+    etat!,
+    voix,
+    liens,
+    presse,
+    raccourcis,
+    partages,
+    drive: leDrive,
+    fichiers: fichiers,
+  );
 }
 
 /// Laisse la base SQLite (qui tourne hors du temps simulé) finir son travail,

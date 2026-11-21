@@ -115,7 +115,8 @@ jobs:
             --target-platform android-arm,android-arm64 \
             --obfuscate --split-debug-info=build/symboles \
             --build-number ${{ steps.version.outputs.numero }} \
-            --dart-define=ZP_CANAL=${{ steps.cle.outputs.canal }}
+            --dart-define=ZP_CANAL=${{ steps.cle.outputs.canal }} \
+            --dart-define=ZP_RELAIS=${{ vars.ZP_RELAIS_URL }}
           mkdir -p sortie
           cp build/app/outputs/flutter-apk/app-release.apk sortie/ZeroPerte.apk
 
@@ -127,7 +128,8 @@ jobs:
             --target-platform android-arm,android-arm64 \
             --obfuscate --split-debug-info=build/symboles \
             --build-number ${{ steps.version.outputs.numero }} \
-            --dart-define=ZP_CANAL=${{ steps.cle.outputs.canal }}
+            --dart-define=ZP_CANAL=${{ steps.cle.outputs.canal }} \
+            --dart-define=ZP_RELAIS=${{ vars.ZP_RELAIS_URL }}
           cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk sortie/ZeroPerte-arm64.apk
           cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk sortie/ZeroPerte-armv7.apk
 
@@ -182,9 +184,10 @@ jobs:
             '{version: $v, versionCode: $n, canal: $c, date: $d, commit: $sha, apk: $apk}' > sortie/version.json
           {
             echo ""
-            echo "Empreinte SHA-256 du certificat de signature :"
+            echo "Empreintes du certificat de signature (publiques ; la SHA-1 sert à Google Cloud, identifiant Android) :"
             echo '```'
             "$BT/apksigner" verify --print-certs sortie/ZeroPerte.apk | grep -m1 "SHA-256"
+            "$BT/apksigner" verify --print-certs sortie/ZeroPerte.apk | grep -m1 "SHA-1"
             echo '```'
           } >> "$RAPPORT"
           if [ "$CANAL" = "essai" ]; then

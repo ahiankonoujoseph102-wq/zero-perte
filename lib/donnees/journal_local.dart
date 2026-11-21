@@ -687,6 +687,191 @@ class JournalLocal implements ReglagesLocaux {
       0;
 
   // ---------------------------------------------------------------------------
+  // Synchronisation entre appareils (bloc D)
+  // ---------------------------------------------------------------------------
+
+  /// Dernier numéro d'opération connu pour un téléphone (0 si aucune).
+  Future<int> dernierNumero(String idTelephone) async =>
+      ((await _db.rawQuery(
+            'SELECT MAX(numero) AS n FROM operations WHERE telephone_id = ?',
+            [idTelephone],
+          )).first['n']
+          as int?) ??
+      0;
+
+  /// Téléphones présents dans le journal (le nôtre et ceux déjà importés).
+  Future<Set<String>> telephonesConnus() async => {
+    for (final l in await _db.rawQuery(
+      'SELECT DISTINCT telephone_id AS t FROM operations',
+    ))
+      l['t'] as String,
+  };
+
+  /// Opérations de ce téléphone après le numéro [apres] (pour l'envoi).
+  Future<List<Operation>> mesOperationsApres(int apres) async =>
+      (await operationsDuTelephone(telephoneId))
+          .where((o) => o.numero > apres)
+          .toList();
+
+  /// Ajoute des opérations venues d'AUTRES appareils de la boutique.
+  /// Chaque chaîne est vérifiée (suite sans trou, empreintes) avant d'écrire ;
+  /// les opérations déjà connues sont ignorées. Renvoie le nombre ajouté.
+  Future<int> importerOperations(List<Operation> recues) async {
+    final parTelephone = <String, List<Operation>>{};
+    for (final op in recues) {
+      // Jamais nos propres opérations.
+      if (op.telephoneId == telephoneId) {
+        continue;
+      }
+      parTelephone.putIfAbsent(op.telephoneId, () => []).add(op);
+    }
+    final aAjouter = <Operation>[];
+    for (final MapEntry(key: tel, value: liste) in parTelephone.entries) {
+      liste.sort((a, b) => a.numero.compareTo(b.numero));
+      final connues = await operationsDuTelephone(tel);
+      final dernier = connues.isEmpty ? 0 : connues.last.numero;
+      final nouvelles = liste.where((o) => o.numero > dernier).toList();
+      if (nouvelles.isEmpty) continue;
+      // La suite doit continuer exactement la chaîne déjà connue.
+      final chaine = [...connues, ...nouvelles];
+      final problemes = verifierChaine(chaine);
+      if (problemes.isNotEmpty) {
+        throw ErreurZeroPerte(
+          'Données reçues d\'un autre appareil refusées : ${problemes.first}',
+        );
+      }
+      aAjouter.addAll(nouvelles);
+    }
+    if (aAjouter.isEmpty) return 0;
+    aAjouter.sort(
+      (a, b) => a.heureTelephone != b.heureTelephone
+          ? a.heureTelephone.compareTo(b.heureTelephone)
+          : a.numero.compareTo(b.numero),
+    );
+    await _db.transaction((t) async {
+      for (final op in aAjouter) {
+        await t.insert('operations', {
+          'id': op.id,
+          'telephone_id': op.telephoneId,
+          'numero': op.numero,
+          'type': op.type,
+          'auteur_id': op.auteurId,
+          'heure_telephone': op.heureTelephone,
+          'donnees': jsonCanonique(op.donnees),
+          'empreinte_precedente': op.empreintePrecedente,
+          'empreinte': op.empreinte,
+          'signature': op.signature,
+        });
+        await projeter(t, op);
+      }
+    });
+    return aAjouter.length;
+  }
+
+  /// Ce téléphone prend l'identité d'un ancien appareil de la boutique (perdu
+  /// ou cassé) : il continue sa chaîne et ses numéros de reçus. Possible
+  /// seulement si ce téléphone n'a encore rien écrit lui-même.
+  Future<void> reprendreIdentite(String idTelephone, String prefixe) async {
+    if ((await dernierNumero(telephoneId)) > 0 && idTelephone != telephoneId) {
+      throw const ErreurZeroPerte(
+        'Ce téléphone a déjà des opérations : il ne peut pas remplacer un autre appareil.',
+      );
+    }
+    await _ecrireParametre(_db, 'telephone_id', idTelephone);
+    await _ecrireParametre(_db, 'prefixe_recu', prefixe);
+    _telephoneId = idTelephone;
+    _prefixeRecu = prefixe;
+  }
+
+  /// Remet les opérations de CE téléphone (reprises d'un ancien appareil).
+  /// Le journal ne doit encore rien contenir pour ce téléphone.
+  Future<int> restaurerOperationsPropres(List<Operation> ops) async {
+    if (ops.isEmpty) return 0;
+    if (await dernierNumero(telephoneId) > 0) {
+      throw const ErreurZeroPerte(
+        'Ce téléphone a déjà ses propres opérations.',
+      );
+    }
+    final miennes = ops.where((o) => o.telephoneId == telephoneId).toList()
+      ..sort((a, b) => a.numero.compareTo(b.numero));
+    if (verifierChaine(miennes).isNotEmpty) {
+      throw const ErreurZeroPerte(
+        'Données de l\'ancien appareil modifiées ou incomplètes.',
+      );
+    }
+    await _db.transaction((t) async {
+      for (final op in miennes) {
+        await t.insert('operations', {
+          'id': op.id,
+          'telephone_id': op.telephoneId,
+          'numero': op.numero,
+          'type': op.type,
+          'auteur_id': op.auteurId,
+          'heure_telephone': op.heureTelephone,
+          'donnees': jsonCanonique(op.donnees),
+          'empreinte_precedente': op.empreintePrecedente,
+          'empreinte': op.empreinte,
+          'signature': op.signature,
+        });
+        await projeter(t, op);
+      }
+    });
+    return miennes.length;
+  }
+
+  /// Change le préfixe des reçus (nouvel appareil d'une boutique existante).
+  Future<void> changerPrefixeRecu(String prefixe) async {
+    if (!prefixeRecuValide(prefixe)) {
+      throw ErreurZeroPerte('Préfixe de reçu invalide : « $prefixe ».');
+    }
+    await _ecrireParametre(_db, 'prefixe_recu', prefixe);
+    _prefixeRecu = prefixe;
+  }
+
+  /// Opérations venues de ce fichier JSON (format des fichiers de synchronisation).
+  static List<Operation> operationsDepuisJson(List<int> json) {
+    final d = (jsonDecode(utf8.decode(json)) as Map).cast<String, Object?>();
+    return [
+      for (final l in (d['operations'] as List).cast<Map>())
+        Operation(
+          id: l['id'] as String,
+          telephoneId: l['telephone_id'] as String,
+          numero: l['numero'] as int,
+          type: l['type'] as String,
+          auteurId: l['auteur_id'] as String,
+          heureTelephone: l['heure_telephone'] as int,
+          donnees: (jsonDecode(l['donnees'] as String) as Map)
+              .cast<String, Object?>(),
+          empreintePrecedente: l['empreinte_precedente'] as String,
+          empreinte: l['empreinte'] as String,
+          signature: l['signature'] as String?,
+        ),
+    ];
+  }
+
+  /// Fichier JSON contenant [ops] (même format que la sauvegarde).
+  static List<int> operationsVersJson(List<Operation> ops) => utf8.encode(
+    jsonEncode({
+      'format': 1,
+      'operations': [
+        for (final op in ops)
+          {
+            'id': op.id,
+            'telephone_id': op.telephoneId,
+            'numero': op.numero,
+            'type': op.type,
+            'auteur_id': op.auteurId,
+            'heure_telephone': op.heureTelephone,
+            'donnees': jsonCanonique(op.donnees),
+            'empreinte_precedente': op.empreintePrecedente,
+            'empreinte': op.empreinte,
+            'signature': op.signature,
+          },
+      ],
+    }),
+  );
+
+  // ---------------------------------------------------------------------------
   // Sauvegarde
   // ---------------------------------------------------------------------------
 

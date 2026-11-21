@@ -91,22 +91,23 @@ void main() {
     expect(find.byKey(const Key('bouton-client-panier')), findsOneWidget);
   });
 
-  testWidgets('billets : total 1 200 F → pas de 1 000 F, 2 000 F → rendre 800 F', (
-    tester,
-  ) async {
-    final env = await environnementDeTest(
-      tester,
-      preparer: boutiqueAvecClients,
-    );
-    await ouvrirVendre(tester, env);
-    await riz2kg(tester);
-    await toucher(tester, find.byKey(const Key('bouton-encaisser')));
-    expect(find.byKey(const Key('rapide-exact')), findsOneWidget);
-    expect(find.byKey(const Key('rapide-1000')), findsNothing);
-    expect(find.byKey(const Key('rapide-2000')), findsOneWidget);
-    await toucher(tester, find.byKey(const Key('rapide-2000')));
-    expect(find.text('800\u00A0F'), findsWidgets); // à rendre
-  });
+  testWidgets(
+    'billets : total 1 200 F → pas de 1 000 F, 2 000 F → rendre 800 F',
+    (tester) async {
+      final env = await environnementDeTest(
+        tester,
+        preparer: boutiqueAvecClients,
+      );
+      await ouvrirVendre(tester, env);
+      await riz2kg(tester);
+      await toucher(tester, find.byKey(const Key('bouton-encaisser')));
+      expect(find.byKey(const Key('rapide-exact')), findsOneWidget);
+      expect(find.byKey(const Key('rapide-1000')), findsNothing);
+      expect(find.byKey(const Key('rapide-2000')), findsOneWidget);
+      await toucher(tester, find.byKey(const Key('rapide-2000')));
+      expect(find.text('800\u00A0F'), findsWidgets); // à rendre
+    },
+  );
 
   testWidgets('filtre par catégorie : seulement si plusieurs catégories', (
     tester,

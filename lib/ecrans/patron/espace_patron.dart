@@ -7,6 +7,7 @@ import '../caisse/saisie_montant.dart';
 import '../communs.dart';
 import 'arrivages.dart';
 import 'sauvegarde.dart';
+import 'synchronisation.dart';
 import 'tableau.dart';
 import 'vendeurs.dart';
 
@@ -66,6 +67,13 @@ final List<EntreePatron> entreesPatron = [
     pageRetraitPatron,
   ),
   EntreePatron(
+    'synchro',
+    Icons.cloud_sync_rounded,
+    'Appareils et Drive',
+    CouleursZp.marque,
+    (etat) => PageSynchronisation(etat: etat),
+  ),
+  EntreePatron(
     'sauvegarde',
     Icons.backup_rounded,
     'Sauvegarde',
@@ -85,7 +93,7 @@ class EspacePatron extends StatelessWidget {
     // Pas de sauvegarde en démonstration : ses données ne doivent pas en sortir.
     final entrees = [
       for (final e in entreesPatron)
-        if (!(etat.estDemo && e.cle == 'sauvegarde')) e,
+        if (!(etat.estDemo && (e.cle == 'sauvegarde' || e.cle == 'synchro'))) e,
     ];
     return PageZp(
       titre: 'Espace patron',

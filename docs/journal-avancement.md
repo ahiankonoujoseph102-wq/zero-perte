@@ -10,7 +10,7 @@ Il est mis à jour **à la fin de chaque étape**.
 | | |
 |---|---|
 | **Dernière étape terminée** | **B13** — Sauvegarde chiffrée → **bloc B terminé** |
-| **Version publiée** | 0.19.0 (voir les Releases GitHub) |
+| **Version publiée** | 0.20.0 (voir les Releases GitHub) |
 | **Dernière étape terminée (bis)** | **C1** — Crédit client |
 | **Prochaine étape** | Rapport de fin de bloc C1, puis bloc **D** (synchronisation) |
 | **Méthode** | Enchaîner les étapes de `docs/plan-v1.md` sans validation intermédiaire : B1→B13, puis C1, D, C2→C4, E. Rapport au chef de projet **à la fin de chaque bloc**, ou si une décision appartient au propriétaire, ou si on est bloqué. |
@@ -375,3 +375,43 @@ payée ; le téléphone reste exigé seulement pour le crédit.
 - Téléphone 4 pouces : captures identiques à la version 0.18.
 
 **Choix pris au plus simple :** les pages sans intérêt à deux colonnes sont centrées plutôt que redessinées.
+
+### Étape 4 — Bloc D : synchronisation par Google Drive, alertes, restauration ✅ (version 0.20.0)
+**Fait (sans aucun compte extérieur) :**
+- **Moteur de synchronisation** (`lib/synchro/synchro.dart`) : chaque appareil dépose SES opérations dans
+  le dossier caché de l'application du Google Drive de la boutique (`ops-<appareil>-<n°>-<n°>.json`) et lit
+  celles des autres ; aucun conflit possible. Chaque chaîne reçue est vérifiée (suite sans trou, empreintes) :
+  un fichier trafiqué est refusé et rien n'est écrit.
+- **Mis en commun entre appareils** : ventes, stock, caisse, clients et soldes. Le **plafond de crédit compte
+  les dettes prises sur tous les appareils** (dès qu'ils ont synchronisé).
+- **Appareils et licence** : chaque appareil s'inscrit (`appareil-<id>.json`) ; au-delà du nombre de la
+  licence, refus clair. Un 2e appareil prend tout seul un autre préfixe de reçus (B, C…).
+- **Client Google Drive** (API REST v3, sans bibliothèque) et **connexion Google** (bibliothèque
+  `google_sign_in`, autorisation `drive.appdata` seulement). Relève **à chaque ouverture et toutes les 15 min**
+  quand l'application est ouverte.
+- **Espace patron → « Appareils et Drive »** : connecter le compte Google de la boutique, dernière
+  synchronisation, erreurs, appareils (« reçus A (celui-ci) »).
+- **Remettre une sauvegarde** : écran de bienvenue → « J'ai déjà une boutique : la retrouver » →
+  **depuis Google Drive** (« ce téléphone remplace : Ama » = il continue ses reçus, ou « appareil en plus »)
+  ou **depuis un fichier .zps** + code du patron (6 chiffres, ou 4 pour une ancienne sauvegarde).
+- **Alertes graves** : relais Cloudflare prêt (`relais/worker.js`, testé avec Node) ; l'application envoie
+  une alerte si un vendeur ferme la caisse avec **1 000 F ou plus de manque**, annule une vente de
+  **5 000 F ou plus**, ou fait **5 codes faux** ; le téléphone du patron la relève chaque minute (application
+  ouverte) : **bandeau rouge** + voix. Chaque boutique a un jeton secret, rangé dans son Drive.
+- **Étapes du propriétaire** : `docs/etapes-proprietaire.md` (Google Cloud, Cloudflare, variable
+  `ZP_RELAIS_URL`). La fabrication affiche maintenant aussi l'empreinte **SHA-1** (publique) demandée par Google.
+
+**Tests (324 au total, tous réussis)**, par exemple :
+- Le patron synchronise ; un téléphone neuf récupère la boutique (riz **100 kg**), devient l'appareil « B »,
+  vend 2 kg (reçu **B-000001**) ; après synchronisation, le patron voit **98 kg** et **1 200 F** de ventes.
+- Kofi (plafond 5 000 F) prend **4 000 F** à crédit chez le vendeur ; chez le patron, 1 500 F de plus sont
+  **refusés** : « peut encore prendre 1 000 F ».
+- Le vendeur Kossi ferme la caisse (fonds 5 000 F) en comptant 3 000 F → le patron reçoit « Caisse fermée par
+  Kossi : il manque 2 000 F ». Licence de 2 appareils → le 3e est refusé. Fichier modifié dans le Drive → refusé.
+
+**Choix pris au plus simple :** une seule caisse pour toute la boutique (une fermeture sur un appareil ferme la
+caisse commune) ; seuils d'alerte 1 000 F (manque) et 5 000 F (annulation) ; relève des alertes seulement
+application ouverte (notifications application fermée : plus tard, avec Firebase).
+
+**Problèmes restants :** rien n'a pu être essayé avec un vrai compte Google (il faut d'abord les étapes A de
+`docs/etapes-proprietaire.md`) ; la relève en arrière-plan (application fermée) n'est pas faite.

@@ -1,0 +1,9 @@
+# Configuration du relais d'alertes (voir docs/etapes-proprietaire.md).
+name = "zero-perte-relais"
+main = "worker.js"
+compatibility_date = "2026-11-01"
+
+[[kv_namespaces]]
+binding = "ALERTES"
+# Remplacer par l'identifiant de l'espace KV créé dans le tableau de bord Cloudflare.
+id = "A_REMPLACER"

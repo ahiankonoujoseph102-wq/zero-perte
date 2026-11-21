@@ -9,6 +9,7 @@ import '../communs.dart' show ColonneCentree;
 import '../../theme/couleurs.dart';
 import '../accueil_vendeur.dart';
 import 'etapes_boutique.dart';
+import 'retrouver.dart';
 
 /// Assistant d'installation : une étape par écran, une voix qui lit la consigne,
 /// un bouton d'aide toujours visible. Il reprend là où il s'était arrêté.
@@ -197,7 +198,24 @@ class _AssistantInstallationState extends State<AssistantInstallation> {
   }
 
   Widget _contenu(EtapeAssistant e) => switch (e) {
-    EtapeAssistant.bienvenue => const _Bienvenue(),
+    EtapeAssistant.bienvenue => Column(
+      children: [
+        const Expanded(child: _Bienvenue()),
+        TextButton.icon(
+          key: const Key('bouton-retrouver-boutique'),
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => PageRetrouverBoutique(etat: etat),
+            ),
+          ),
+          icon: const Icon(Icons.restore_rounded, size: 26),
+          label: const Text(
+            'J\'ai déjà une boutique : la retrouver',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+          ),
+        ),
+      ],
+    ),
     EtapeAssistant.verification => FutureBuilder<_ResultatVerification>(
       future: _verification,
       builder: (context, r) {

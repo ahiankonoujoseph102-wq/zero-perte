@@ -318,4 +318,43 @@ void main() {
       );
     });
   }
+  for (final e in ecrans.entries) {
+    testWidgets('etape4 ${e.key}', (tester) async {
+      final env = await environnementDeTest(tester, preparer: boutiqueAvecKofi);
+      await tester.runAsync(() async {
+        await env.etat.connecterSynchro();
+        await env.etat.synchroniser();
+      });
+      await afficherApp(tester, env.etat, taille: e.value, densite: 2);
+      await ouvrirEspacePatron(tester);
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('captures/patron_tuiles_${e.key}.png'),
+      );
+      await toucher(tester, find.byKey(const Key('patron-synchro')));
+      await attendre(tester, tours: 8);
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('captures/drive_${e.key}.png'),
+      );
+      final neuf = await environnementDeTest(tester, drive: env.drive);
+      await tester.pumpWidget(const SizedBox());
+      await afficherApp(tester, neuf.etat, taille: e.value, densite: 2);
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('captures/bienvenue_${e.key}.png'),
+      );
+      await toucher(tester, find.byKey(const Key('bouton-retrouver-boutique')));
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('captures/retrouver_${e.key}.png'),
+      );
+      await toucher(tester, find.byKey(const Key('retrouver-drive')));
+      await attendre(tester, tours: 10);
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('captures/retrouver_drive_${e.key}.png'),
+      );
+    });
+  }
 }

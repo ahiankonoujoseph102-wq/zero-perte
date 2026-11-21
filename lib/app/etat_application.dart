@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../domaine/argent.dart';
@@ -11,7 +13,10 @@ import '../domaine/sauvegarde.dart';
 import '../domaine/tableau.dart';
 import '../domaine/utilisateurs.dart';
 import '../donnees/journal_local.dart';
+import '../services/google.dart' show ConnexionStockage;
 import '../services/partage.dart';
+import '../synchro/relais.dart';
+import '../synchro/synchro.dart';
 import '../services/aide.dart';
 import '../services/telephone.dart';
 import '../services/voix.dart';
@@ -32,6 +37,8 @@ class ServicesZp {
     required this.creerRaccourci,
     required this.partagerImage,
     required this.partagerFichier,
+    this.connecterDrive,
+    this.choisirFichier,
   });
 
   final ServiceTelephone telephone;
@@ -61,6 +68,12 @@ class ServicesZp {
   /// Partage un fichier (sauvegarde) par le menu de partage d'Android.
   final Future<ResultatPartage> Function(Uint8List octets, String nom)
   partagerFichier;
+
+  /// Connexion au Drive de la boutique (nul : pas possible ici).
+  final Future<ConnexionStockage?> Function({bool silencieux})? connecterDrive;
+
+  /// Choisit un fichier de sauvegarde sur l'appareil (nul si annulé).
+  final Future<Uint8List?> Function()? choisirFichier;
 }
 
 /// Étapes de l'assistant d'installation, dans l'ordre.
@@ -364,6 +377,12 @@ class EtatApplication extends ChangeNotifier {
         'pin.blocage.${u.id}',
         '${maintenant().add(dureeBlocagePin).millisecondsSinceEpoch}',
       );
+      unawaited(
+        alerter(
+          'code',
+          '$essaisPin codes faux pour ${u.nom} (appareil ${journal.prefixeRecu}).',
+        ),
+      );
     }
     return false;
   }
@@ -449,6 +468,15 @@ class EtatApplication extends ChangeNotifier {
       auteurId: auteurActuel,
     );
     await rechargerProduits();
+    if (v.total >= seuilAlerteAnnulation) {
+      unawaited(
+        alerter(
+          'annulation',
+          '${nomDe(auteurActuel)} a annulé la vente ${v.recu} de '
+              '${formatFrancs(v.total)} (« $motif »).',
+        ),
+      );
+    }
   }
 
   /// Perte déclarée (casse, périmé…) : [nombre] unités de [conditionnement] (ou de base).
@@ -524,6 +552,18 @@ class EtatApplication extends ChangeNotifier {
       auteurId: auteurActuel,
     );
     notifyListeners();
+    for (final m in ModePaiement.caisses) {
+      final r = f.resultat(m);
+      if (-r.ecart >= seuilAlerteEcart) {
+        unawaited(
+          alerter(
+            'ecart',
+            'Caisse fermée par ${nomDe(f.auteurId)} : il manque '
+                '${formatFrancs(-r.ecart)} (${m.code}).',
+          ),
+        );
+      }
+    }
     return f;
   }
 
@@ -777,6 +817,177 @@ class EtatApplication extends ChangeNotifier {
       if (i >= 0) totaux[i] += t;
     }
     return [for (var i = 0; i < 7; i++) (jours[i], totaux[i])];
+  }
+
+  // ---------------------------------------------------------------------------
+  // Synchronisation (bloc D)
+  // ---------------------------------------------------------------------------
+
+  Synchroniseur? _synchro;
+  String? _compteSynchro;
+  bool _synchroEnCours = false;
+  Timer? _minuterie;
+
+  /// Compte Google de la boutique (nul : pas encore connecté).
+  String? get compteSynchro => _compteSynchro;
+  bool get synchroEnCours => _synchroEnCours;
+
+  /// Connecte le dossier de la boutique. Faux si annulé ou impossible.
+  Future<bool> connecterSynchro({bool silencieux = false}) async {
+    final f = services.connecterDrive;
+    if (f == null) return false;
+    final c = await f(silencieux: silencieux);
+    if (c == null) return false;
+    _synchro = Synchroniseur(journal: journal, stockage: c.stockage);
+    _compteSynchro = c.compte;
+    await journal.ecrireParametre('sync.compte', c.compte);
+    notifyListeners();
+    return true;
+  }
+
+  /// Envoie ce qui est nouveau ici, reçoit ce qui vient des autres appareils.
+  /// Les erreurs sont gardées (affichées au patron), jamais bloquantes.
+  Future<ResultatSynchro?> synchroniser() async {
+    if (_synchroEnCours || estDemo) return null;
+    if (_synchro == null) {
+      if (await journal.lireParametre('sync.compte') == null) return null;
+      if (!await connecterSynchro(silencieux: true)) return null;
+    }
+    _synchroEnCours = true;
+    notifyListeners();
+    try {
+      final r = await _synchro!.synchroniser(
+        maxAppareils: licence?.telephones,
+        nomAppareil: utilisateurActuel?.nom ?? patron?.nom ?? '',
+        boutiqueId: licence?.boutiqueId,
+      );
+      await journal.ecrireParametre(
+        'sync.derniere',
+        '${maintenant().millisecondsSinceEpoch}',
+      );
+      await journal.ecrireParametre('sync.erreur', '');
+      await journal.ecrireParametre('sync.appareils', '${r.appareils.length}');
+      if (r.recues > 0) await rechargerTout();
+      return r;
+    } catch (e) {
+      await journal.ecrireParametre('sync.erreur', '$e');
+      return null;
+    } finally {
+      _synchroEnCours = false;
+      notifyListeners();
+    }
+  }
+
+  // --- Alertes graves (relais) ---------------------------------------------
+
+  /// Transport des alertes (nul : relais non configuré dans cette version).
+  TransportAlertes? transportAlertes;
+  final List<Alerte> _alertes = [];
+  Timer? _minuterieAlertes;
+
+  /// Alertes reçues pas encore vues par le patron.
+  List<Alerte> get alertes => List.unmodifiable(_alertes);
+
+  void effacerAlertes() {
+    _alertes.clear();
+    notifyListeners();
+  }
+
+  Future<String?> _jetonRelais() async {
+    final j = await journal.lireParametre('relais.jeton');
+    if (j != null && j.isNotEmpty) return j;
+    final infos = await _synchro?.infosBoutique();
+    final nouveau = infos?['jeton_relais'] as String?;
+    if (nouveau != null) await journal.ecrireParametre('relais.jeton', nouveau);
+    return nouveau;
+  }
+
+  /// Envoie une alerte grave au patron (jamais bloquant ; rien si c'est le
+  /// patron lui-même qui agit, ou en démonstration).
+  Future<void> alerter(String type, String message) async {
+    if (estDemo || estPatron) return;
+    final t = transportAlertes;
+    final jeton = await _jetonRelais();
+    if (t == null || jeton == null) return;
+    try {
+      await t.envoyer(
+        jeton,
+        Alerte(
+          type: type,
+          message: message,
+          heure: maintenant().millisecondsSinceEpoch,
+          appareil: journal.prefixeRecu,
+        ),
+      );
+    } catch (_) {
+      // Pas de réseau : l'alerte sera de toute façon visible par la synchronisation.
+    }
+  }
+
+  /// Relève les nouvelles alertes (appareil du patron).
+  Future<int> releverAlertes() async {
+    final t = transportAlertes;
+    final jeton = await _jetonRelais();
+    if (t == null || jeton == null || estDemo) return 0;
+    try {
+      final depuis =
+          int.tryParse(await journal.lireParametre('relais.depuis') ?? '') ?? 0;
+      final nouvelles = await t.relever(jeton, depuis);
+      if (nouvelles.isEmpty) return 0;
+      _alertes.addAll(nouvelles);
+      await journal.ecrireParametre(
+        'relais.depuis',
+        '${nouvelles.map((a) => a.heure).reduce((a, b) => a > b ? a : b)}',
+      );
+      await services.voix.dire('Alerte. ${nouvelles.last.message}');
+      notifyListeners();
+      return nouvelles.length;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  /// Relève les alertes chaque minute tant que l'application est ouverte.
+  void demarrerAlertesAuto({Duration periode = const Duration(minutes: 1)}) {
+    _minuterieAlertes?.cancel();
+    _minuterieAlertes = Timer.periodic(periode, (_) {
+      if (estPatron) releverAlertes();
+    });
+  }
+
+  /// Appareils inscrits dans la boutique (nul si pas connecté).
+  Future<List<Appareil>?> appareilsSynchro() async => _synchro?.appareils();
+
+  /// Relève automatique tant que l'application est ouverte (Android impose
+  /// 15 minutes au minimum pour une relève en arrière-plan ; ici, au premier
+  /// plan, toutes les 15 minutes aussi, plus à chaque ouverture).
+  void demarrerSynchroAuto({Duration periode = const Duration(minutes: 15)}) {
+    _minuterie?.cancel();
+    synchroniser();
+    _minuterie = Timer.periodic(periode, (_) => synchroniser());
+  }
+
+  /// Nouveau téléphone : récupère toute la boutique depuis le Drive.
+  /// Avec [remplace], il prend la place de cet ancien appareil.
+  Future<int> retrouverBoutiqueDepuisDrive({Appareil? remplace}) async {
+    final s = _synchro;
+    if (s == null) {
+      throw const ErreurZeroPerte('Connectez d\'abord le compte Google.');
+    }
+    final n = await s.recupererBoutique(remplace: remplace);
+    await rechargerTout();
+    if (n > 0) await allerA(EtapeAssistant.termine);
+    return n;
+  }
+
+  /// Nouveau téléphone : remet une sauvegarde (fichier .zps).
+  Future<int> retrouverBoutiqueDepuisFichier(
+    List<int> fichier,
+    String code,
+  ) async {
+    final n = await restaurerSauvegarde(fichier, code);
+    if (n > 0) await allerA(EtapeAssistant.termine);
+    return n;
   }
 
   /// La personne connectée est-elle le patron ?
