@@ -1,12 +1,19 @@
 name: "1 - Créer la clé de signature (une seule fois)"
 
-# À lancer UNE SEULE FOIS par le propriétaire, après avoir créé le secret
-# ZP_SIGNATURE_MOT_DE_PASSE. Ce workflow :
-#  1. crée la clé de signature officielle ;
-#  2. l'enregistre CHIFFRÉE dans le dépôt (signature/cle-signature.p12.chiffre) ;
-#  3. met une copie de secours chiffrée à télécharger (à garder dans Google Drive) ;
-#  4. relance la fabrication de l'APK, cette fois signé officiellement.
-# La clé en clair n'apparaît jamais : ni dans le dépôt, ni dans les journaux.
+# À lancer UNE SEULE FOIS par le propriétaire. Le dépôt est PUBLIC : la clé n'y est
+# JAMAIS écrite, même chiffrée, et aucune valeur secrète n'est affichée dans le journal.
+#
+# Avant de lancer, le propriétaire a créé (voir docs/cle-de-signature.md) :
+#  - le secret ZP_SIGNATURE_MOT_DE_PASSE (mot de passe, au moins 16 caractères) ;
+#  - le dépôt PRIVÉ <propriétaire>/zero-perte-coffre (copie de secours) ;
+#  - le secret ZP_JETON_COFFRE : jeton GitHub limité, valable 7 jours, autorisé à
+#    écrire les secrets de zero-perte et le contenu de zero-perte-coffre.
+#
+# Le workflow :
+#  1. crée la clé dans un dossier temporaire, la chiffre (AES-256, mot de passe) ;
+#  2. range la copie de secours chiffrée dans le dépôt privé zero-perte-coffre ;
+#  3. range la clé chiffrée dans le secret ZP_CLE_SIGNATURE de ce dépôt ;
+#  4. efface tout, puis relance la fabrication de l'APK officiel.
 # Il refuse de remplacer une clé existante.
 
 on:
@@ -18,8 +25,8 @@ on:
         default: ""
 
 permissions:
-  contents: write
-  actions: write
+  contents: read
+  actions: write # seulement pour relancer la fabrication à la fin
 
 concurrency:
   group: creer-cle-signature
@@ -29,43 +36,89 @@ jobs:
   creer:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      COFFRE: ${{ github.repository_owner }}/zero-perte-coffre
     steps:
       - name: Contrôles avant création
+        env:
+          CLE_EXISTE: ${{ secrets.ZP_CLE_SIGNATURE != '' }}
+          MDP_PRESENT: ${{ secrets.ZP_SIGNATURE_MOT_DE_PASSE != '' }}
+          JETON_PRESENT: ${{ secrets.ZP_JETON_COFFRE != '' }}
         run: |
           if [ "${{ github.ref }}" != "refs/heads/main" ]; then
-            echo "::error::Lancez ce workflow sur la branche main."
-            exit 1
+            echo "::error::Lancez ce workflow sur la branche main."; exit 1
           fi
           if [ "${{ github.event.inputs.confirmation }}" != "OUI" ]; then
-            echo "::error::Confirmation absente : écrivez OUI en majuscules."
-            exit 1
+            echo "::error::Confirmation absente : écrivez OUI en majuscules."; exit 1
+          fi
+          if [ "$CLE_EXISTE" = "true" ]; then
+            echo "::error::Une clé de signature existe déjà (secret ZP_CLE_SIGNATURE). Elle ne sera JAMAIS remplacée automatiquement."; exit 1
+          fi
+          if [ "$MDP_PRESENT" != "true" ]; then
+            echo "::error::Le secret ZP_SIGNATURE_MOT_DE_PASSE est absent. Créez-le d'abord."; exit 1
+          fi
+          if [ "$JETON_PRESENT" != "true" ]; then
+            echo "::error::Le secret ZP_JETON_COFFRE est absent. Créez-le d'abord."; exit 1
           fi
 
+      - name: Vérifier le jeton et le coffre privé
+        env:
+          GH_TOKEN: ${{ secrets.ZP_JETON_COFFRE }}
+        run: |
+          PRIVE=$(gh api "repos/$COFFRE" --jq .private 2>/dev/null || echo "introuvable")
+          if [ "$PRIVE" = "introuvable" ]; then
+            echo "::error::Le dépôt $COFFRE est introuvable, ou le jeton ZP_JETON_COFFRE n'y a pas accès."; exit 1
+          fi
+          if [ "$PRIVE" != "true" ]; then
+            echo "::error::Le dépôt $COFFRE n'est PAS privé. Rendez-le privé avant de continuer."; exit 1
+          fi
+          if ! gh secret list --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::error::Le jeton ZP_JETON_COFFRE ne peut pas gérer les secrets de $GITHUB_REPOSITORY (permission « Secrets : lecture et écriture » manquante)."; exit 1
+          fi
+          echo "Jeton et coffre privé : OK."
+
       - name: Récupérer le code
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: main
+          persist-credentials: false
 
-      - name: Créer et chiffrer la clé
+      - name: Créer et chiffrer la clé (dossier temporaire)
         env:
           ZP_SIGNATURE_MOT_DE_PASSE: ${{ secrets.ZP_SIGNATURE_MOT_DE_PASSE }}
         run: |
-          ./outils/creer-cle-signature.sh signature/cle-signature.p12.chiffre | tee "$RUNNER_TEMP/resultat.txt"
+          mkdir -p "$RUNNER_TEMP/zp" && chmod 700 "$RUNNER_TEMP/zp"
+          ./outils/creer-cle-signature.sh "$RUNNER_TEMP/zp/cle.chiffre" | tee "$RUNNER_TEMP/empreintes.txt"
+          base64 -w0 "$RUNNER_TEMP/zp/cle.chiffre" > "$RUNNER_TEMP/zp/cle.b64"
+          # Le contenu chiffré ne doit pas non plus apparaître dans le journal.
+          echo "::add-mask::$(cat "$RUNNER_TEMP/zp/cle.b64")"
 
-      - name: Enregistrer la clé chiffrée dans le dépôt
+      - name: Ranger la copie de secours dans le coffre privé
+        env:
+          GH_TOKEN: ${{ secrets.ZP_JETON_COFFRE }}
         run: |
-          git config user.name "zero-perte-bot"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add signature/cle-signature.p12.chiffre
-          git commit -m "Ajout de la clé de signature officielle (chiffrée)"
-          git push origin HEAD:main
+          NOM="cle-signature/zeroperte-$(date -u +%Y-%m-%d)-run${GITHUB_RUN_ID}.p12.chiffre"
+          jq -n --arg m "Copie de secours chiffrée de la clé de signature Zéro Perte" \
+                --rawfile c "$RUNNER_TEMP/zp/cle.b64" \
+                '{message: $m, content: $c}' > "$RUNNER_TEMP/zp/requete.json"
+          TAILLE=$(gh api -X PUT "repos/$COFFRE/contents/$NOM" --input "$RUNNER_TEMP/zp/requete.json" --jq '.content.size')
+          echo "Copie de secours rangée dans le coffre privé : $NOM ($TAILLE octets, chiffrée)."
+          echo "$NOM" > "$RUNNER_TEMP/nom-copie.txt"
 
-      - name: Copie de secours chiffrée (à garder dans Google Drive)
-        uses: actions/upload-artifact@v4
-        with:
-          name: copie-de-secours-cle-chiffree
-          path: signature/cle-signature.p12.chiffre
-          retention-days: 90
+      - name: Ranger la clé chiffrée dans les secrets GitHub
+        env:
+          GH_TOKEN: ${{ secrets.ZP_JETON_COFFRE }}
+        run: |
+          gh secret set ZP_CLE_SIGNATURE --repo "$GITHUB_REPOSITORY" < "$RUNNER_TEMP/zp/cle.b64"
+          gh secret list --repo "$GITHUB_REPOSITORY" --json name --jq '.[].name' | grep -qx ZP_CLE_SIGNATURE \
+            || { echo "::error::Le secret ZP_CLE_SIGNATURE n'a pas été créé."; exit 1; }
+          echo "Secret ZP_CLE_SIGNATURE créé."
+
+      - name: Effacer les fichiers temporaires
+        if: always()
+        run: |
+          find "$RUNNER_TEMP/zp" -type f -exec shred -u {} + 2>/dev/null || true
+          rm -rf "$RUNNER_TEMP/zp"
 
       - name: Relancer la fabrication de l'APK officiel
         env:
@@ -77,13 +130,14 @@ jobs:
           {
             echo "## ✅ Clé de signature créée"
             echo ""
-            echo "- La clé est enregistrée **chiffrée** dans \`signature/cle-signature.p12.chiffre\`."
-            echo "- **Téléchargez la copie de secours** ci-dessous (« copie-de-secours-cle-chiffree ») et rangez-la dans votre Google Drive."
-            echo "- Gardez le **mot de passe** sur papier, à part : sans lui, la copie ne sert à rien. GitHub ne peut pas le réafficher."
+            echo "- La clé chiffrée est rangée dans le secret **ZP_CLE_SIGNATURE** (jamais dans ce dépôt public)."
+            echo "- La **copie de secours chiffrée** est dans votre dépôt **privé** \`zero-perte-coffre\` : \`$(cat "$RUNNER_TEMP/nom-copie.txt")\`. Téléchargez-la et rangez-la aussi dans votre Google Drive."
+            echo "- Gardez le **mot de passe** sur papier : sans lui, la copie ne sert à rien. GitHub ne peut pas le réafficher."
+            echo "- **Supprimez maintenant le jeton** ZP_JETON_COFFRE (il ne sert plus)."
             echo "- La fabrication de l'APK officiel a été relancée automatiquement."
             echo ""
             echo "Empreintes **publiques** du certificat (pas secrètes, utiles plus tard pour Google Cloud) :"
             echo '```'
-            grep "Empreinte" "$RUNNER_TEMP/resultat.txt" || true
+            grep "Empreinte" "$RUNNER_TEMP/empreintes.txt" || true
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"

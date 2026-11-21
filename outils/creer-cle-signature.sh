@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
-# Crée la clé de signature officielle de Zéro Perte et l'enregistre CHIFFRÉE.
+# Crée la clé de signature de Zéro Perte et produit un fichier CHIFFRÉ, hors du dépôt.
 #
-# Utilisé par le workflow « 1 - Créer la clé de signature ». Ne jamais lancer ce script
-# avec un vrai mot de passe tapé dans un terminal partagé ou une conversation.
+# Utilisé par le workflow « 1 - Créer la clé de signature » (puis le fichier chiffré est
+# rangé dans les secrets GitHub et dans le dépôt privé « coffre » du propriétaire) et par
+# la fabrication d'essai (clé jetable). Ne jamais lancer ce script avec un vrai mot de
+# passe tapé dans un terminal partagé ou une conversation.
+# Le dépôt est PUBLIC : ce script refuse d'écrire dans le dépôt, même un fichier chiffré.
 #
 # Entrées (variables d'environnement) :
 #   ZP_SIGNATURE_MOT_DE_PASSE  mot de passe choisi par le propriétaire (secret GitHub)
 # Argument :
-#   $1  chemin du fichier chiffré à créer (ex. signature/cle-signature.p12.chiffre)
+#   $1  chemin du fichier chiffré à créer, HORS du dépôt (ex. $RUNNER_TEMP/zp/cle.chiffre)
 #
 # La clé en clair n'existe que dans un dossier temporaire privé, effacé à la fin.
 # Rien de secret n'est affiché : seules les empreintes publiques du certificat le sont.
@@ -25,6 +28,12 @@ if [ "${#ZP_SIGNATURE_MOT_DE_PASSE}" -lt 16 ]; then
   echo "::error::Le mot de passe est trop court : il faut au moins 16 caractères. Remplacez le secret ZP_SIGNATURE_MOT_DE_PASSE."
   exit 1
 fi
+DEPOT="${GITHUB_WORKSPACE:-$(cd "$(dirname "$0")/.." && pwd)}"
+case "$(realpath -m "$SORTIE")" in
+  "$(realpath -m "$DEPOT")"/*)
+    echo "::error::Refus : le dépôt est public, la clé (même chiffrée) ne doit jamais y être écrite."
+    exit 1 ;;
+esac
 if [ -e "$SORTIE" ]; then
   echo "::error::Une clé existe déjà ($SORTIE). Par sécurité, elle ne sera JAMAIS remplacée automatiquement."
   exit 1
@@ -60,7 +69,7 @@ keytool -list -keystore "$TMP/verif.p12" -storetype PKCS12 \
   -storepass:env ZP_SIGNATURE_MOT_DE_PASSE -alias "$ALIAS" >/dev/null
 
 # 4. Empreintes PUBLIQUES du certificat (utiles plus tard pour Google Cloud). Rien de secret.
-echo "Clé créée et chiffrée dans : $SORTIE"
+echo "Clé créée et chiffrée (fichier temporaire hors du dépôt)."
 keytool -list -v -keystore "$TMP/verif.p12" -storetype PKCS12 \
   -storepass:env ZP_SIGNATURE_MOT_DE_PASSE -alias "$ALIAS" 2>/dev/null \
   | grep -E "SHA1:|SHA256:" | sed 's/^[[:space:]]*/Empreinte publique /'

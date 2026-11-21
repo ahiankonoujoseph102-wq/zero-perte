@@ -4,7 +4,7 @@
 # Entrées (variables d'environnement) :
 #   ZP_SIGNATURE_MOT_DE_PASSE  mot de passe (secret GitHub)
 # Arguments :
-#   $1  fichier chiffré (ex. signature/cle-signature.p12.chiffre)
+#   $1  fichier chiffré (tiré du secret ZP_CLE_SIGNATURE, dans un dossier temporaire)
 #   $2  fichier en clair à créer, dans un dossier temporaire (jamais dans le dépôt)
 set -euo pipefail
 
