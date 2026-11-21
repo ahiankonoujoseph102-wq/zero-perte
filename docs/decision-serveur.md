@@ -207,8 +207,15 @@ Limites vérifiées : **100 000 requêtes/jour**, 10 ms de calcul par requête. 
 | Dépôt GitHub privé (Releases) | 2 Go | — | Non | Oui | **Non** : téléchargement impossible sans être connecté à GitHub | ❌ |
 | Dépôt GitHub public | 2 Go | Large | Non | Oui | Oui | ❌ Refusé par le propriétaire |
 
+**Règle de l'APK universel (correction du chef de projet, étape A1) :**
+- La **première installation** se fait avec **un seul fichier APK envoyé par WhatsApp**, car le commerçant ne connaît pas le processeur de son téléphone. C'est l'**APK universel**, qui contient les versions 32 bits (`armeabi-v7a`) et 64 bits (`arm64-v8a`).
+- Les **APK par processeur** servent **seulement aux mises à jour automatiques**. L'application choisit elle-même le bon.
+- L'APK universel n'est **pas** publié sur Cloudflare Pages s'il dépasse 25 Mo. Il reste disponible pour WhatsApp, qui accepte de bien plus gros fichiers.
+- **Les trois APK ont le même numéro de version interne** (`versionCode`), grâce à `force-version-code-ignoring-abi=true` dans `android/gradle.properties`. Sans cela, un téléphone mis à jour par un APK par processeur refuserait ensuite un APK universel plus récent reçu par WhatsApp.
+- Les APK ne contiennent pas la version x86 (ordinateurs et émulateurs), qui n'existe pas sur les téléphones visés.
+
 **Fonctionnement retenu :**
-1. GitHub Actions (dépôt privé) fabrique l'APK signé, **découpé par type de processeur** :
+1. GitHub Actions (dépôt privé) fabrique l'APK universel **et** les APK signés **découpés par type de processeur** :
    - `arm64-v8a` pour les téléphones récents ;
    - `armeabi-v7a` pour les vieux ou très bas de gamme.
    

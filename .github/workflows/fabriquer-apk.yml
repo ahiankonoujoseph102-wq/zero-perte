@@ -1,0 +1,202 @@
+name: "2 - Fabriquer l'APK"
+
+# Fabrique :
+#  - l'APK UNIVERSEL (32 et 64 bits), à envoyer par WhatsApp pour la première installation ;
+#  - les APK PAR PROCESSEUR (arm64-v8a, armeabi-v7a), pour les mises à jour automatiques.
+# Les APK sont signés avec la clé officielle si elle existe (fichier chiffré
+# signature/cle-signature.p12.chiffre + secret ZP_SIGNATURE_MOT_DE_PASSE).
+# Sinon, c'est une VERSION D'ESSAI signée avec une clé jetable : bandeau rouge,
+# à ne jamais donner aux clients.
+
+on:
+  push:
+    branches: ["**"]
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fabriquer-apk-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  FLUTTER_VERSION: "3.47.9"
+  CLE_CHIFFREE: signature/cle-signature.p12.chiffre
+
+jobs:
+  fabriquer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # nécessaire pour compter les versions
+
+      - name: Installer Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Installer Flutter ${{ env.FLUTTER_VERSION }}
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Télécharger les dépendances
+        run: flutter pub get
+
+      - name: Vérifier le code
+        run: flutter analyze
+
+      - name: Lancer les tests
+        run: flutter test
+
+      - name: Calculer le numéro de version
+        id: version
+        run: |
+          NOM=$(grep '^version:' pubspec.yaml | sed -E 's/version: *([0-9.]+).*/\1/')
+          # Numéro qui augmente toujours : nombre de modifications enregistrées.
+          NUMERO=$(git rev-list --count HEAD)
+          echo "nom=$NOM" >> "$GITHUB_OUTPUT"
+          echo "numero=$NUMERO" >> "$GITHUB_OUTPUT"
+          echo "Version $NOM ($NUMERO)"
+
+      - name: Préparer la clé de signature
+        id: cle
+        env:
+          ZP_SIGNATURE_MOT_DE_PASSE: ${{ secrets.ZP_SIGNATURE_MOT_DE_PASSE }}
+        run: |
+          DOSSIER="$RUNNER_TEMP/zp-cle"
+          mkdir -p "$DOSSIER" && chmod 700 "$DOSSIER"
+          if [ -f "$CLE_CHIFFREE" ]; then
+            if [ -z "$ZP_SIGNATURE_MOT_DE_PASSE" ]; then
+              echo "::error::La clé officielle existe mais le secret ZP_SIGNATURE_MOT_DE_PASSE est absent."
+              exit 1
+            fi
+            ./outils/dechiffrer-cle-signature.sh "$CLE_CHIFFREE" "$DOSSIER/cle.p12"
+            echo "canal=officiel" >> "$GITHUB_OUTPUT"
+            echo "ZP_CLE_MOT_DE_PASSE=$ZP_SIGNATURE_MOT_DE_PASSE" >> "$GITHUB_ENV"
+          else
+            echo "::warning::Pas encore de clé officielle : VERSION D'ESSAI signée avec une clé jetable. Ne pas donner aux clients."
+            # Clé jetable : même chemin que la clé officielle (création chiffrée puis déchiffrement),
+            # ce qui teste toute la chaîne de signature à chaque fabrication.
+            JETABLE=$(openssl rand -hex 24)
+            echo "::add-mask::$JETABLE"
+            ZP_SIGNATURE_MOT_DE_PASSE="$JETABLE" ./outils/creer-cle-signature.sh "$DOSSIER/jetable.p12.chiffre"
+            ZP_SIGNATURE_MOT_DE_PASSE="$JETABLE" ./outils/dechiffrer-cle-signature.sh "$DOSSIER/jetable.p12.chiffre" "$DOSSIER/cle.p12"
+            echo "canal=essai" >> "$GITHUB_OUTPUT"
+            echo "ZP_CLE_MOT_DE_PASSE=$JETABLE" >> "$GITHUB_ENV"
+          fi
+          echo "ZP_CLE_CHEMIN=$DOSSIER/cle.p12" >> "$GITHUB_ENV"
+
+      - name: Fabriquer l'APK universel (32 et 64 bits)
+        run: |
+          flutter build apk --release \
+            --target-platform android-arm,android-arm64 \
+            --build-number ${{ steps.version.outputs.numero }} \
+            --dart-define=ZP_CANAL=${{ steps.cle.outputs.canal }}
+          mkdir -p sortie
+          cp build/app/outputs/flutter-apk/app-release.apk sortie/universel.apk
+
+      - name: Fabriquer les APK par processeur (mises à jour)
+        run: |
+          flutter build apk --release --split-per-abi \
+            --target-platform android-arm,android-arm64 \
+            --build-number ${{ steps.version.outputs.numero }} \
+            --dart-define=ZP_CANAL=${{ steps.cle.outputs.canal }}
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk sortie/arm64.apk
+          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk sortie/armv7.apk
+
+      - name: Effacer la clé en clair
+        if: always()
+        run: |
+          find "$RUNNER_TEMP/zp-cle" -type f -exec shred -u {} + 2>/dev/null || true
+          rm -rf "$RUNNER_TEMP/zp-cle"
+
+      - name: Vérifier les APK (signature, version, Android 8, taille)
+        id: verif
+        run: |
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          SUFFIXE=""
+          [ "${{ steps.cle.outputs.canal }}" = "essai" ] && SUFFIXE="-ESSAI"
+          V="${{ steps.version.outputs.nom }}-${{ steps.version.outputs.numero }}"
+          RAPPORT="$RUNNER_TEMP/rapport.md"
+          {
+            echo "## Zéro Perte ${{ steps.version.outputs.nom }} (${{ steps.version.outputs.numero }}) — ${{ steps.cle.outputs.canal }}"
+            echo ""
+            echo "| Fichier | Rôle | Taille | versionCode | Android min. | Processeurs |"
+            echo "|---|---|---|---|---|---|"
+          } > "$RAPPORT"
+          CODES=""
+          for F in universel arm64 armv7; do
+            A="sortie/$F.apk"
+            "$BT/apksigner" verify "$A"
+            BADGE=$("$BT/aapt2" dump badging "$A")
+            PAQUET=$(echo "$BADGE" | sed -nE "s/^package: name='([^']+)'.*/\1/p")
+            CODE=$(echo "$BADGE" | sed -nE "s/.*versionCode='([0-9]+)'.*/\1/p")
+            MIN=$(echo "$BADGE" | sed -nE "s/^(min)?[sS]dkVersion:'([0-9]+)'.*/\2/p" | head -1)
+            ABIS=$(echo "$BADGE" | sed -nE "s/^native-code: (.*)/\1/p" | tr -d "'")
+            TAILLE=$(stat -c %s "$A")
+            MO=$(awk "BEGIN{printf \"%.1f\", $TAILLE/1048576}")
+            [ "$PAQUET" = "tg.zeroperte.app" ] || { echo "::error::Identifiant inattendu : $PAQUET"; exit 1; }
+            [ "$MIN" = "26" ] || { echo "::error::Android minimum inattendu : $MIN (attendu 26 = Android 8)"; exit 1; }
+            CODES="$CODES $CODE"
+            case $F in
+              universel) ROLE="Première installation (WhatsApp)"; NOM="ZeroPerte-$V$SUFFIXE.apk" ;;
+              arm64)     ROLE="Mise à jour auto. (64 bits)";      NOM="ZeroPerte-$V-arm64$SUFFIXE.apk"
+                         [ "$TAILLE" -le 23068672 ] || { echo "::error::APK arm64 trop gros ($MO Mo > 22 Mo) pour Cloudflare Pages"; exit 1; } ;;
+              armv7)     ROLE="Mise à jour auto. (32 bits)";      NOM="ZeroPerte-$V-armv7$SUFFIXE.apk"
+                         [ "$TAILLE" -le 23068672 ] || { echo "::error::APK armv7 trop gros ($MO Mo > 22 Mo) pour Cloudflare Pages"; exit 1; } ;;
+            esac
+            mv "$A" "sortie/$NOM"
+            echo "| $NOM | $ROLE | $MO Mo | $CODE | $MIN | $ABIS |" >> "$RAPPORT"
+            [ "$F" = universel ] && echo "universel=sortie/$NOM" >> "$GITHUB_OUTPUT"
+          done
+          # Les trois APK doivent avoir le même versionCode (voir android/gradle.properties).
+          [ "$(echo $CODES | tr ' ' '\n' | sort -u | wc -l)" = "1" ] || { echo "::error::versionCode différents :$CODES"; exit 1; }
+          echo "" >> "$RAPPORT"
+          echo "Empreinte SHA-256 du certificat de signature :" >> "$RAPPORT"
+          echo '```' >> "$RAPPORT"
+          "$BT/apksigner" verify --print-certs "sortie/$(ls sortie | head -1)" | grep -m1 "SHA-256" >> "$RAPPORT"
+          echo '```' >> "$RAPPORT"
+          if [ -n "$SUFFIXE" ]; then
+            echo "" >> "$RAPPORT"
+            echo "> ⚠️ **VERSION D'ESSAI** (clé jetable). Ne pas donner aux clients." >> "$RAPPORT"
+          fi
+          cat "$RAPPORT" >> "$GITHUB_STEP_SUMMARY"
+          cp "$RAPPORT" sortie/LISEZ-MOI.md
+          ls -la sortie
+
+      - name: Mettre les APK à disposition (téléchargement)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZeroPerte-${{ steps.version.outputs.nom }}-${{ steps.version.outputs.numero }}-${{ steps.cle.outputs.canal }}
+          path: sortie/
+          retention-days: 30
+
+      - name: Publier une « Release » GitHub (branche main seulement)
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          N="${{ steps.version.outputs.numero }}"
+          V="${{ steps.version.outputs.nom }}"
+          if [ "${{ steps.cle.outputs.canal }}" = "officiel" ]; then
+            TAG="v$V-n$N"; TITRE="Zéro Perte $V ($N)"; OPTION="--latest"
+          else
+            TAG="essai-$V-n$N"; TITRE="ESSAI — Zéro Perte $V ($N) — ne pas distribuer"; OPTION="--prerelease"
+          fi
+          gh release create "$TAG" sortie/*.apk \
+            --target "${{ github.sha }}" \
+            --title "$TITRE" \
+            --notes-file sortie/LISEZ-MOI.md \
+            $OPTION
+          echo "Release publiée : $TAG" >> "$GITHUB_STEP_SUMMARY"
