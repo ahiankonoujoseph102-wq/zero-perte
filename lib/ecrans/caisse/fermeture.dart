@@ -8,6 +8,7 @@ import '../../theme/couleurs.dart';
 import '../clavier_montant.dart';
 import '../communs.dart';
 import '../vente/page_encaisser.dart' show nomPaiement, iconePaiement;
+import '../patron/inventaire.dart' show PageInventaire;
 import '../vente/ventes_du_jour.dart' show heureCourte;
 
 /// Question posée pour chaque moyen de paiement (le vendeur ne voit jamais
@@ -56,7 +57,7 @@ class _PageFermerCaisseState extends State<PageFermerCaisse> {
         MaterialPageRoute(
           builder: (_) => widget.etat.estPatron
               ? PageResultatFermeture(etat: widget.etat, fermeture: f)
-              : const PageCaisseFermee(),
+              : PageCaisseFermee(etat: widget.etat),
         ),
       );
     } catch (e) {
@@ -143,19 +144,60 @@ class _PageFermerCaisseState extends State<PageFermerCaisse> {
 
 /// Fin de fermeture pour un vendeur : aucun chiffre (le patron verra l'écart).
 class PageCaisseFermee extends StatelessWidget {
-  const PageCaisseFermee({super.key});
+  const PageCaisseFermee({super.key, this.etat});
+
+  /// Pour proposer le petit inventaire du jour (3 produits).
+  final EtatApplication? etat;
 
   @override
   Widget build(BuildContext context) {
     return PageZp(
       titre: 'Caisse fermée',
       icone: Icons.lock_rounded,
-      bas: GrosBouton(
-        key: const Key('bouton-fin-fermeture'),
-        texte: 'Terminé',
-        icone: Icons.check_rounded,
-        onPressed: () => Navigator.of(context).pop(),
-      ),
+      bas: etat == null
+          ? GrosBouton(
+              key: const Key('bouton-fin-fermeture'),
+              texte: 'Terminé',
+              icone: Icons.check_rounded,
+              onPressed: () => Navigator.of(context).pop(),
+            )
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Inventaire tournant : quelques produits chaque soir.
+                GrosBouton(
+                  key: const Key('bouton-compter-du-jour'),
+                  texte: 'Compter les produits du jour',
+                  icone: Icons.inventory_rounded,
+                  onPressed: () async {
+                    final p = await etat!.produitsAInventorierAujourdhui();
+                    if (!context.mounted) return;
+                    if (p.isEmpty) {
+                      Navigator.of(context).pop();
+                      return;
+                    }
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(
+                        builder: (_) => PageInventaire(
+                          etat: etat!,
+                          produits: p,
+                          titre: 'Produits du jour',
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                TextButton(
+                  key: const Key('bouton-fin-fermeture'),
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text(
+                    'Plus tard',
+                    style: TextStyle(fontSize: 18),
+                  ),
+                ),
+              ],
+            ),
       corps: const Center(
         child: Padding(
           padding: EdgeInsets.all(24),

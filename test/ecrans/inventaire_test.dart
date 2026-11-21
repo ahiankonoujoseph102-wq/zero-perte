@@ -49,6 +49,8 @@ void main() {
       await ouvrirEspacePatron(tester);
       await toucher(tester, find.byKey(const Key('patron-inventaire')));
       await attendre(tester, tours: 6);
+      await toucher(tester, find.byKey(const Key('bouton-inventaire-complet')));
+      await attendre(tester, tours: 6);
       // Le compteur ne voit jamais l'attendu.
       expect(find.textContaining('100 kg'), findsNothing);
       expect(find.text('Produit 1 sur 2'), findsOneWidget);
@@ -128,6 +130,8 @@ void main() {
       await afficherApp(tester, env.etat, taille: taille, densite: densite);
       await ouvrirEspacePatron(tester);
       await toucher(tester, find.byKey(const Key('patron-inventaire')));
+      await attendre(tester, tours: 6);
+      await toucher(tester, find.byKey(const Key('bouton-inventaire-complet')));
       await attendre(tester, tours: 6);
       expect(tester.takeException(), isNull);
       await taperMontant(tester, '97');

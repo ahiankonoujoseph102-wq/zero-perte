@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../domaine/argent.dart';
 import '../domaine/boutique.dart';
 import '../domaine/catalogue.dart';
+import '../domaine/inventaire.dart';
 import '../domaine/licence.dart';
 import '../domaine/operation.dart';
 import '../domaine/panier.dart';
@@ -750,6 +751,37 @@ class EtatApplication extends ChangeNotifier {
     );
     await rechargerProduits();
     return inv;
+  }
+
+  /// Produits à compter aujourd'hui (inventaire tournant) : 3, ou 5 si la
+  /// boutique a plus de 30 produits.
+  Future<List<Produit>> produitsAInventorierAujourdhui() async {
+    final m = maintenant();
+    final semaine = await journal.ventesParProduit(
+      depuis: DateTime(m.year, m.month, m.day - 6).millisecondsSinceEpoch,
+    );
+    final stocks = await journal.stocks();
+    final poids = {
+      for (final p in _produits)
+        if ((stocks[p.id] ?? 0) > 0 && p.prixUnitaire > 0)
+          p.id: p.prixUnitaire * ((semaine[p.id]?.milliemes ?? 0) ~/ 1000 + 1),
+    };
+    final ids = produitsDuJour(
+      jour: m,
+      poids: poids,
+      nombre: _produits.length > 30 ? 5 : 3,
+    );
+    return [for (final id in ids) _produits.firstWhere((p) => p.id == id)];
+  }
+
+  /// Écarts d'inventaire (en francs) par personne qui a compté, depuis [depuis].
+  Future<Map<String, int>> ecartsParPersonne({required int depuis}) async {
+    final r = <String, int>{};
+    for (final inv in await journal.inventaires(limite: 500)) {
+      if (inv.heure < depuis) continue;
+      r[inv.auteurId] = (r[inv.auteurId] ?? 0) + inv.ecartFrancs;
+    }
+    return r;
   }
 
   /// Supprime un client du carnet (patron seulement, et s'il ne doit rien).

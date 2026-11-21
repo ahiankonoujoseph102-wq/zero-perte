@@ -58,7 +58,7 @@ final List<EntreePatron> entreesPatron = [
     Icons.inventory_rounded,
     'Inventaire',
     CouleursZp.marque,
-    (etat) => PageInventaire(etat: etat),
+    (etat) => PageInventaires(etat: etat),
   ),
   EntreePatron(
     'fermetures',

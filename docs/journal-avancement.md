@@ -10,7 +10,7 @@ Il est mis à jour **à la fin de chaque étape**.
 | | |
 |---|---|
 | **Dernière étape terminée** | **B13** — Sauvegarde chiffrée → **bloc B terminé** |
-| **Version publiée** | 0.22.0 (Android et Windows, voir les Releases GitHub) |
+| **Version publiée** | 0.23.0 (Android et Windows, voir les Releases GitHub) |
 | **Dernière étape terminée (bis)** | **C1** — Crédit client |
 | **Prochaine étape** | Rapport de fin de bloc C1, puis bloc **D** (synchronisation) |
 | **Méthode** | Enchaîner les étapes de `docs/plan-v1.md` sans validation intermédiaire : B1→B13, puis C1, D, C2→C4, E. Rapport au chef de projet **à la fin de chaque bloc**, ou si une décision appartient au propriétaire, ou si on est bloqué. |
@@ -472,3 +472,26 @@ application ouverte (notifications application fermée : plus tard, avec Firebas
 **Choix pris au plus simple :** l'écart en francs est calculé au **prix de vente** (le prix d'achat n'est pas
 toujours connu) ; tolérance 5 % ; « Ne plus faire crédit » met le plafond à 0 (« Refaire crédit » le remet à
 5 000 F).
+
+**Résultat de la première fabrication Windows (v0.21.0-n34) :** réussie du premier coup.
+`ZeroPerte-Windows.zip` = **13,1 Mo**. ⚠️ L'APK universel passe de 15,4 à **17,3 Mo** : la base SQLite
+nécessaire à Windows est aussi incluse dans l'APK (environ 1 Mo par type de processeur). Toujours sous la
+limite de 20 Mo ; à surveiller.
+
+### Étape 6 — C3 : inventaire tournant quotidien + écarts par personne ✅ (version 0.23.0)
+**Fait :**
+- Chaque jour, **3 produits** (5 si la boutique en a plus de 30) sont tirés au hasard, en privilégiant ceux
+  qui **valent cher et se vendent vite** (poids = prix × quantité vendue en 7 jours). Le même jour donne
+  toujours le même choix (relancer ne permet pas de tricher).
+- Après **« Fermer la caisse »**, le vendeur voit « **Compter les produits du jour** » (ou « Plus tard ») ; il
+  compte sans voir l'attendu, puis voit seulement « Comptage enregistré. Merci ! ».
+- Espace patron → **« Inventaire »** : « Tout compter » (inventaire complet), « Compter les produits du
+  jour », et **« Écarts des 30 derniers jours » par personne** (ex. « Kossi − 68 000 F »).
+
+**Tests (343 au total, tous réussis)**, par exemple :
+- Même jour → même choix ; sur 300 jours, le riz (cher, vendu souvent) sort plus de 100 fois, le bonbon
+  (25 F) moins de 5 fois.
+- Kossi ferme la caisse, compte riz 0 kg et sucre 0 paquet → il ne voit aucun écart ; le patron voit
+  « Kossi − 68 000 F » (100 kg × 600 F + 10 × 800 F).
+
+**Choix pris au plus simple :** l'inventaire du jour est proposé après la fermeture de caisse (pas imposé).

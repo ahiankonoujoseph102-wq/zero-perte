@@ -13,17 +13,27 @@ import '../clavier_montant.dart';
 /// Inventaire complet en comptage aveugle : un produit à la fois, on compte
 /// sans voir ce que l'application attend. À la fin : écarts en francs.
 class PageInventaire extends StatefulWidget {
-  const PageInventaire({super.key, required this.etat});
+  const PageInventaire({
+    super.key,
+    required this.etat,
+    this.produits,
+    this.titre = 'Inventaire',
+  });
 
   final EtatApplication etat;
+
+  /// Seulement ces produits (inventaire tournant du jour) ; nul = tous.
+  final List<Produit>? produits;
+  final String titre;
 
   @override
   State<PageInventaire> createState() => _PageInventaireState();
 }
 
 class _PageInventaireState extends State<PageInventaire> {
-  late final List<Produit> _produits = [...widget.etat.produits]
-    ..sort((a, b) => a.nom.toLowerCase().compareTo(b.nom.toLowerCase()));
+  late final List<Produit> _produits = [
+    ...(widget.produits ?? widget.etat.produits),
+  ]..sort((a, b) => a.nom.toLowerCase().compareTo(b.nom.toLowerCase()));
   int _i = 0;
   final Map<String, int> _comptes = {};
   List<Conditionnement> _conds = const [];
@@ -65,8 +75,10 @@ class _PageInventaireState extends State<PageInventaire> {
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (_) =>
-              PageResultatInventaire(etat: widget.etat, inventaire: inv),
+          // Un vendeur ne voit pas les écarts (comme pour la caisse).
+          builder: (_) => widget.etat.estPatron
+              ? PageResultatInventaire(etat: widget.etat, inventaire: inv)
+              : const PageComptageMerci(),
         ),
       );
     } catch (e) {
@@ -92,7 +104,7 @@ class _PageInventaireState extends State<PageInventaire> {
     final p = _p;
     final dernier = _i == _produits.length - 1;
     return PageZp(
-      titre: 'Inventaire',
+      titre: widget.titre,
       icone: Icons.inventory_rounded,
       bas: GrosBouton(
         key: const Key('bouton-produit-suivant'),
@@ -288,6 +300,166 @@ class PageResultatInventaire extends StatelessWidget {
               fontWeight: FontWeight.w700,
               color: couleur,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Fin du comptage pour un vendeur : aucun chiffre, le patron verra les écarts.
+class PageComptageMerci extends StatelessWidget {
+  const PageComptageMerci({super.key});
+
+  @override
+  Widget build(BuildContext context) => PageZp(
+    titre: 'Comptage',
+    icone: Icons.check_circle_rounded,
+    bas: GrosBouton(
+      key: const Key('bouton-fin-comptage'),
+      texte: 'Terminé',
+      icone: Icons.check_rounded,
+      onPressed: () => Navigator.of(context).pop(),
+    ),
+    corps: const Center(
+      child: Padding(
+        padding: EdgeInsets.all(24),
+        child: Text(
+          'Comptage enregistré. Merci !\nLe patron verra le résultat.',
+          key: Key('comptage-merci'),
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+        ),
+      ),
+    ),
+  );
+}
+
+/// Espace patron → « Inventaire » : écarts par personne (30 jours), inventaire
+/// complet, ou les produits du jour.
+class PageInventaires extends StatefulWidget {
+  const PageInventaires({super.key, required this.etat});
+
+  final EtatApplication etat;
+
+  @override
+  State<PageInventaires> createState() => _PageInventairesState();
+}
+
+class _PageInventairesState extends State<PageInventaires> {
+  late Future<Map<String, int>> _ecarts = _charger();
+
+  Future<Map<String, int>> _charger() {
+    final m = widget.etat.maintenant();
+    return widget.etat.ecartsParPersonne(
+      depuis: DateTime(m.year, m.month, m.day - 29).millisecondsSinceEpoch,
+    );
+  }
+
+  Future<void> _ouvrir(Widget page) async {
+    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
+    if (mounted) {
+      setState(() {
+        _ecarts = _charger();
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final etat = widget.etat;
+    return PageZp(
+      titre: 'Inventaire',
+      icone: Icons.inventory_rounded,
+      corps: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          GrosBouton(
+            key: const Key('bouton-inventaire-complet'),
+            texte: 'Tout compter',
+            icone: Icons.inventory_rounded,
+            onPressed: () => _ouvrir(PageInventaire(etat: etat)),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            key: const Key('bouton-inventaire-du-jour'),
+            onPressed: () async {
+              final p = await etat.produitsAInventorierAujourdhui();
+              if (!context.mounted) return;
+              if (p.isEmpty) {
+                annoncer(context, 'Aucun produit en stock à compter.');
+                return;
+              }
+              await _ouvrir(
+                PageInventaire(
+                  etat: etat,
+                  produits: p,
+                  titre: 'Produits du jour',
+                ),
+              );
+            },
+            icon: const Icon(Icons.shuffle_rounded),
+            label: const Text(
+              'Compter les produits du jour',
+              style: TextStyle(fontSize: 18),
+            ),
+            style: OutlinedButton.styleFrom(minimumSize: const Size(0, 60)),
+          ),
+          const SizedBox(height: 18),
+          const Text(
+            'Écarts des 30 derniers jours',
+            style: TextStyle(fontSize: 21, fontWeight: FontWeight.w700),
+          ),
+          FutureBuilder<Map<String, int>>(
+            future: _ecarts,
+            builder: (context, s) {
+              final e = s.data;
+              if (e == null) return const SizedBox(height: 40);
+              if (e.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.only(top: 6),
+                  child: Text(
+                    'Aucun inventaire pour l\'instant.',
+                    style: TextStyle(fontSize: 17, color: CouleursZp.texteDoux),
+                  ),
+                );
+              }
+              return Column(
+                children: [
+                  for (final MapEntry(key: qui, value: f) in e.entries)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.person_rounded),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              etat.nomDe(qui),
+                              style: const TextStyle(fontSize: 18),
+                            ),
+                          ),
+                          Text(
+                            f == 0
+                                ? 'Juste'
+                                : f < 0
+                                ? '− ${formatFrancs(-f)}'
+                                : '+ ${formatFrancs(f)}',
+                            key: Key('ecart-${etat.nomDe(qui)}'),
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: f < 0
+                                  ? CouleursZp.argentSort
+                                  : CouleursZp.argentEntre,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
         ],
       ),
