@@ -1,0 +1,9 @@
+name: "test minimal (temporaire)"
+on:
+  push:
+    branches: ["claude/**"]
+jobs:
+  bonjour:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo bonjour
