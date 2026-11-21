@@ -724,6 +724,34 @@ class EtatApplication extends ChangeNotifier {
     return id;
   }
 
+  /// « Ne plus faire crédit » (plafond à 0) ou « Refaire crédit » (patron).
+  Future<void> changerCredit(Client c, {required bool autorise}) async {
+    if (!estPatron) {
+      throw const ErreurZeroPerte('Seul le patron peut changer le crédit.');
+    }
+    await journal.definirClient(
+      clientId: c.id,
+      nom: c.nom,
+      telephone: c.telephone,
+      photo: c.photo,
+      plafond: autorise ? plafondParDefaut : 0,
+      quartier: c.quartier,
+      email: c.email,
+      auteurId: auteurActuel,
+    );
+    notifyListeners();
+  }
+
+  /// Inventaire complet (patron) : quantités comptées, en millièmes.
+  Future<Inventaire> faireInventaire(Map<String, int> comptes) async {
+    final inv = await journal.enregistrerInventaire(
+      comptes,
+      auteurId: auteurActuel,
+    );
+    await rechargerProduits();
+    return inv;
+  }
+
   /// Supprime un client du carnet (patron seulement, et s'il ne doit rien).
   /// Rien n'est effacé du journal : la fiche est seulement désactivée.
   Future<void> supprimerClient(Client c) async {

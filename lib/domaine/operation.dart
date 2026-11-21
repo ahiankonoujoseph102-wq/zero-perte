@@ -34,6 +34,7 @@ abstract final class TypeOperation {
   static const utilisateurDefini = 'utilisateur.defini';
   static const clientDefini = 'client.defini';
   static const remboursementCredit = 'credit.remboursement';
+  static const inventaire = 'stock.inventaire';
 }
 
 /// Une opération du journal.

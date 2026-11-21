@@ -10,7 +10,7 @@ Il est mis à jour **à la fin de chaque étape**.
 | | |
 |---|---|
 | **Dernière étape terminée** | **B13** — Sauvegarde chiffrée → **bloc B terminé** |
-| **Version publiée** | 0.21.0 (Android et Windows, voir les Releases GitHub) |
+| **Version publiée** | 0.22.0 (Android et Windows, voir les Releases GitHub) |
 | **Dernière étape terminée (bis)** | **C1** — Crédit client |
 | **Prochaine étape** | Rapport de fin de bloc C1, puis bloc **D** (synchronisation) |
 | **Méthode** | Enchaîner les étapes de `docs/plan-v1.md` sans validation intermédiaire : B1→B13, puis C1, D, C2→C4, E. Rapport au chef de projet **à la fin de chaque bloc**, ou si une décision appartient au propriétaire, ou si on est bloqué. |
@@ -448,3 +448,27 @@ application ouverte (notifications application fermée : plus tard, avec Firebas
   (environ 100 à 400 dollars par an ; un certificat « EV » fait disparaître l'avertissement tout de suite,
   un certificat simple après un certain nombre de téléchargements), ou la publication dans le
   Microsoft Store (compte développeur, environ 19 dollars une fois).
+
+### Étape 6 — C2 : inventaire complet en comptage aveugle + « Ne plus faire crédit » ✅ (version 0.22.0)
+**Fait :**
+- Espace patron → **« Inventaire »** : un produit à la fois (« Produit 1 sur 12 »), on choisit l'unité
+  (kg, sac…) et on tape la quantité comptée au clavier de chiffres. **On ne voit jamais ce que
+  l'application attend.**
+- À la fin : **écart en francs** (au prix de vente), total « Marchandise manquante : 6 000 F » ou
+  « en trop », et pour chaque produit « Attendu … · compté … » avec « Juste », « Il manque … (… F) »,
+  « En trop … ».
+- **Tolérance de 5 %** pour les produits vendus au bol, au tas ou au montant (« Presque juste »).
+- Le stock prend ensuite la valeur comptée (opération `stock.inventaire`, jamais d'effacement).
+- Fiche client (patron) : **« Ne plus faire crédit »** / « Refaire crédit » ; une vente à crédit est alors
+  refusée : « Le patron ne fait plus crédit à Kofi. »
+
+**Tests (334 au total, tous réussis)**, par exemple :
+- Riz attendu **100 kg**, compté **90 kg** → « Il manque 10 kg (6 000 F) » ; sucre 10 paquets → « Juste » ;
+  le stock du riz passe à 90 kg.
+- Produit au bol : 2 % d'écart → toléré ; 10 % → « il manque ».
+- « Ne plus faire crédit » pour Kofi → vente à crédit refusée ; « Refaire crédit » → il peut de nouveau
+  prendre 5 000 F.
+
+**Choix pris au plus simple :** l'écart en francs est calculé au **prix de vente** (le prix d'achat n'est pas
+toujours connu) ; tolérance 5 % ; « Ne plus faire crédit » met le plafond à 0 (« Refaire crédit » le remet à
+5 000 F).

@@ -6,6 +6,7 @@ import '../caisse/fermeture.dart';
 import '../caisse/saisie_montant.dart';
 import '../communs.dart';
 import 'arrivages.dart';
+import 'inventaire.dart';
 import 'sauvegarde.dart';
 import 'synchronisation.dart';
 import 'tableau.dart';
@@ -51,6 +52,13 @@ final List<EntreePatron> entreesPatron = [
     'Vendeurs',
     CouleursZp.marque,
     (etat) => PageVendeurs(etat: etat),
+  ),
+  EntreePatron(
+    'inventaire',
+    Icons.inventory_rounded,
+    'Inventaire',
+    CouleursZp.marque,
+    (etat) => PageInventaire(etat: etat),
   ),
   EntreePatron(
     'fermetures',

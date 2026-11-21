@@ -658,7 +658,9 @@ class _PageClientState extends State<PageClient> {
                           key: const Key('solde-client'),
                         ),
                         Text(
-                          'Peut encore prendre ${formatFrancs(c.disponible)}',
+                          c.plafond == 0
+                              ? 'Plus de crédit (décision du patron)'
+                              : 'Peut encore prendre ${formatFrancs(c.disponible)}',
                           style: const TextStyle(
                             fontSize: 16,
                             color: CouleursZp.texteDoux,
@@ -707,6 +709,41 @@ class _PageClientState extends State<PageClient> {
                       ),
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size(0, 52),
+                      ),
+                    ),
+                  if (widget.etat.estPatron)
+                    OutlinedButton.icon(
+                      key: const Key('bouton-credit-arret'),
+                      onPressed: () async {
+                        await widget.etat.changerCredit(
+                          c,
+                          autorise: c.plafond == 0,
+                        );
+                        if (context.mounted) {
+                          annoncer(
+                            context,
+                            c.plafond == 0
+                                ? '${c.nom} peut de nouveau prendre à crédit.'
+                                : 'Plus de crédit pour ${c.nom}.',
+                          );
+                        }
+                      },
+                      icon: Icon(
+                        c.plafond == 0
+                            ? Icons.lock_open_rounded
+                            : Icons.block_rounded,
+                      ),
+                      label: Text(
+                        c.plafond == 0
+                            ? 'Refaire crédit'
+                            : 'Ne plus faire crédit',
+                        style: const TextStyle(fontSize: 17),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(0, 52),
+                        foregroundColor: c.plafond == 0
+                            ? CouleursZp.argentEntre
+                            : CouleursZp.argentSort,
                       ),
                     ),
                   if (widget.etat.estPatron)

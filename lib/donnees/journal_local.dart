@@ -380,6 +380,23 @@ class JournalLocal implements ReglagesLocaux {
           'prix_total': 0,
           'cout_total': d['cout_total'],
         });
+      case TypeOperation.inventaire:
+        // Le stock prend la valeur comptée : écart = compté − attendu.
+        final lignes = (d['lignes'] as List).cast<Map>();
+        for (var i = 0; i < lignes.length; i++) {
+          final l = lignes[i];
+          final ecart = (l['compte'] as int) - (l['attendu'] as int);
+          if (ecart == 0) continue;
+          await t.insert('mouvements_stock', {
+            'operation_id': op.id,
+            'ligne': i + 1,
+            'produit_id': l['produit'],
+            'quantite_milliemes': ecart,
+            'nature': 'inventaire',
+            'prix_total': 0,
+            'cout_total': null,
+          });
+        }
       case TypeOperation.vente:
       case TypeOperation.venteAnnulee:
         final annulation = op.type == TypeOperation.venteAnnulee;
@@ -1235,6 +1252,74 @@ class JournalLocal implements ReglagesLocaux {
     });
   }
 
+  /// Inventaire complet : [comptes] = quantité comptée par produit
+  /// (millièmes). L'attendu est calculé ICI (le compteur ne le voit pas) ;
+  /// le stock prend ensuite la valeur comptée.
+  Future<Inventaire> enregistrerInventaire(
+    Map<String, int> comptes, {
+    required String auteurId,
+  }) async {
+    if (comptes.isEmpty) {
+      throw const ErreurZeroPerte('Aucun produit compté.');
+    }
+    if (comptes.values.any((v) => v < 0)) {
+      throw const ErreurZeroPerte(
+        'Une quantité comptée ne peut pas être négative.',
+      );
+    }
+    final op = await _db.transaction((t) async {
+      final stocks = {
+        for (final l in await t.rawQuery(
+          'SELECT produit_id AS p, SUM(quantite_milliemes) AS s FROM mouvements_stock GROUP BY produit_id',
+        ))
+          l['p'] as String: (l['s'] as int?) ?? 0,
+      };
+      final lignes = <Map<String, Object?>>[];
+      for (final MapEntry(key: id, value: compte) in comptes.entries) {
+        final p = await _produitActuel(t, id);
+        lignes.add({
+          'produit': id,
+          'attendu': stocks[id] ?? 0,
+          'compte': compte,
+          'prix_unitaire': p.prixUnitaire,
+        });
+      }
+      return _ajouter(
+        t,
+        type: TypeOperation.inventaire,
+        auteurId: auteurId,
+        donnees: {'lignes': lignes},
+      );
+    });
+    return Inventaire.depuisOperation(
+      op.id,
+      op.heureTelephone,
+      op.auteurId,
+      op.donnees,
+    );
+  }
+
+  /// Inventaires passés, le plus récent d'abord.
+  Future<List<Inventaire>> inventaires({int limite = 30}) async {
+    final r = await _db.query(
+      'operations',
+      columns: ['id', 'heure_telephone', 'auteur_id', 'donnees'],
+      where: 'type = ?',
+      whereArgs: [TypeOperation.inventaire],
+      orderBy: 'heure_telephone DESC, numero DESC',
+      limit: limite,
+    );
+    return [
+      for (final l in r)
+        Inventaire.depuisOperation(
+          l['id'] as String,
+          l['heure_telephone'] as int,
+          l['auteur_id'] as String,
+          (jsonDecode(l['donnees'] as String) as Map).cast<String, Object?>(),
+        ),
+    ];
+  }
+
   /// Stock actuel d'un produit, en millièmes d'unité de base.
   Future<int> stockMilliemes(String produitId) async {
     final r = await _db.rawQuery(
@@ -1376,6 +1461,9 @@ class JournalLocal implements ReglagesLocaux {
           throw ErreurZeroPerte(
             'Ajoutez le téléphone de ${c.nom} pour lui faire crédit.',
           );
+        }
+        if (c.plafond == 0) {
+          throw ErreurZeroPerte('Le patron ne fait plus crédit à ${c.nom}.');
         }
         final solde = await _solde(t, clientId);
         if (solde + total > c.plafond) {
@@ -2076,4 +2164,63 @@ class MouvementCredit {
   final String nature;
   final String? recu;
   final ModePaiement? mode;
+}
+
+/// Une ligne d'inventaire : attendu et compté (millièmes de l'unité de base).
+class LigneInventaire {
+  const LigneInventaire({
+    required this.produitId,
+    required this.attendu,
+    required this.compte,
+    required this.prixUnitaire,
+  });
+
+  final String produitId;
+  final int attendu;
+  final int compte;
+  final int prixUnitaire;
+
+  /// > 0 : en trop ; < 0 : il manque.
+  int get ecart => compte - attendu;
+
+  /// Écart en francs (au prix de vente de l'unité de base).
+  int get ecartFrancs =>
+      diviserArrondi(ecart * prixUnitaire, milliemesParUnite);
+}
+
+/// Un inventaire complet enregistré.
+class Inventaire {
+  const Inventaire({
+    required this.id,
+    required this.heure,
+    required this.auteurId,
+    required this.lignes,
+  });
+
+  factory Inventaire.depuisOperation(
+    String id,
+    int heure,
+    String auteurId,
+    Map<String, Object?> d,
+  ) => Inventaire(
+    id: id,
+    heure: heure,
+    auteurId: auteurId,
+    lignes: [
+      for (final l in (d['lignes'] as List).cast<Map>())
+        LigneInventaire(
+          produitId: l['produit'] as String,
+          attendu: l['attendu'] as int,
+          compte: l['compte'] as int,
+          prixUnitaire: (l['prix_unitaire'] as int?) ?? 0,
+        ),
+    ],
+  );
+
+  final String id;
+  final int heure;
+  final String auteurId;
+  final List<LigneInventaire> lignes;
+
+  int get ecartFrancs => lignes.fold(0, (s, l) => s + l.ecartFrancs);
 }

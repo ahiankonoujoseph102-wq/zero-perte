@@ -20,6 +20,8 @@ import 'package:zero_perte/app/etat_application.dart';
 
 import '../test/ecrans/credit_test.dart' show boutiqueAvecKofi, panierACredit;
 import '../test/ecrans/code_patron_test.dart' show ancienneBoutique;
+import '../test/ecrans/inventaire_test.dart' show boutiquePourInventaire;
+import '../test/ecrans/caisse_test.dart' show taperMontant;
 import '../test/support/outils.dart';
 
 Future<void> _chargerPolices() async {
@@ -354,6 +356,32 @@ void main() {
       await expectLater(
         find.byType(MaterialApp),
         matchesGoldenFile('captures/retrouver_drive_${e.key}.png'),
+      );
+    });
+  }
+  for (final e in ecrans.entries) {
+    testWidgets('inventaire ${e.key}', (tester) async {
+      final env = await environnementDeTest(
+        tester,
+        preparer: boutiquePourInventaire,
+      );
+      await afficherApp(tester, env.etat, taille: e.value, densite: 2);
+      await ouvrirEspacePatron(tester);
+      await toucher(tester, find.byKey(const Key('patron-inventaire')));
+      await attendre(tester, tours: 6);
+      await taperMontant(tester, '90');
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('captures/inventaire_compte_${e.key}.png'),
+      );
+      await toucher(tester, find.byKey(const Key('bouton-produit-suivant')));
+      await attendre(tester, tours: 6);
+      await taperMontant(tester, '10');
+      await toucher(tester, find.byKey(const Key('bouton-produit-suivant')));
+      await attendre(tester, tours: 12);
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('captures/inventaire_resultat_${e.key}.png'),
       );
     });
   }

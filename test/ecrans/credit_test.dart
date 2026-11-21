@@ -170,6 +170,11 @@ void main() {
       await toucher(tester, find.byKey(const Key('bouton-fin-remboursement')));
       await attendre(tester, tours: 8);
       expect(find.text('Doit 800 F'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('− 1\u202F000\u00A0F'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.text('− 1 000 F'), findsOneWidget);
     },
   );
