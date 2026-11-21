@@ -1,41 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zero_perte/app/etat_application.dart';
 import 'package:zero_perte/ecrans/patron/espace_patron.dart';
 
 import '../support/outils.dart';
-
-/// Boutique installée : patron « Ama » (code 4827), riz (sac de 50 kg) et sucre.
-Future<void> boutiqueInstallee(EtatApplication etat) async {
-  await etat.enregistrerConfig(
-    etat.config.copie(nom: 'Boutique Mama Ama', types: ['alimentation']),
-  );
-  await etat.definirPatron(nom: 'Ama', pin: '4827');
-  final cat = etat.catalogue.produitsDe(['alimentation']);
-  await etat.ajouterDuCatalogue(
-    cat.where(
-      (p) => p.id == 'alimentation.riz' || p.id == 'alimentation.sucre',
-    ),
-  );
-  for (final p in etat.produits) {
-    final conds = await etat.journal.conditionnements(p.id);
-    await etat.fixerPrix(p, p.nom == 'Riz' ? 600 : 800, {
-      for (final c in conds)
-        c: c.nom == 'sac de 50 kg'
-            ? 28000
-            : (c.nom == 'sac de 25 kg' ? 14500 : 8000),
-    });
-  }
-  await etat.allerA(EtapeAssistant.termine);
-}
-
-Future<void> taperPin(WidgetTester tester, String pin) async {
-  for (final c in pin.split('')) {
-    await tester.tap(find.byKey(Key('pin-$c')));
-    await tester.pump();
-  }
-  await attendre(tester, tours: 8);
-}
 
 void main() {
   testWidgets(

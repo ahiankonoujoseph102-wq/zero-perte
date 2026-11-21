@@ -4,6 +4,7 @@ import '../domaine/boutique.dart';
 import '../domaine/catalogue.dart';
 import '../domaine/licence.dart';
 import '../domaine/operation.dart';
+import '../domaine/panier.dart';
 import '../domaine/quantites.dart';
 import '../domaine/utilisateurs.dart';
 import '../donnees/journal_local.dart';
@@ -303,6 +304,39 @@ class EtatApplication extends ChangeNotifier {
     _produits = await journal.produits();
     _stocks = await journal.stocks();
     notifyListeners();
+  }
+
+  /// Enregistre une vente (le panier n'est pas vidé ici). Lève [ErreurZeroPerte]
+  /// si l'argent reçu ne suffit pas.
+  Future<VenteEnregistree> vendre(
+    Panier panier, {
+    required ModePaiement mode,
+    int? montantRecu,
+    String? reference,
+  }) async {
+    final vente = await journal.enregistrerVente(
+      lignes: [
+        for (final l in panier.lignes)
+          l.auMontant
+              ? LigneDemandee.auMontant(
+                  produitId: l.produitId,
+                  montant: l.montant!,
+                )
+              : LigneDemandee.quantite(
+                  produitId: l.produitId,
+                  conditionnementId: l.conditionnement?.id,
+                  nombre: l.nombre!,
+                ),
+      ],
+      mode: mode,
+      montantRecu: montantRecu,
+      referencePaiement: (reference ?? '').trim().isEmpty
+          ? null
+          : reference!.trim(),
+      auteurId: auteurActuel,
+    );
+    await rechargerProduits();
+    return vente;
   }
 
   /// Arrivage de marchandise (patron seulement).

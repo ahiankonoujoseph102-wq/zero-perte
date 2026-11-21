@@ -9,9 +9,9 @@ Il est mis à jour **à la fin de chaque étape**.
 
 | | |
 |---|---|
-| **Dernière étape terminée** | **B5** — Arrivages (espace patron) |
-| **Version publiée** | 0.6.0 (voir les Releases GitHub) |
-| **Prochaine étape** | **B6** — Vendre |
+| **Dernière étape terminée** | **B6** — Vendre |
+| **Version publiée** | 0.7.0 (voir les Releases GitHub) |
+| **Prochaine étape** | **B7** — Vendeurs, connexion par code |
 | **Méthode** | Enchaîner les étapes de `docs/plan-v1.md` sans validation intermédiaire : B1→B13, puis C1, D, C2→C4, E. Rapport au chef de projet **à la fin de chaque bloc**, ou si une décision appartient au propriétaire, ou si on est bloqué. |
 | **Ordre des blocs** | A ✅ → **B (en cours)** → C1 → D → C2–C4 → E |
 
@@ -128,3 +128,17 @@ Police Atkinson Hyperlegible, marque bleu nuit, écran d'accueil vendeur à 4 gr
 - **5 codes faux** → « Trop d'erreurs » ; le bon code est refusé ; **6 minutes plus tard**, il est accepté.
 
 **Problèmes restants :** aucun.
+
+### B6 — Vendre ✅ (version 0.7.0)
+**Fait :**
+- **Vendre** : grille des produits (pictogramme ou photo, nom, prix « 600 F / kg ») ; un produit avec conditionnements ou « au montant » ouvre un choix : **1 kg — 600 F**, **1 sac de 50 kg — 28 000 F**, **« Pour un montant »** (50, 100, 200, 250, 500, 1 000 F ou clavier). Un produit sans prix est refusé avec un message.
+- **Panier** : même article regroupé (1 kg + 1 kg = 2 kg), boutons − / + / corbeille, **total géant en vert**.
+- **Encaisser** : « À payer » et « Le client donne » côte à côte, choix **Espèces / Flooz / Mixx (T-Money)**, billets rapides (compte exact, 500 … 10 000 F), clavier ; **« Rendre 3 000 F »** avec les billets et pièces à rendre, ou **« Il manque … »** en rouge (validation impossible). Mobile Money : rappel de vérifier le message reçu + **4 derniers chiffres** de la transaction (facultatif). **Voix** : « À payer : 2000 francs », « Vente enregistrée. Rendez 3000 francs ».
+- **Vente enregistrée** : numéro de reçu (A-000001…), monnaie à rendre en très grand, « Nouvelle vente » (le panier se vide).
+
+**Tests (153 au total, tous réussis)**, par exemple :
+- **2 kg de riz (600 F) + 1 paquet de sucre (800 F) = 2 000 F** ; le client donne 5 000 F → **rendre 3 000 F = 1 billet de 2 000 + 1 billet de 1 000** ; reçu **A-000001** ; stock de riz **100 kg → 98 kg** ; caisse espèces **+2 000 F**.
+- Riz **« pour 100 F »** payé par **Mixx** (référence 4821) : stock **−0,167 kg** (100 ÷ 600), caisse Mixx **+100 F**, caisse espèces inchangée.
+- Total 600 F, le client donne 500 F → **« Il manque 100 F »**, bouton « Valider » désactivé.
+
+**Problèmes restants :** sur un écran de 4 pouces, l'écran « Encaisser » défile un peu pour voir le bas du clavier (choix délibéré : le clavier garde des touches d'au moins 30 points).

@@ -11,6 +11,7 @@ import 'ecrans/accueil_vendeur.dart';
 import 'ecrans/assistant/assistant_installation.dart';
 import 'ecrans/communs.dart';
 import 'ecrans/patron/espace_patron.dart';
+import 'ecrans/vente/page_vendre.dart';
 import 'services/aide.dart';
 import 'services/photos.dart';
 import 'services/raccourci.dart';
@@ -161,6 +162,11 @@ class ZeroPerteApp extends StatelessWidget {
                           );
                         }
                       },
+                actions: {
+                  'vendre': () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => PageVendre(etat: etat)),
+                  ),
+                },
                 config: etat.config,
                 nomVendeur: etat.patron?.nom ?? 'Vendeur',
                 maintenant: maintenant,
