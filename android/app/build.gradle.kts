@@ -17,6 +17,14 @@ val signatureOfficielle = !cleChemin.isNullOrEmpty() && !cleMotDePasse.isNullOrE
 
 android {
     namespace = "tg.zeroperte.app"
+
+    // APK plus léger à télécharger (WhatsApp) : les bibliothèques natives sont
+    // compressées dans l'APK (Android les décompresse à l'installation).
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
