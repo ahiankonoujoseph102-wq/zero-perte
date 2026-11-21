@@ -811,3 +811,6 @@ domaine `ahiankonoujoseph102-wq.github.io`), identifiant Android (SHA-1 49:27:�
 - Essai sur la branche avant `main` : fabrication Android avec le nouveau logo réussie (ressources adaptatives
   et monochrome compilées), MSIX créé avec le logo PNG.
 - **Reste** : essai A5 par le propriétaire (téléphone, puis PC).
+**Publiée :** v0.29.0-n53 (Android et Windows réussis ; vérification de la connexion Google sur PC réussie) —
+APK universel **17,7 Mo** (arm64 9,6 Mo, armv7 9,1 Mo), Windows **13,3 Mo**. Site republié avec le logo
+(les 3 pages, `logo.svg`, icônes d'onglet : réponse 200).
