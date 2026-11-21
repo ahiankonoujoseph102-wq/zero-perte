@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../app/etat_application.dart';
+import '../../domaine/licence.dart';
 import '../../domaine/verification_telephone.dart';
 import '../../services/aide.dart';
 import '../../services/telephone.dart';
@@ -28,7 +29,31 @@ class _AssistantInstallationState extends State<AssistantInstallation> {
   static const _etapes = [
     EtapeAssistant.bienvenue,
     EtapeAssistant.verification,
+    EtapeAssistant.activation,
   ];
+
+  String? _erreurActivation;
+  bool _activationEnCours = false;
+
+  Future<void> _collerCode() async {
+    setState(() {
+      _activationEnCours = true;
+      _erreurActivation = null;
+    });
+    try {
+      final texte = await etat.services.lirePressePapiers();
+      await etat.activer(texte ?? '');
+      final l = etat.licence!;
+      await etat.services.voix.dire(
+        'Code accepté. Boutique ${l.nomBoutique}. ${l.telephones} téléphones. Touchez Continuer.',
+      );
+    } on ErreurCode catch (e) {
+      _erreurActivation = e.probleme.message;
+      await etat.services.voix.dire(e.probleme.message);
+    } finally {
+      if (mounted) setState(() => _activationEnCours = false);
+    }
+  }
 
   Future<_ResultatVerification> _verifier() async {
     final infos = await etat.services.telephone.infos();
@@ -46,6 +71,9 @@ class _AssistantInstallationState extends State<AssistantInstallation> {
     EtapeAssistant.verification =>
       'Vérification du téléphone. Attendez quelques secondes. Si tout est vert, '
           'touchez Continuer. Si quelque chose est rouge, touchez Aide.',
+    EtapeAssistant.activation =>
+      'Code d\'activation. Ouvrez WhatsApp. Appuyez longtemps sur le message de Zéro Perte '
+          'qui contient votre code, puis choisissez Copier. Revenez ici et touchez Coller le code.',
     EtapeAssistant.termine => '',
   };
 
@@ -171,6 +199,10 @@ class _AssistantInstallationState extends State<AssistantInstallation> {
         return _ListeControles(controles: r.data!.controles);
       },
     ),
+    EtapeAssistant.activation => _Activation(
+      licence: etat.licence,
+      erreur: _erreurActivation,
+    ),
     EtapeAssistant.termine => const SizedBox.shrink(),
   };
 
@@ -203,6 +235,18 @@ class _AssistantInstallationState extends State<AssistantInstallation> {
         texte: 'Commencer',
         onPressed: () => etat.suivante(),
       );
+    } else if (e == EtapeAssistant.activation) {
+      principal = etat.licence == null
+          ? _BoutonPrincipal(
+              cle: 'bouton-coller-code',
+              texte: 'Coller le code',
+              onPressed: _activationEnCours ? null : _collerCode,
+            )
+          : _BoutonPrincipal(
+              cle: 'bouton-continuer',
+              texte: 'Continuer',
+              onPressed: () => etat.suivante(),
+            );
     } else {
       principal = FutureBuilder<_ResultatVerification>(
         future: _verification,
@@ -316,6 +360,7 @@ class _Bienvenue extends StatelessWidget {
 
 class _Message extends StatelessWidget {
   const _Message({
+    super.key,
     required this.icone,
     required this.couleur,
     required this.titre,
@@ -529,6 +574,132 @@ class _FeuilleAide extends StatelessWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Étape « Code d'activation ».
+class _Activation extends StatelessWidget {
+  const _Activation({required this.licence, required this.erreur});
+
+  final Licence? licence;
+  final String? erreur;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = licence;
+    if (l != null) {
+      return _Message(
+        key: const Key('activation-reussie'),
+        icone: Icons.verified_rounded,
+        couleur: CouleursZp.argentEntre,
+        titre: 'Boutique activée',
+        texte: '${l.nomBoutique}\n${l.telephones} téléphones autorisés',
+      );
+    }
+    return ListView(
+      children: [
+        const Text(
+          'Code d\'activation',
+          style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 14),
+        if (erreur != null)
+          Container(
+            key: const Key('activation-erreur'),
+            margin: const EdgeInsets.only(top: 8),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: CouleursZp.argentSort.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: CouleursZp.argentSort, width: 2),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.error_rounded,
+                  color: CouleursZp.argentSort,
+                  size: 32,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    erreur!,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      color: CouleursZp.texte,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        if (erreur != null) const SizedBox(height: 14),
+        const _EtapeImagee(
+          numero: 1,
+          icone: Icons.chat_rounded,
+          texte: 'Ouvrez WhatsApp et trouvez le message de Zéro Perte avec votre code.',
+        ),
+        const _EtapeImagee(
+          numero: 2,
+          icone: Icons.touch_app_rounded,
+          texte: 'Appuyez longtemps sur le message, puis touchez « Copier ».',
+        ),
+        const _EtapeImagee(
+          numero: 3,
+          icone: Icons.content_paste_rounded,
+          texte: 'Revenez ici et touchez « Coller le code ».',
+        ),
+      ],
+    );
+  }
+}
+
+/// Une consigne numérotée avec une icône (pour les personnes qui lisent mal).
+class _EtapeImagee extends StatelessWidget {
+  const _EtapeImagee({
+    required this.numero,
+    required this.icone,
+    required this.texte,
+  });
+
+  final int numero;
+  final IconData icone;
+  final String texte;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 26,
+            child: Text(
+              '$numero',
+              style: const TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.w700,
+                color: CouleursZp.marque,
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          CircleAvatar(
+            radius: 26,
+            backgroundColor: CouleursZp.marquePale,
+            child: Icon(icone, color: CouleursZp.marque, size: 28),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              texte,
+              style: const TextStyle(fontSize: 18, height: 1.3),
+            ),
+          ),
+        ],
       ),
     );
   }

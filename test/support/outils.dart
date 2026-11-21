@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:zero_perte/app/etat_application.dart';
+import 'package:zero_perte/domaine/licence.dart';
 import 'package:zero_perte/donnees/reglages.dart';
 import 'package:zero_perte/main.dart';
 import 'package:zero_perte/services/telephone.dart';
@@ -37,17 +38,29 @@ class FausseVoix implements Voix {
 }
 
 class Environnement {
-  Environnement(this.etat, this.voix, this.liens);
+  Environnement(this.etat, this.voix, this.liens, this.pressePapiers);
   final EtatApplication etat;
   final FausseVoix voix;
   final List<Uri> liens;
+  final PressePapiers pressePapiers;
 }
+
+/// Presse-papiers simulé (le test y « copie » un code).
+class PressePapiers {
+  String? texte;
+}
+
+/// Clé publique de test (clé jetable, voir test/domaine/licence_test.dart).
+const clePubliqueDeTest = 'bTbX4S7szORvKgHF/5VT1JzJquzDFJOhEXRlbPp6/Sc=';
 
 Future<Environnement> environnementDeTest({
   EtapeAssistant? etape,
   InfosTelephone telephone = telephoneCompatible,
   bool voixFrancaise = true,
+  PressePapiers? presse,
+  String clePublique = clePubliqueDeTest,
 }) async {
+  final pressePapiers = presse ?? PressePapiers();
   final voix = FausseVoix(francais: voixFrancaise);
   final liens = <Uri>[];
   final etat = await EtatApplication.charger(
@@ -59,9 +72,11 @@ Future<Environnement> environnementDeTest({
         liens.add(u);
         return true;
       },
+      lirePressePapiers: () async => pressePapiers.texte,
+      clePublique: () async => lireClePublique(clePublique),
     ),
   );
-  return Environnement(etat, voix, liens);
+  return Environnement(etat, voix, liens, pressePapiers);
 }
 
 final infosDeTest = PackageInfo(

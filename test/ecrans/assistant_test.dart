@@ -6,6 +6,7 @@ import 'package:zero_perte/ecrans/accueil_vendeur.dart';
 import 'package:zero_perte/services/aide.dart';
 import 'package:zero_perte/services/telephone.dart';
 
+import '../domaine/licence_test.dart' show codeLicence, codeExtension;
 import '../support/outils.dart';
 
 const sansGoogle = InfosTelephone(
@@ -76,8 +77,80 @@ void main() {
 
     await tester.tap(find.byKey(const Key('bouton-continuer')));
     await tester.pumpAndSettle();
-    expect(find.byType(AccueilVendeur), findsOneWidget);
-    expect(env.etat.etape, EtapeAssistant.termine);
+    expect(env.etat.etape, EtapeAssistant.activation);
+    expect(find.byKey(const Key('bouton-coller-code')), findsOneWidget);
+  });
+
+  group('Activation', () {
+    testWidgets('message WhatsApp copié → boutique activée → accueil', (
+      tester,
+    ) async {
+      final env = await environnementDeTest(etape: EtapeAssistant.activation);
+      env.pressePapiers.texte =
+          'Bonjour, voici votre code :\n$codeLicence\nMerci';
+      await afficherApp(tester, env.etat);
+      await tester.tap(find.byKey(const Key('bouton-coller-code')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('activation-reussie')), findsOneWidget);
+      expect(find.textContaining('Boutique Mama Ama'), findsOneWidget);
+      expect(find.textContaining('2 téléphones'), findsOneWidget);
+      expect(env.voix.phrases.last, contains('Code accepté'));
+
+      await tester.tap(find.byKey(const Key('bouton-continuer')));
+      await tester.pumpAndSettle();
+      expect(find.byType(AccueilVendeur), findsOneWidget);
+    });
+
+    testWidgets('code faux : message rouge, on reste bloqué', (tester) async {
+      final env = await environnementDeTest(etape: EtapeAssistant.activation);
+      env.pressePapiers.texte = codeLicence.replaceRange(20, 21, 'X');
+      await afficherApp(tester, env.etat);
+      await tester.tap(find.byKey(const Key('bouton-coller-code')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('activation-erreur')), findsOneWidget);
+      expect(env.etat.licence, isNull);
+      expect(find.byKey(const Key('bouton-continuer')), findsNothing);
+    });
+
+    testWidgets('rien de copié : message clair', (tester) async {
+      final env = await environnementDeTest(etape: EtapeAssistant.activation);
+      await afficherApp(tester, env.etat);
+      await tester.tap(find.byKey(const Key('bouton-coller-code')));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Aucun code Zéro Perte'), findsOneWidget);
+    });
+
+    testWidgets('extension « téléphone en plus » sans licence : refusée', (
+      tester,
+    ) async {
+      final env = await environnementDeTest(etape: EtapeAssistant.activation);
+      env.pressePapiers.texte = codeExtension;
+      await afficherApp(tester, env.etat);
+      await tester.tap(find.byKey(const Key('bouton-coller-code')));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('Activez d\'abord la licence'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'version sans clé publique : activation impossible, message clair',
+      (tester) async {
+        final env = await environnementDeTest(
+          etape: EtapeAssistant.activation,
+          clePublique: 'ABSENTE',
+        );
+        env.pressePapiers.texte = codeLicence;
+        await afficherApp(tester, env.etat);
+        await tester.tap(find.byKey(const Key('bouton-coller-code')));
+        await tester.pumpAndSettle();
+        expect(
+          find.textContaining('ne peut pas encore vérifier'),
+          findsOneWidget,
+        );
+      },
+    );
   });
 
   testWidgets(
@@ -118,7 +191,7 @@ void main() {
   ) async {
     final env = await environnementDeTest(etape: EtapeAssistant.verification);
     await afficherApp(tester, env.etat);
-    expect(find.text('Étape 2 sur 2'), findsOneWidget);
+    expect(find.text('Étape 2 sur 3'), findsOneWidget);
     expect(
       await env.etat.reglages.lireParametre('assistant.etape'),
       'verification',

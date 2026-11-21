@@ -39,6 +39,7 @@ void main() {
     'assistant_bienvenue': (EtapeAssistant.bienvenue, true),
     'assistant_verification_ok': (EtapeAssistant.verification, true),
     'assistant_verification_bloquee': (EtapeAssistant.verification, false),
+    'assistant_activation': (EtapeAssistant.activation, true),
   };
 
   for (final e in ecrans.entries) {

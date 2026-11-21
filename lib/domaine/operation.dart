@@ -29,6 +29,7 @@ abstract final class TypeOperation {
   static const depense = 'caisse.depense';
   static const retraitPatron = 'caisse.retrait_patron';
   static const fermetureCaisse = 'caisse.fermeture';
+  static const licenceActivee = 'licence.activee';
 }
 
 /// Une opération du journal.

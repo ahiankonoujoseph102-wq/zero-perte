@@ -9,9 +9,9 @@ Il est mis à jour **à la fin de chaque étape**.
 
 | | |
 |---|---|
-| **Dernière étape terminée** | **B1** — Assistant d'installation (partie 1) |
-| **Version publiée** | 0.3.0 (voir les Releases GitHub) |
-| **Prochaine étape** | **B2** — Code d'activation signé |
+| **Dernière étape terminée** | **B2** — Code d'activation signé |
+| **Version publiée** | 0.4.0 (voir les Releases GitHub) |
+| **Prochaine étape** | **B3** — Personnalisation |
 | **Méthode** | Enchaîner les étapes de `docs/plan-v1.md` sans validation intermédiaire : B1→B13, puis C1, D, C2→C4, E. Rapport au chef de projet **à la fin de chaque bloc**, ou si une décision appartient au propriétaire, ou si on est bloqué. |
 | **Ordre des blocs** | A ✅ → **B (en cours)** → C1 → D → C2–C4 → E |
 
@@ -19,8 +19,10 @@ Il est mis à jour **à la fin de chaque étape**.
 
 | # | Question | Choix provisoire (facile à changer) |
 |---|---|---|
-| Q1 | Que peut faire une boutique **avant** d'avoir saisi son code d'activation ? | *(à définir en B2)* |
-| Q2 | Génération des codes d'activation : jeton longue durée pour écrire dans le coffre privé (le jeton actuel `ZP_JETON_COFFRE` expire le 28 novembre) | *(à définir en B2)* |
+| Q1 | Que peut faire une boutique **avant** d'avoir collé son code d'activation ? (a) rien : l'installation s'arrête à l'étape « Code d'activation » ; (b) une démonstration avec des produits fictifs ; (c) un essai de quelques jours | **(a) bloquée** (le plus simple, empêche le piratage). Pour changer : `EtapeAssistant.activation` dans `lib/app/etat_application.dart` |
+| Q2 | **Clé des licences** : le workflow « 3 - Créer la clé des licences » doit tourner **avant le 28 novembre** (expiration de `ZP_JETON_COFFRE`). Le propriétaire le lance-t-il, ou autorise-t-il Claude à le lancer ? | Pas encore lancé : `assets/licence/cle_publique.txt` = « ABSENTE » → l'application affiche « ne peut pas encore vérifier les codes » |
+| Q3 | **Jeton longue durée `ZP_JETON_CODES`** (1 an, écriture du coffre seulement) pour générer des codes après le 28 novembre ? | Sans lui, le workflow 4 utilise `ZP_JETON_COFFRE` (jusqu'au 28 novembre seulement) |
+| Q4 | **Texte du message d'activation** envoyé au patron (workflow 4, fichier dans le coffre) : à valider | « Bonjour, Voici le code d'activation Zéro Perte de votre boutique « NOM » (2 téléphones) : CODE. Pour l'activer : appuyez longtemps sur ce message, choisissez « Copier », puis ouvrez Zéro Perte et touchez « Coller le code ». Ce code est personnel : ne le donnez à personne. » |
 
 ---
 
@@ -76,3 +78,20 @@ Police Atkinson Hyperlegible, marque bleu nuit, écran d'accueil vendeur à 4 gr
 - Écrans vérifiés sur 4 pouces, 5 pouces, 6,5 pouces et tablette, avec le texte agrandi ×1,5 : rien ne déborde.
 
 **Problèmes restants :** aucun bloquant. La voix réelle n'a pas pu être testée hors téléphone (testée avec une fausse voix).
+
+### B2 — Code d'activation signé ✅ (version 0.4.0)
+**Fait :**
+- Codes `ZP1.<charge>.<signature>` signés **Ed25519** ; vérifiés **sans Internet** dans l'application (bibliothèque `cryptography`), avec la clé **publique** seulement (`assets/licence/cle_publique.txt`).
+- Le patron **copie le message WhatsApp entier** puis touche **« Coller le code »** : le code est retrouvé même entouré de texte ou coupé sur plusieurs lignes. (WhatsApp ne rend cliquables que les liens https : un lien d'activation direct n'était pas possible simplement.)
+- **2 téléphones par licence** ; code **« téléphone en plus »** (extension) ; un code ne sert qu'une fois ; extension refusée sans licence ou pour une autre boutique. Le contrôle du nombre réel de téléphones se fera en D4 (il faut le Drive).
+- Activation enregistrée comme **opération du journal** (`licence.activee`) : elle sera synchronisée et restaurée avec le Drive.
+- Nouvelle étape de l'assistant : **« Code d'activation »** (3 consignes illustrées, voix, message d'erreur rouge **en haut** de l'écran).
+- Workflows : **« 3 - Créer la clé des licences (une seule fois) »** (clé privée en secret `ZP_CLE_LICENCES`, copie chiffrée dans le coffre, clé publique enregistrée dans l'application) et **« 4 - Générer un code d'activation »** (message prêt à transférer + **registre des clients** rangés dans le **coffre privé** ; nom et code **masqués** dans le journal public).
+- Script `outils/licence.sh` (création de clé, signature OpenSSL), refuse d'écrire une clé privée dans le dépôt.
+
+**Tests (79 au total, tous réussis)**, par exemple :
+- Un code signé par **OpenSSL** (comme sur GitHub) est accepté par l'application : boutique `bq-test-0001`, « Boutique Mama Ama », **2 téléphones**.
+- Licence 2 téléphones + 1 code « téléphone en plus » = **3 téléphones** ; le même code utilisé 2 fois est **refusé**.
+- Une seule lettre changée dans le nom (« Ama » → « Amb ») : **signature refusée**.
+
+**Problèmes restants :** la clé des licences n'est pas encore créée (Q2) : tant qu'elle ne l'est pas, aucune boutique ne peut être activée.

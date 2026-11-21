@@ -16,6 +16,7 @@ import 'package:sqflite/sqflite.dart';
 
 import '../domaine/argent.dart';
 import '../domaine/calculs.dart';
+import '../domaine/licence.dart';
 import '../domaine/operation.dart';
 import '../domaine/quantites.dart';
 import '../domaine/recu.dart';
@@ -971,6 +972,50 @@ class JournalLocal implements ReglagesLocaux {
       [emballage],
     );
     return soldeEmballages(r.map((l) => l['q'] as int));
+  }
+
+  // ---------------------------------------------------------------------------
+  // Licence
+  // ---------------------------------------------------------------------------
+
+  /// Enregistre un code d'activation DÉJÀ VÉRIFIÉ (signature contrôlée avant).
+  Future<Operation> enregistrerActivation(
+    CodeActivation code, {
+    required String auteurId,
+  }) => _db.transaction(
+    (t) => _ajouter(
+      t,
+      type: TypeOperation.licenceActivee,
+      auteurId: auteurId,
+      donnees: {
+        'code': code.texte,
+        'code_id': code.codeId,
+        'boutique': code.boutiqueId,
+        'type': code.type.name,
+        'telephones': code.telephones,
+      },
+    ),
+  );
+
+  /// Codes activés (tous téléphones), dans l'ordre d'activation.
+  Future<List<CodeActivation>> codesActives() async {
+    final r = await _db.query(
+      'operations',
+      columns: ['donnees'],
+      where: 'type = ?',
+      whereArgs: [TypeOperation.licenceActivee],
+      orderBy: 'heure_telephone, numero',
+    );
+    final codes = <CodeActivation>[];
+    for (final l in r) {
+      final d = jsonDecode(l['donnees'] as String) as Map<String, Object?>;
+      try {
+        codes.add(lireCode(d['code'] as String));
+      } on ErreurCode {
+        // Code illisible : ignoré (il reste dans le journal).
+      }
+    }
+    return codes;
   }
 
   /// Accès brut à la base, réservé aux tests.

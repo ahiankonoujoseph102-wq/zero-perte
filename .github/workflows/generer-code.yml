@@ -1,0 +1,137 @@
+name: "4 - Générer un code d'activation"
+
+# Crée un code d'activation signé pour une boutique, puis range dans le dépôt PRIVÉ
+# zero-perte-coffre :
+#   - codes/<date>-<code>.txt : le message prêt à transférer sur WhatsApp ;
+#   - registre-clients.csv    : le registre des clients (une ligne par code).
+# Rien de personnel n'est affiché dans le journal de ce dépôt public : le nom de la
+# boutique et le code sont masqués.
+# Jeton : ZP_JETON_CODES (longue durée, écriture du coffre seulement) si présent,
+# sinon ZP_JETON_COFFRE.
+
+on:
+  workflow_dispatch:
+    inputs:
+      nom_boutique:
+        description: "Nom de la boutique (affiché au patron à l'activation)"
+        required: true
+      type:
+        description: "licence = nouvelle boutique ; extension = téléphone(s) en plus"
+        type: choice
+        options: [licence, extension]
+        default: licence
+      telephones:
+        description: "Nombre de téléphones (2 pour une licence, 1 pour une extension)"
+        required: true
+        default: "2"
+      boutique_id:
+        description: "Pour une extension seulement : identifiant de la boutique (dans le registre)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: generer-code # une génération à la fois (registre)
+  cancel-in-progress: false
+
+jobs:
+  generer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      COFFRE: ${{ github.repository_owner }}/zero-perte-coffre
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Lire et contrôler la demande (valeurs masquées)
+        env:
+          CLE_PRESENTE: ${{ secrets.ZP_CLE_LICENCES != '' }}
+        run: |
+          [ "$CLE_PRESENTE" = "true" ] || { echo "::error::La clé des licences n'existe pas encore : lancez d'abord le workflow 3."; exit 1; }
+          # Lecture depuis le fichier de l'événement : les valeurs n'apparaissent pas dans le journal.
+          NOM=$(jq -r '.inputs.nom_boutique' "$GITHUB_EVENT_PATH")
+          TYPE=$(jq -r '.inputs.type' "$GITHUB_EVENT_PATH")
+          TEL=$(jq -r '.inputs.telephones' "$GITHUB_EVENT_PATH")
+          BQ=$(jq -r '.inputs.boutique_id // ""' "$GITHUB_EVENT_PATH")
+          echo "::add-mask::$NOM"
+          [ -n "$(echo "$NOM" | tr -d '[:space:]')" ] || { echo "::error::Le nom de la boutique est vide."; exit 1; }
+          [[ "$TEL" =~ ^[0-9]+$ ]] && [ "$TEL" -ge 1 ] && [ "$TEL" -le 50 ] || { echo "::error::Nombre de téléphones invalide."; exit 1; }
+          if [ "$TYPE" = "extension" ]; then
+            [[ "$BQ" =~ ^bq-[0-9a-f]{12}$ ]] || { echo "::error::Pour une extension, indiquez l'identifiant de la boutique (bq-…) tel qu'il est dans le registre."; exit 1; }
+          else
+            BQ="bq-$(openssl rand -hex 6)"
+          fi
+          CODE_ID="c-$(date -u +%Y%m%d)-$(openssl rand -hex 3)"
+          mkdir -p "$RUNNER_TEMP/zpc" && chmod 700 "$RUNNER_TEMP/zpc"
+          jq -cS -n --arg b "$BQ" --arg d "$(date -u +%Y-%m-%d)" --arg i "$CODE_ID" --arg n "$NOM" \
+                --arg type "$TYPE" --argjson t "$TEL" \
+                '{v: 1, b: $b, d: $d, i: $i, n: $n, t: $t, type: $type}' | tr -d '\n' > "$RUNNER_TEMP/zpc/charge.json"
+          {
+            echo "NOM=$NOM"; echo "TYPE=$TYPE"; echo "TEL=$TEL"; echo "BQ=$BQ"; echo "CODE_ID=$CODE_ID"
+          } > "$RUNNER_TEMP/zpc/demande.env"
+          echo "Demande valide : $TYPE, code $CODE_ID."
+
+      - name: Signer le code
+        env:
+          ZP_CLE_LICENCES: ${{ secrets.ZP_CLE_LICENCES }}
+        run: |
+          printf '%s' "$ZP_CLE_LICENCES" | base64 -d > "$RUNNER_TEMP/zpc/cle.pem"
+          chmod 600 "$RUNNER_TEMP/zpc/cle.pem"
+          ./outils/licence.sh signer "$RUNNER_TEMP/zpc/cle.pem" "$RUNNER_TEMP/zpc/charge.json" > "$RUNNER_TEMP/zpc/code.txt"
+          shred -u "$RUNNER_TEMP/zpc/cle.pem"
+          echo "::add-mask::$(cat "$RUNNER_TEMP/zpc/code.txt")"
+          echo "Code signé."
+
+      - name: Ranger le message et le registre dans le coffre privé
+        env:
+          GH_TOKEN: ${{ secrets.ZP_JETON_CODES || secrets.ZP_JETON_COFFRE }}
+        run: |
+          set -a; . "$RUNNER_TEMP/zpc/demande.env"; set +a
+          CODE=$(cat "$RUNNER_TEMP/zpc/code.txt")
+          PRIVE=$(gh api "repos/$COFFRE" --jq .private 2>/dev/null || echo "introuvable")
+          [ "$PRIVE" = "true" ] || { echo "::error::Coffre $COFFRE inaccessible (jeton expiré ?) ou non privé."; exit 1; }
+          if [ "$TYPE" = "licence" ]; then
+            QUOI="le code d'activation Zéro Perte de votre boutique « $NOM » ($TEL téléphones)"
+          else
+            QUOI="le code Zéro Perte pour ajouter $TEL téléphone(s) à votre boutique « $NOM »"
+          fi
+          # Texte proposé (à valider par le propriétaire).
+          printf '%s\n' "Bonjour," "" "Voici $QUOI :" "" "$CODE" "" \
+            "Pour l'activer : appuyez longtemps sur ce message, choisissez « Copier »," \
+            "puis ouvrez Zéro Perte et touchez « Coller le code »." "" \
+            "Ce code est personnel : ne le donnez à personne." > "$RUNNER_TEMP/zpc/message.txt"
+          FICHIER="codes/$(date -u +%Y-%m-%d)-$CODE_ID.txt"
+          jq -n --arg m "Code $CODE_ID" --arg c "$(base64 -w0 "$RUNNER_TEMP/zpc/message.txt")" \
+            '{message: $m, content: $c}' > "$RUNNER_TEMP/zpc/r1.json"
+          gh api -X PUT "repos/$COFFRE/contents/$FICHIER" --input "$RUNNER_TEMP/zpc/r1.json" --jq '.content.path' >/dev/null
+          # Registre : on ajoute une ligne (lecture, ajout, écriture avec contrôle de version).
+          REG="registre-clients.csv"
+          if gh api "repos/$COFFRE/contents/$REG" > "$RUNNER_TEMP/zpc/reg.json" 2>/dev/null; then
+            SHA=$(jq -r .sha "$RUNNER_TEMP/zpc/reg.json")
+            jq -r .content "$RUNNER_TEMP/zpc/reg.json" | base64 -d > "$RUNNER_TEMP/zpc/reg.csv"
+          else
+            SHA=""
+            echo "date;code;type;boutique;nom;telephones" > "$RUNNER_TEMP/zpc/reg.csv"
+          fi
+          printf '%s;%s;%s;%s;%s;%s\n' "$(date -u +%Y-%m-%d)" "$CODE_ID" "$TYPE" "$BQ" "${NOM//;/,}" "$TEL" >> "$RUNNER_TEMP/zpc/reg.csv"
+          jq -n --arg m "Registre : $CODE_ID" --arg c "$(base64 -w0 "$RUNNER_TEMP/zpc/reg.csv")" --arg s "$SHA" \
+            '{message: $m, content: $c} + (if $s == "" then {} else {sha: $s} end)' > "$RUNNER_TEMP/zpc/r2.json"
+          gh api -X PUT "repos/$COFFRE/contents/$REG" --input "$RUNNER_TEMP/zpc/r2.json" --jq '.content.path' >/dev/null
+          {
+            echo "## ✅ Code d'activation créé ($CODE_ID)"
+            echo ""
+            echo "Le message prêt à envoyer est dans votre **coffre privé** : \`$FICHIER\`."
+            echo "Ouvrez-le, copiez tout le texte et transférez-le au patron sur WhatsApp."
+            echo "La boutique est ajoutée au registre \`$REG\` (coffre privé)."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Effacer les fichiers temporaires
+        if: always()
+        run: |
+          find "$RUNNER_TEMP/zpc" -type f -exec shred -u {} + 2>/dev/null || true
+          rm -rf "$RUNNER_TEMP/zpc"

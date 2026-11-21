@@ -1,0 +1,119 @@
+name: "3 - Créer la clé des licences (une seule fois)"
+
+# Crée la paire de clés Ed25519 qui signe les codes d'activation.
+#  - clé PRIVÉE : secret ZP_CLE_LICENCES (jamais dans ce dépôt public, jamais affichée) ;
+#    copie de secours CHIFFRÉE (avec le mot de passe ZP_SIGNATURE_MOT_DE_PASSE) dans
+#    le dépôt privé zero-perte-coffre ;
+#  - clé PUBLIQUE : enregistrée dans assets/licence/cle_publique.txt (elle peut être
+#    publique : elle sert seulement à VÉRIFIER les codes dans l'application).
+# Refuse de remplacer une clé existante : cela rendrait tous les codes déjà donnés invalides.
+# Il faut un jeton (ZP_JETON_COFFRE) autorisé à écrire les secrets de ce dépôt et le coffre.
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Écrivez OUI en majuscules pour confirmer"
+        required: true
+        default: ""
+
+permissions:
+  contents: write # enregistrer la clé publique
+  actions: write # relancer la fabrication
+
+concurrency:
+  group: creer-cle-licences
+  cancel-in-progress: false
+
+jobs:
+  creer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      COFFRE: ${{ github.repository_owner }}/zero-perte-coffre
+    steps:
+      - name: Contrôles avant création
+        env:
+          CLE_EXISTE: ${{ secrets.ZP_CLE_LICENCES != '' }}
+          MDP_PRESENT: ${{ secrets.ZP_SIGNATURE_MOT_DE_PASSE != '' }}
+          JETON_PRESENT: ${{ secrets.ZP_JETON_COFFRE != '' }}
+        run: |
+          [ "${{ github.ref }}" = "refs/heads/main" ] || { echo "::error::Lancez ce workflow sur la branche main."; exit 1; }
+          [ "${{ github.event.inputs.confirmation }}" = "OUI" ] || { echo "::error::Confirmation absente : écrivez OUI en majuscules."; exit 1; }
+          [ "$CLE_EXISTE" != "true" ] || { echo "::error::La clé des licences existe déjà (secret ZP_CLE_LICENCES). Elle ne sera JAMAIS remplacée automatiquement."; exit 1; }
+          [ "$MDP_PRESENT" = "true" ] || { echo "::error::Le secret ZP_SIGNATURE_MOT_DE_PASSE est absent (il chiffre la copie de secours)."; exit 1; }
+          [ "$JETON_PRESENT" = "true" ] || { echo "::error::Le secret ZP_JETON_COFFRE est absent ou expiré."; exit 1; }
+
+      - name: Vérifier le jeton et le coffre privé
+        env:
+          GH_TOKEN: ${{ secrets.ZP_JETON_COFFRE }}
+        run: |
+          PRIVE=$(gh api "repos/$COFFRE" --jq .private 2>/dev/null || echo "introuvable")
+          [ "$PRIVE" = "true" ] || { echo "::error::Le dépôt $COFFRE est introuvable, inaccessible au jeton, ou n'est pas privé."; exit 1; }
+          gh secret list --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || { echo "::error::Le jeton ne peut pas gérer les secrets de $GITHUB_REPOSITORY."; exit 1; }
+
+      - name: Récupérer le code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+
+      - name: Créer la paire de clés (dossier temporaire)
+        run: |
+          mkdir -p "$RUNNER_TEMP/zpl" && chmod 700 "$RUNNER_TEMP/zpl"
+          ./outils/licence.sh creer-cle "$RUNNER_TEMP/zpl"
+          base64 -w0 "$RUNNER_TEMP/zpl/cle_privee.pem" > "$RUNNER_TEMP/zpl/cle_privee.b64"
+          echo "::add-mask::$(cat "$RUNNER_TEMP/zpl/cle_privee.b64")"
+          echo "Clé publique : $(cat "$RUNNER_TEMP/zpl/cle_publique.txt")"
+
+      - name: Copie de secours chiffrée dans le coffre privé
+        env:
+          GH_TOKEN: ${{ secrets.ZP_JETON_COFFRE }}
+          ZP_SIGNATURE_MOT_DE_PASSE: ${{ secrets.ZP_SIGNATURE_MOT_DE_PASSE }}
+        run: |
+          openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt -pass env:ZP_SIGNATURE_MOT_DE_PASSE \
+            -in "$RUNNER_TEMP/zpl/cle_privee.pem" -out "$RUNNER_TEMP/zpl/secours.chiffre"
+          NOM="cle-licences/zeroperte-licences-$(date -u +%Y-%m-%d)-run${GITHUB_RUN_ID}.pem.chiffre"
+          jq -n --arg m "Copie de secours chiffrée de la clé des licences Zéro Perte" \
+                --arg c "$(base64 -w0 "$RUNNER_TEMP/zpl/secours.chiffre")" \
+                '{message: $m, content: $c}' > "$RUNNER_TEMP/zpl/requete.json"
+          gh api -X PUT "repos/$COFFRE/contents/$NOM" --input "$RUNNER_TEMP/zpl/requete.json" --jq '.content.path'
+          echo "$NOM" > "$RUNNER_TEMP/nom-copie.txt"
+
+      - name: Ranger la clé privée dans les secrets GitHub
+        env:
+          GH_TOKEN: ${{ secrets.ZP_JETON_COFFRE }}
+        run: |
+          gh secret set ZP_CLE_LICENCES --repo "$GITHUB_REPOSITORY" < "$RUNNER_TEMP/zpl/cle_privee.b64"
+          gh secret list --repo "$GITHUB_REPOSITORY" --json name --jq '.[].name' | grep -qx ZP_CLE_LICENCES \
+            || { echo "::error::Le secret ZP_CLE_LICENCES n'a pas été créé."; exit 1; }
+
+      - name: Enregistrer la clé PUBLIQUE dans l'application
+        run: |
+          cp "$RUNNER_TEMP/zpl/cle_publique.txt" assets/licence/cle_publique.txt
+          git config user.name "zero-perte-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/licence/cle_publique.txt
+          git commit -m "Clé publique des licences (créée par le workflow 3)"
+          git push origin HEAD:main
+
+      - name: Effacer les fichiers temporaires
+        if: always()
+        run: |
+          find "$RUNNER_TEMP/zpl" -type f -exec shred -u {} + 2>/dev/null || true
+          rm -rf "$RUNNER_TEMP/zpl"
+
+      - name: Relancer la fabrication de l'APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run fabriquer-apk.yml --ref main
+
+      - name: Résumé
+        run: |
+          {
+            echo "## ✅ Clé des licences créée"
+            echo ""
+            echo "- Clé privée : secret **ZP_CLE_LICENCES** (jamais dans ce dépôt public)."
+            echo "- Copie de secours chiffrée dans le coffre privé : \`$(cat "$RUNNER_TEMP/nom-copie.txt")\`."
+            echo "- Clé publique enregistrée dans l'application ; la fabrication a été relancée."
+            echo "- Vous pouvez maintenant générer des codes avec le workflow « 4 - Générer un code d'activation »."
+          } >> "$GITHUB_STEP_SUMMARY"

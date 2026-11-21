@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as chemins;
 import 'package:sqflite/sqflite.dart';
 
 import 'app/etat_application.dart';
+import 'domaine/licence.dart';
 import 'donnees/journal_local.dart';
 import 'ecrans/accueil_vendeur.dart';
 import 'ecrans/assistant/assistant_installation.dart';
@@ -47,6 +49,11 @@ Future<EtatApplication> chargerEtatDuTelephone() async {
       telephone: ServiceTelephoneAndroid(),
       voix: VoixAndroid(),
       ouvrirLien: ouvrirLienExterne,
+      lirePressePapiers: () async =>
+          (await Clipboard.getData(Clipboard.kTextPlain))?.text,
+      clePublique: () async => lireClePublique(
+        await rootBundle.loadString('assets/licence/cle_publique.txt'),
+      ),
     ),
   );
 }
