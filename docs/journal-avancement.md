@@ -10,7 +10,7 @@ Il est mis à jour **à la fin de chaque étape**.
 | | |
 |---|---|
 | **Dernière étape terminée** | **B13** — Sauvegarde chiffrée → **bloc B terminé** |
-| **Version publiée** | 0.16.0 (voir les Releases GitHub) |
+| **Version publiée** | 0.17.0 (voir les Releases GitHub) |
 | **Dernière étape terminée (bis)** | **C1** — Crédit client |
 | **Prochaine étape** | Rapport de fin de bloc C1, puis bloc **D** (synchronisation) |
 | **Méthode** | Enchaîner les étapes de `docs/plan-v1.md` sans validation intermédiaire : B1→B13, puis C1, D, C2→C4, E. Rapport au chef de projet **à la fin de chaque bloc**, ou si une décision appartient au propriétaire, ou si on est bloqué. |
@@ -296,3 +296,40 @@ Police Atkinson Hyperlegible, marque bleu nuit, écran d'accueil vendeur à 4 gr
 
 
 
+
+## Travail de nuit du 21 au 22 novembre 2026 (sans validation intermédiaire)
+
+Consignes : choix non décidés → option la plus simple, notée ici et dans le rapport. Écrans vérifiés sur
+petit téléphone 4 pouces, grand téléphone, tablette 10 pouces et PC 1366×768. APK universel < 20 Mo.
+
+### Analyse du concurrent (MikahPOS) ✅
+`docs/analyse-concurrent.md` (texte seulement). Les deux vidéos ont été regardées image par image sur une
+copie hors du dépôt, puis effacées. Le son a été transcrit automatiquement (modèle français hors ligne),
+mais le résultat est presque inutilisable (bruit) : seuls quelques mots sûrs.
+
+### Étape 1 — Code du patron à 6 chiffres + carnet de clients ✅ (version 0.17.0)
+**Fait :**
+- **Code du patron : 6 chiffres** (création, connexion, sauvegarde). Hachage plus lent : 120 000 tours
+  PBKDF2-SHA256 pour le patron (vendeurs : 4 chiffres, 20 000 tours, inchangé). Codes trop faciles refusés
+  (un seul chiffre répété, suites 123456 / 654321, alternances 121212).
+- **Écran unique « Nouveau code du patron »** pour les boutiques installées avant : le patron tape son code
+  actuel (4 chiffres, pour qu'un vendeur ne puisse pas le faire), puis deux fois le nouveau (6 chiffres).
+- **Sauvegarde** : nouveau format « ZPS2 », clé tirée du code par PBKDF2 300 000 tours ; les anciens
+  fichiers « ZPS1 » se lisent toujours. Démonstration : code patron « 135790 ».
+- **Carnet de clients** : quartier et e-mail (facultatifs), **téléphone obligatoire pour le crédit**
+  (vérifié à la vente), recherche par nom ou par téléphone (même tapé avec des espaces), page « Clients ».
+  Le vendeur peut **ajouter** ; seul le patron peut **modifier, supprimer** (refusé si le client doit
+  encore de l'argent ; rien n'est effacé du journal, la fiche est désactivée) et **exporter** (fichier
+  `clients.csv` lisible par Excel, envoyé par le menu de partage). Schéma de la base : version 4.
+
+**Tests (244 au total, tous réussis)**, par exemple :
+- Patron installé avant 0.17 avec le code **4827** : « 1111 » → « Code faux », « 4827 » → nouveau code
+  « 123456 » refusé (trop facile), « 730518 » deux fois → accueil ; l'ancien code ne marche plus et le
+  nouveau n'apparaît nulle part dans le journal.
+- Le vendeur Kossi : ajouter Yao (sans téléphone) ✅ ; lui faire crédit ❌ « Ajoutez le téléphone de Yao
+  pour lui faire crédit. » ; modifier / supprimer / exporter ❌.
+- Le patron cherche « 90 11 » → seul Kofi apparaît ; l'export contient la ligne de Kofi avec son
+  téléphone au format +228 et son quartier.
+
+**Choix pris au plus simple :** 120 000 tours pour le code patron (environ 1 seconde sur un téléphone
+d'entrée de gamme à chaque entrée du patron) ; export au format CSV (Excel) plutôt qu'en PDF.

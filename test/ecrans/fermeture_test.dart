@@ -60,7 +60,7 @@ void main() {
       // Le patron consulte le résultat.
       env.etat.deconnecter();
       await tester.runAsync(
-        () => env.etat.verifierPin(env.etat.patron!, '4827'),
+        () => env.etat.verifierPin(env.etat.patron!, '482713'),
       );
       await attendre(tester);
       await ouvrirEspacePatron(tester);

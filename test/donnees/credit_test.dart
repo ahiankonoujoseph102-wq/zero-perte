@@ -76,6 +76,7 @@ void main() {
     'plafond : 5 000 F, déjà 4 200 F → 3 kg (1 800 F) refusés, 1 kg accepté',
     () async {
       final ama = await j.definirClient(
+        telephone: '90000001',
         nom: 'Ama',
         plafond: 5000,
         auteurId: 'p',
@@ -100,6 +101,7 @@ void main() {
 
   test('vente à crédit annulée : la dette disparaît, le riz revient', () async {
     final kofi = await j.definirClient(
+      telephone: '90000002',
       nom: 'Kofi',
       plafond: 10000,
       auteurId: 'p',
@@ -116,6 +118,7 @@ void main() {
 
   test('remboursement trop grand, ou à crédit : refusé', () async {
     final kofi = await j.definirClient(
+      telephone: '90000003',
       nom: 'Kofi',
       plafond: 10000,
       auteurId: 'p',
@@ -153,11 +156,13 @@ void main() {
         throwsA(isA<ErreurZeroPerte>()),
       );
       final id = await j.definirClient(
+        telephone: '90000004',
         nom: 'Afi',
         plafond: 2000,
         auteurId: 'p',
       );
       await j.definirClient(
+        telephone: '90000005',
         clientId: id,
         nom: 'Afi Mensah',
         plafond: 8000,

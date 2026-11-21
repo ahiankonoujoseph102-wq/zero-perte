@@ -120,16 +120,16 @@ void main() {
 
       // 8. Code secret : trop facile refusé, puis deux codes différents, puis bon.
       await tester.enterText(find.byKey(const Key('champ-nom-patron')), 'Ama');
-      await taperPin(tester, '1234');
+      await taperPin(tester, '123456');
       expect(find.byKey(const Key('pin-erreur')), findsOneWidget);
-      await taperPin(tester, '4827');
-      await taperPin(tester, '4828');
+      await taperPin(tester, '482713');
+      await taperPin(tester, '482814');
       expect(find.textContaining('différents'), findsOneWidget);
-      await taperPin(tester, '4827');
-      await taperPin(tester, '4827');
+      await taperPin(tester, '482713');
+      await taperPin(tester, '482713');
       expect(env.etat.patron!.nom, 'Ama');
       expect(
-        await tester.runAsync(() => pinCorrect(env.etat.patron!, '4827')),
+        await tester.runAsync(() => pinCorrect(env.etat.patron!, '482713')),
         isTrue,
       );
 

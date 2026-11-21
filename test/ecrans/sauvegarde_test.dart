@@ -28,14 +28,20 @@ void main() {
     final clair = utf8.encode('{"format":1,"operations":[]}');
 
     test('aller-retour avec le bon code', () async {
-      final f = await chiffrerSauvegarde(clair, '4827');
-      expect(f.sublist(0, 4), utf8.encode('ZPS1'));
+      final f = await chiffrerSauvegarde(clair, '482713');
+      expect(f.sublist(0, 4), utf8.encode('ZPS2'));
       expect(utf8.decode(f, allowMalformed: true), isNot(contains('format')));
+      expect(await dechiffrerSauvegarde(f, '482713'), clair);
+    });
+
+    test('un ancien fichier « ZPS1 » se lit toujours', () async {
+      final f = await chiffrerSauvegarde(clair, '4827', format: 1);
+      expect(f.sublist(0, 4), utf8.encode('ZPS1'));
       expect(await dechiffrerSauvegarde(f, '4827'), clair);
     });
 
     test('code faux → refus', () async {
-      final f = await chiffrerSauvegarde(clair, '4827');
+      final f = await chiffrerSauvegarde(clair, '482713');
       expect(
         () => dechiffrerSauvegarde(f, '1111'),
         throwsA(isA<ErreurSauvegarde>()),
@@ -43,14 +49,14 @@ void main() {
     });
 
     test('un octet modifié → refus ; autre fichier → message clair', () async {
-      final f = Uint8List.fromList(await chiffrerSauvegarde(clair, '4827'));
+      final f = Uint8List.fromList(await chiffrerSauvegarde(clair, '482713'));
       f[f.length - 1] ^= 1;
       expect(
-        () => dechiffrerSauvegarde(f, '4827'),
+        () => dechiffrerSauvegarde(f, '482713'),
         throwsA(isA<ErreurSauvegarde>()),
       );
       expect(
-        () => dechiffrerSauvegarde(utf8.encode('photo.jpg' * 10), '4827'),
+        () => dechiffrerSauvegarde(utf8.encode('photo.jpg' * 10), '482713'),
         throwsA(
           isA<ErreurSauvegarde>().having(
             (e) => e.message,
@@ -68,7 +74,7 @@ void main() {
       final env = await environnementDeTest(tester, preparer: journee);
       await tester.runAsync(() async {
         final avant = env.etat;
-        final fichier = await avant.creerSauvegarde('4827');
+        final fichier = await avant.creerSauvegarde('482713');
 
         final neuf = await nouveauTelephone(avant);
         expect(neuf.produits, isEmpty);
@@ -79,7 +85,7 @@ void main() {
         );
         expect(await neuf.journal.nombreOperations(), 0);
 
-        final n = await neuf.restaurerSauvegarde(fichier, '4827');
+        final n = await neuf.restaurerSauvegarde(fichier, '482713');
         expect(n, await avant.journal.nombreOperations());
         expect(neuf.config.nom, 'Boutique Mama Ama');
         expect(neuf.patron!.nom, 'Ama');
@@ -101,7 +107,7 @@ void main() {
 
         // Restaurer sur un téléphone qui a déjà des ventes : refusé.
         await expectLater(
-          neuf.restaurerSauvegarde(fichier, '4827'),
+          neuf.restaurerSauvegarde(fichier, '482713'),
           throwsA(isA<ErreurZeroPerte>()),
         );
       });
@@ -148,9 +154,9 @@ void main() {
     );
     expect(find.text('Aucune sauvegarde pour l\'instant.'), findsOneWidget);
     await toucher(tester, find.byKey(const Key('bouton-creer-sauvegarde')));
-    await taperPin(tester, '1111');
+    await taperPin(tester, '111111');
     expect(find.text('Code faux.'), findsOneWidget);
-    await taperPin(tester, '4827');
+    await taperPin(tester, '482713');
     for (var i = 0; i < 10 && env.partages.isEmpty; i++) {
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 300)),
@@ -160,7 +166,7 @@ void main() {
     await attendre(tester, tours: 10);
     expect(env.partages, hasLength(1));
     final (octets, nom) = env.partages.single;
-    expect(utf8.decode(octets.sublist(0, 4)), 'ZPS1');
+    expect(utf8.decode(octets.sublist(0, 4)), 'ZPS2');
     expect(
       nom,
       matches(RegExp(r'^ZeroPerte-Boutique-Mama-Ama-\d{4}-\d\d-\d\d\.zps$')),

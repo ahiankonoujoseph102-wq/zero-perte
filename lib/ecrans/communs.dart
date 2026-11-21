@@ -251,6 +251,7 @@ class _PageDemandePinState extends State<_PageDemandePin> {
             key: ValueKey(_tour),
             titre: 'Code secret de ${widget.utilisateur.nom}',
             erreur: _erreur,
+            longueur: widget.utilisateur.longueurCode,
             onComplet: _saisi,
           ),
         ),

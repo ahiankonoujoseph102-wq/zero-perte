@@ -221,8 +221,6 @@ void main() {
       await toucher(tester, find.byKey(const Key('bouton-credit')));
       await attendre(tester, tours: 8);
       await toucher(tester, find.byKey(const Key('bouton-nouveau-client')));
-      expect(find.byKey(const Key('plafond-fixe')), findsOneWidget);
-      expect(find.byKey(const Key('plafond-20000')), findsNothing);
       await tester.enterText(find.byKey(const Key('champ-nom-client')), 'Afi');
       await tester.enterText(
         find.byKey(const Key('champ-telephone-client')),
@@ -230,6 +228,13 @@ void main() {
       );
       await attendre(tester);
       await toucher(tester, find.byKey(const Key('bouton-photo-client')));
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('plafond-fixe')),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.byKey(const Key('plafond-fixe')), findsOneWidget);
+      expect(find.byKey(const Key('plafond-20000')), findsNothing);
       await toucher(tester, find.byKey(const Key('bouton-enregistrer-client')));
       await attendre(tester, tours: 10);
       final afi = (await tester.runAsync(env.journal.clients))!.single;

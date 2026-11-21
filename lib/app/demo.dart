@@ -16,7 +16,7 @@ import '../donnees/journal_local.dart';
 import 'etat_application.dart';
 
 /// Code du patron de la démonstration (affiché à l'écran).
-const String codePatronDemo = '1357';
+const String codePatronDemo = '135790';
 
 /// Produits de la démonstration : (id du catalogue, prix de l'unité de base,
 /// stock en unités de base).

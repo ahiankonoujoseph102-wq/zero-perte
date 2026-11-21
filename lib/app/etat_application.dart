@@ -216,7 +216,7 @@ class EtatApplication extends ChangeNotifier {
     required String nom,
     required String pin,
   }) async {
-    final probleme = problemePin(pin);
+    final probleme = problemePin(pin, longueur: longueurPinPatron);
     if (probleme != null) throw ErreurZeroPerte(probleme);
     final sel = nouveauSel();
     final u = Utilisateur(
@@ -224,7 +224,9 @@ class EtatApplication extends ChangeNotifier {
       nom: nom.trim().isEmpty ? 'Patron' : nom.trim(),
       role: Role.patron,
       sel: sel,
-      hachage: await hacherPin(pin, sel),
+      hachage: await hacherPin(pin, sel, tours: toursPinPatron),
+      longueurCode: longueurPinPatron,
+      tours: toursPinPatron,
     );
     await journal.definirUtilisateur(u, auteurId: u.id);
     _utilisateurs = await journal.utilisateurs();
@@ -282,23 +284,30 @@ class EtatApplication extends ChangeNotifier {
 
   /// Change le code secret d'un utilisateur.
   Future<void> changerPin(Utilisateur u, String pin) async {
-    final probleme = problemePin(pin);
+    final longueur = longueurPour(u.role);
+    final probleme = problemePin(pin, longueur: longueur);
     if (probleme != null) throw ErreurZeroPerte(probleme);
     final sel = nouveauSel();
-    await journal.definirUtilisateur(
-      Utilisateur(
-        id: u.id,
-        nom: u.nom,
-        role: u.role,
-        sel: sel,
-        hachage: await hacherPin(pin, sel),
-        actif: u.actif,
-      ),
-      auteurId: auteurActuel,
+    final tours = toursPour(u.role);
+    final nouveau = Utilisateur(
+      id: u.id,
+      nom: u.nom,
+      role: u.role,
+      sel: sel,
+      hachage: await hacherPin(pin, sel, tours: tours),
+      actif: u.actif,
+      longueurCode: longueur,
+      tours: tours,
     );
+    await journal.definirUtilisateur(nouveau, auteurId: auteurActuel);
     _utilisateurs = await journal.utilisateurs();
+    if (_utilisateurActuel?.id == u.id) _utilisateurActuel = nouveau;
     notifyListeners();
   }
+
+  /// Le patron installé avant la version 0.17 doit choisir un code de 6 chiffres.
+  bool get patronDoitChangerCode =>
+      installationTerminee && (patron?.doitPasserA6Chiffres ?? false);
 
   // ---------------------------------------------------------------------------
   // Session : qui utilise le téléphone
@@ -598,15 +607,27 @@ class EtatApplication extends ChangeNotifier {
     }
     final clair = await dechiffrerSauvegarde(fichier, codePatron);
     final n = await journal.restaurerJournal(clair);
+    await rechargerTout();
+    return n;
+  }
+
+  /// Relit tout depuis le journal (après une restauration, ou quand des
+  /// opérations d'un autre appareil arrivent par la synchronisation).
+  Future<void> rechargerTout() async {
     _codes
       ..clear()
       ..addAll(await journal.codesActives());
     _config = await journal.configuration() ?? const ConfigBoutique();
     _utilisateurs = await journal.utilisateurs();
+    final actuel = _utilisateurActuel;
+    if (actuel != null) {
+      _utilisateurActuel = _utilisateurs
+          .where((u) => u.id == actuel.id)
+          .firstOrNull;
+    }
     _produits = await journal.produits();
     _stocks = await journal.stocks();
     notifyListeners();
-    return n;
   }
 
   // ---------------------------------------------------------------------------
@@ -630,14 +651,21 @@ class EtatApplication extends ChangeNotifier {
     return l;
   }
 
-  /// Crée ou modifie une fiche client. Seul le patron choisit le plafond.
+  /// Crée ou modifie une fiche client. Le vendeur peut seulement AJOUTER ;
+  /// modifier, supprimer et exporter sont réservés au patron. Seul le patron
+  /// choisit le plafond.
   Future<String> enregistrerClient({
     Client? existant,
     required String nom,
     String telephone = '',
     String? photo,
     int? plafond,
+    String quartier = '',
+    String email = '',
   }) async {
+    if (existant != null && !estPatron) {
+      throw const ErreurZeroPerte('Seul le patron peut modifier un client.');
+    }
     final p = estPatron
         ? (plafond ?? existant?.plafond ?? plafondParDefaut)
         : (existant?.plafond ?? plafondParDefaut);
@@ -647,10 +675,58 @@ class EtatApplication extends ChangeNotifier {
       telephone: normaliserTelephone(telephone) ?? telephone.trim(),
       photo: photo ?? existant?.photo,
       plafond: p,
+      quartier: quartier,
+      email: email,
       auteurId: auteurActuel,
     );
     notifyListeners();
     return id;
+  }
+
+  /// Supprime un client du carnet (patron seulement, et s'il ne doit rien).
+  /// Rien n'est effacé du journal : la fiche est seulement désactivée.
+  Future<void> supprimerClient(Client c) async {
+    if (!estPatron) {
+      throw const ErreurZeroPerte('Seul le patron peut supprimer un client.');
+    }
+    if (c.solde > 0) {
+      throw ErreurZeroPerte(
+        '${c.nom} doit encore ${formatFrancs(c.solde)} : impossible de le supprimer.',
+      );
+    }
+    await journal.definirClient(
+      clientId: c.id,
+      nom: c.nom,
+      telephone: c.telephone,
+      photo: c.photo,
+      plafond: c.plafond,
+      quartier: c.quartier,
+      email: c.email,
+      actif: false,
+      auteurId: auteurActuel,
+    );
+    notifyListeners();
+  }
+
+  /// Carnet de clients en CSV (patron seulement), pour un tableur.
+  Future<String> exporterClientsCsv() async {
+    if (!estPatron) {
+      throw const ErreurZeroPerte('Seul le patron peut exporter les clients.');
+    }
+    String champ(String v) => '"${v.replaceAll('"', '""')}"';
+    final lignes = [
+      'nom;telephone;quartier;email;doit (F);plafond (F)',
+      for (final c in await clients())
+        [
+          champ(c.nom),
+          champ(c.telephone),
+          champ(c.quartier),
+          champ(c.email),
+          '${c.solde}',
+          '${c.plafond}',
+        ].join(';'),
+    ];
+    return '${lignes.join('\r\n')}\r\n';
   }
 
   /// Le client rembourse tout ou partie de sa dette.

@@ -13,7 +13,7 @@
 /// n'utilise donc ni UPSERT, ni RETURNING, ni fonctions JSON, ni fonctions de fenêtre.
 library;
 
-const int versionSchema = 3;
+const int versionSchema = 4;
 
 /// Migrations : pour passer de la version N-1 à la version N.
 /// Uniquement des AJOUTS (ALTER TABLE … ADD COLUMN), compatibles SQLite 3.18.
@@ -52,6 +52,11 @@ CREATE TABLE mouvements_credit (
     'CREATE INDEX mouvements_credit_client ON mouvements_credit (client_id)',
     ...declencheursPour('clients_versions'),
     ...declencheursPour('mouvements_credit'),
+  ],
+  // Carnet de clients (quartier, e-mail).
+  4: [
+    'ALTER TABLE clients_versions ADD COLUMN quartier TEXT',
+    'ALTER TABLE clients_versions ADD COLUMN email TEXT',
   ],
 };
 

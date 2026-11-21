@@ -12,6 +12,7 @@ import 'ecrans/accueil_vendeur.dart';
 import 'ecrans/assistant/assistant_installation.dart';
 import 'ecrans/caisse/fermeture.dart';
 import 'ecrans/caisse/saisie_montant.dart';
+import 'ecrans/code_patron.dart';
 import 'ecrans/communs.dart';
 import 'ecrans/connexion.dart';
 import 'ecrans/credit/clients.dart';
@@ -208,6 +209,8 @@ class ZeroPerteApp extends StatelessWidget {
                         ),
                 ),
               )
+            : etat.patronDoitChangerCode
+            ? PageNouveauCodePatron(etat: etat)
             : (etat.utilisateurActuel == null && etat.utilisateurs.isNotEmpty)
             ? PageConnexion(etat: etat)
             : AccueilVendeur(

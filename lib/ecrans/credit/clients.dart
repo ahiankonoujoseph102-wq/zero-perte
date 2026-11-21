@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
@@ -87,6 +88,28 @@ class _PageClientsState extends State<PageClients> {
     super.dispose();
   }
 
+  Future<void> _exporter() async {
+    try {
+      final csv = await widget.etat.exporterClientsCsv();
+      // BOM UTF-8 : les accents s'affichent bien dans Excel.
+      final octets = Uint8List.fromList([
+        0xEF,
+        0xBB,
+        0xBF,
+        ...utf8.encode(csv),
+      ]);
+      final r = await widget.etat.services.partagerFichier(
+        octets,
+        'clients.csv',
+      );
+      if (r == ResultatPartage.echec && mounted) {
+        annoncer(context, 'L\'export n\'a pas pu être envoyé.', erreur: true);
+      }
+    } catch (e) {
+      if (mounted) annoncer(context, messageErreur(e), erreur: true);
+    }
+  }
+
   Future<void> _nouveau() async {
     final id = await Navigator.of(context).push<String>(
       MaterialPageRoute(builder: (_) => PageFicheEdition(etat: widget.etat)),
@@ -99,7 +122,7 @@ class _PageClientsState extends State<PageClients> {
   @override
   Widget build(BuildContext context) {
     return PageZp(
-      titre: widget.choisir ? 'Quel client ?' : 'Crédit',
+      titre: widget.choisir ? 'Quel client ?' : 'Clients',
       icone: Icons.menu_book_rounded,
       bas: GrosBouton(
         key: const Key('bouton-nouveau-client'),
@@ -133,7 +156,13 @@ class _PageClientsState extends State<PageClients> {
                     .where(
                       (c) =>
                           c.nom.toLowerCase().contains(filtre) ||
-                          c.telephone.contains(filtre),
+                          (filtre.replaceAll(RegExp(r'[^0-9]'), '').length >=
+                                  2 &&
+                              c.telephone
+                                  .replaceAll(RegExp(r'[^0-9]'), '')
+                                  .contains(
+                                    filtre.replaceAll(RegExp(r'[^0-9]'), ''),
+                                  )),
                     )
                     .toList();
           final total = tous.fold<int>(0, (t, c) => t + c.solde);
@@ -168,20 +197,35 @@ class _PageClientsState extends State<PageClients> {
                     ],
                   ),
                 ),
-              if (tous.length > 5)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: TextField(
-                    key: const Key('recherche-client'),
-                    controller: _recherche,
-                    style: const TextStyle(fontSize: 19),
-                    decoration: decorationChamp(
-                      'Chercher un nom',
-                      icone: Icons.search_rounded,
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        key: const Key('recherche-client'),
+                        controller: _recherche,
+                        style: const TextStyle(fontSize: 19),
+                        decoration: decorationChamp(
+                          'Nom ou téléphone',
+                          icone: Icons.search_rounded,
+                        ),
+                        onChanged: (_) => setState(() {}),
+                      ),
                     ),
-                    onChanged: (_) => setState(() {}),
-                  ),
+                    if (widget.etat.estPatron && !widget.choisir) ...[
+                      const SizedBox(width: 8),
+                      IconButton.outlined(
+                        key: const Key('bouton-exporter-clients'),
+                        tooltip: 'Exporter les clients',
+                        iconSize: 30,
+                        onPressed: _exporter,
+                        icon: const Icon(Icons.ios_share_rounded),
+                      ),
+                    ],
+                  ],
                 ),
+              ),
               for (final c in liste)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
@@ -195,7 +239,13 @@ class _PageClientsState extends State<PageClients> {
                       key: Key('client-${c.nom}'),
                       borderRadius: BorderRadius.circular(16),
                       onTap: () => widget.choisir
-                          ? Navigator.of(context).pop(c)
+                          ? (c.peutPrendreCredit
+                                ? Navigator.of(context).pop(c)
+                                : annoncer(
+                                    context,
+                                    'Ajoutez d\'abord le téléphone de ${c.nom} (obligatoire pour le crédit).',
+                                    erreur: true,
+                                  ))
                           : Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (_) => PageClient(
@@ -222,7 +272,15 @@ class _PageClientsState extends State<PageClients> {
                                     ),
                                   ),
                                   texteSolde(c),
-                                  if (widget.choisir)
+                                  if (widget.choisir && !c.peutPrendreCredit)
+                                    const Text(
+                                      'Téléphone manquant',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        color: CouleursZp.argentSort,
+                                      ),
+                                    )
+                                  else if (widget.choisir)
                                     Text(
                                       'Peut encore prendre ${formatFrancs(c.disponible)}',
                                       style: const TextStyle(
@@ -264,6 +322,10 @@ class _PageFicheEditionState extends State<PageFicheEdition> {
   late final _tel = TextEditingController(
     text: widget.existant?.telephone ?? '',
   );
+  late final _quartier = TextEditingController(
+    text: widget.existant?.quartier ?? '',
+  );
+  late final _email = TextEditingController(text: widget.existant?.email ?? '');
   late int _plafond =
       widget.existant?.plafond ?? EtatApplication.plafondParDefaut;
   String? _photo;
@@ -273,6 +335,8 @@ class _PageFicheEditionState extends State<PageFicheEdition> {
   void dispose() {
     _nom.dispose();
     _tel.dispose();
+    _quartier.dispose();
+    _email.dispose();
     super.dispose();
   }
 
@@ -292,6 +356,8 @@ class _PageFicheEditionState extends State<PageFicheEdition> {
         existant: widget.existant,
         nom: _nom.text,
         telephone: _tel.text,
+        quartier: _quartier.text,
+        email: _email.text,
         photo: _photo,
         plafond: _plafond,
       );
@@ -361,6 +427,29 @@ class _PageFicheEditionState extends State<PageFicheEdition> {
             decoration: decorationChamp(
               'Téléphone (WhatsApp)',
               icone: Icons.phone_rounded,
+              aide: 'Obligatoire pour faire crédit.',
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            key: const Key('champ-quartier-client'),
+            controller: _quartier,
+            style: const TextStyle(fontSize: 21),
+            textCapitalization: TextCapitalization.words,
+            decoration: decorationChamp(
+              'Quartier (facultatif)',
+              icone: Icons.place_rounded,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            key: const Key('champ-email-client'),
+            controller: _email,
+            keyboardType: TextInputType.emailAddress,
+            style: const TextStyle(fontSize: 21),
+            decoration: decorationChamp(
+              'E-mail (facultatif)',
+              icone: Icons.alternate_email_rounded,
             ),
           ),
           const SizedBox(height: 16),
@@ -469,6 +558,45 @@ class _PageClientState extends State<PageClient> {
     );
   }
 
+  Future<void> _supprimer(Client c) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          'Supprimer ${c.nom} ?',
+          style: const TextStyle(fontSize: 22),
+        ),
+        content: const Text(
+          'Il ne sera plus dans la liste. Son historique reste gardé.',
+          style: TextStyle(fontSize: 18),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Non', style: TextStyle(fontSize: 18)),
+          ),
+          FilledButton(
+            key: const Key('confirmer-suppression'),
+            style: FilledButton.styleFrom(
+              backgroundColor: CouleursZp.argentSort,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Supprimer', style: TextStyle(fontSize: 18)),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    try {
+      await widget.etat.supprimerClient(c);
+      if (!mounted) return;
+      annoncer(context, '${c.nom} est supprimé.');
+      Navigator.of(context).pop();
+    } catch (e) {
+      if (mounted) annoncer(context, messageErreur(e), erreur: true);
+    }
+  }
+
   Future<void> _rappeler(Client c) async {
     final lien = widget.etat.lienRappel(c);
     if (lien == null) return;
@@ -553,25 +681,54 @@ class _PageClientState extends State<PageClient> {
                       minimumSize: const Size(0, 52),
                     ),
                   ),
-                  OutlinedButton.icon(
-                    key: const Key('bouton-modifier-client'),
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            PageFicheEdition(etat: widget.etat, existant: c),
+                  if (widget.etat.estPatron)
+                    OutlinedButton.icon(
+                      key: const Key('bouton-modifier-client'),
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              PageFicheEdition(etat: widget.etat, existant: c),
+                        ),
+                      ),
+                      icon: const Icon(Icons.edit_rounded),
+                      label: const Text(
+                        'Modifier',
+                        style: TextStyle(fontSize: 17),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(0, 52),
                       ),
                     ),
-                    icon: const Icon(Icons.edit_rounded),
-                    label: const Text(
-                      'Modifier',
-                      style: TextStyle(fontSize: 17),
+                  if (widget.etat.estPatron)
+                    OutlinedButton.icon(
+                      key: const Key('bouton-supprimer-client'),
+                      onPressed: () => _supprimer(c),
+                      icon: const Icon(Icons.delete_rounded),
+                      label: const Text(
+                        'Supprimer',
+                        style: TextStyle(fontSize: 17),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(0, 52),
+                        foregroundColor: CouleursZp.argentSort,
+                      ),
                     ),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(0, 52),
-                    ),
-                  ),
                 ],
               ),
+              if (c.quartier.isNotEmpty || c.email.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    [
+                      c.quartier,
+                      c.email,
+                    ].where((t) => t.isNotEmpty).join(' · '),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: CouleursZp.texteDoux,
+                    ),
+                  ),
+                ),
               if (c.solde > 0 && c.telephone.isEmpty)
                 const Padding(
                   padding: EdgeInsets.only(top: 6),

@@ -448,6 +448,8 @@ class JournalLocal implements ReglagesLocaux {
           'photo': d['photo'],
           'plafond': d['plafond'],
           'actif': (d['actif'] ?? true) == true ? 1 : 0,
+          'quartier': d['quartier'],
+          'email': d['email'],
         });
       case TypeOperation.remboursementCredit:
         await t.insert('mouvements_credit', {
@@ -520,10 +522,17 @@ class JournalLocal implements ReglagesLocaux {
     String? photo,
     required int plafond,
     bool actif = true,
+    String quartier = '',
+    String email = '',
     required String auteurId,
   }) async {
     if (nom.trim().isEmpty) {
       throw const ErreurZeroPerte('Écrivez le nom du client.');
+    }
+    final mail = email.trim();
+    if (mail.isNotEmpty &&
+        !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(mail)) {
+      throw const ErreurZeroPerte('Adresse e-mail incorrecte.');
     }
     if (plafond < 0) {
       throw const ErreurZeroPerte('Le plafond ne peut pas être négatif.');
@@ -541,6 +550,8 @@ class JournalLocal implements ReglagesLocaux {
           'photo': photo,
           'plafond': plafond,
           'actif': actif,
+          if (quartier.trim().isNotEmpty) 'quartier': quartier.trim(),
+          if (mail.isNotEmpty) 'email': mail,
         },
       ),
     );
@@ -555,6 +566,8 @@ class JournalLocal implements ReglagesLocaux {
     plafond: l['plafond'] as int,
     actif: (l['actif'] as int) == 1,
     solde: solde,
+    quartier: (l['quartier'] as String?) ?? '',
+    email: (l['email'] as String?) ?? '',
   );
 
   static const _derniereVersionClient =
@@ -1173,6 +1186,11 @@ class JournalLocal implements ReglagesLocaux {
         final c = await _clientActuel(t, clientId!);
         if (c == null || !c.actif) {
           throw const ErreurZeroPerte('Client introuvable.');
+        }
+        if (c.telephone.trim().isEmpty) {
+          throw ErreurZeroPerte(
+            'Ajoutez le téléphone de ${c.nom} pour lui faire crédit.',
+          );
         }
         final solde = await _solde(t, clientId);
         if (solde + total > c.plafond) {
@@ -1813,11 +1831,15 @@ class Client {
     required this.plafond,
     required this.actif,
     required this.solde,
+    this.quartier = '',
+    this.email = '',
   });
 
   final String id;
   final String nom;
   final String telephone;
+  final String quartier;
+  final String email;
 
   /// Photo JPEG en base64, ou nulle.
   final String? photo;
@@ -1831,6 +1853,9 @@ class Client {
 
   /// Ce qu'il peut encore prendre à crédit.
   int get disponible => plafond - solde < 0 ? 0 : plafond - solde;
+
+  /// Le crédit demande un numéro (pour le rappel WhatsApp).
+  bool get peutPrendreCredit => actif && telephone.trim().isNotEmpty;
 }
 
 /// Une ligne de l'historique du crédit d'un client.

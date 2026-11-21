@@ -16,7 +16,7 @@ void main() {
 
       await toucher(tester, find.byKey(const Key('bouton-espace-patron')));
       expect(find.textContaining('Code secret de Ama'), findsOneWidget);
-      await taperPin(tester, '4827');
+      await taperPin(tester, '482713');
       expect(find.byType(EspacePatron), findsOneWidget);
 
       await toucher(tester, find.byKey(const Key('patron-arrivages')));
@@ -56,17 +56,17 @@ void main() {
     await afficherApp(tester, env.etat);
     await toucher(tester, find.byKey(const Key('bouton-espace-patron')));
     for (var i = 0; i < 4; i++) {
-      await taperPin(tester, '1111');
+      await taperPin(tester, '111111');
     }
     expect(find.textContaining('Encore 1 essai'), findsOneWidget);
-    await taperPin(tester, '1111');
+    await taperPin(tester, '111111');
     expect(find.textContaining('Trop d\'erreurs'), findsOneWidget);
-    await taperPin(tester, '4827'); // bon code, mais bloqué
+    await taperPin(tester, '482713'); // bon code, mais bloqué
     expect(find.byType(EspacePatron), findsNothing);
 
     // 6 minutes plus tard : débloqué.
     env.etat.maintenant = () => DateTime.now().add(const Duration(minutes: 6));
-    await taperPin(tester, '4827');
+    await taperPin(tester, '482713');
     expect(find.byType(EspacePatron), findsOneWidget);
   });
 

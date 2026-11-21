@@ -10,7 +10,7 @@ import 'vente_test.dart' show boutiqueAvecStock, ouvrirLaCaisseSiDemande;
 
 Future<void> ouvrirEspacePatron(WidgetTester tester) async {
   await toucher(tester, find.byKey(const Key('bouton-espace-patron')));
-  await taperPin(tester, '4827');
+  await taperPin(tester, '482713');
   expect(find.byType(EspacePatron), findsOneWidget);
 }
 

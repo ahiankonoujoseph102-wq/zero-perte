@@ -19,6 +19,7 @@ import '../test/ecrans/demo_test.dart' show demo, cheminDemo;
 import 'package:zero_perte/app/etat_application.dart';
 
 import '../test/ecrans/credit_test.dart' show boutiqueAvecKofi, panierACredit;
+import '../test/ecrans/code_patron_test.dart' show ancienneBoutique;
 import '../test/support/outils.dart';
 
 Future<void> _chargerPolices() async {
@@ -293,6 +294,27 @@ void main() {
       await expectLater(
         find.byType(MaterialApp),
         matchesGoldenFile('captures/credit_fiche_${e.key}.png'),
+      );
+    });
+  }
+  for (final e in ecrans.entries) {
+    testWidgets('etape1 ${e.key}', (tester) async {
+      final env = await environnementDeTest(tester, preparer: ancienneBoutique);
+      await afficherApp(tester, env.etat, taille: e.value, densite: 2);
+      await taperPin(tester, '4827');
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('captures/code6_${e.key}.png'),
+      );
+      await taperPin(tester, '730518');
+      await taperPin(tester, '730518');
+      await attendre(tester, tours: 20);
+      await toucher(tester, find.byKey(const Key('bouton-credit')));
+      await attendre(tester, tours: 8);
+      await toucher(tester, find.byKey(const Key('bouton-nouveau-client')));
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('captures/client_nouveau_${e.key}.png'),
       );
     });
   }

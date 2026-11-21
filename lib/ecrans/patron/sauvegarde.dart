@@ -90,6 +90,7 @@ class _PageSauvegardeState extends State<PageSauvegarde> {
               key: ValueKey(_tour),
               titre: 'Code secret du patron',
               erreur: _erreur,
+              longueur: widget.etat.patron?.longueurCode ?? 6,
               onComplet: _codeSaisi,
             ),
           ),

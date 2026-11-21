@@ -277,12 +277,12 @@ Future<void> afficherApp(
   await attendre(tester);
 }
 
-/// Boutique installée : patron « Ama » (code 4827), riz (sac de 50 kg) et sucre.
+/// Boutique installée : patron « Ama » (code 482713), riz (sac de 50 kg) et sucre.
 Future<void> boutiqueInstallee(EtatApplication etat) async {
   await etat.enregistrerConfig(
     etat.config.copie(nom: 'Boutique Mama Ama', types: ['alimentation']),
   );
-  await etat.definirPatron(nom: 'Ama', pin: '4827');
+  await etat.definirPatron(nom: 'Ama', pin: '482713');
   final cat = etat.catalogue.produitsDe(['alimentation']);
   await etat.ajouterDuCatalogue(
     cat.where(

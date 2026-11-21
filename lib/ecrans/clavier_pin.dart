@@ -13,6 +13,7 @@ class SaisiePin extends StatefulWidget {
     required this.onComplet,
     this.erreur,
     this.couleur,
+    this.longueur = longueurPin,
   });
 
   final String titre;
@@ -22,6 +23,9 @@ class SaisiePin extends StatefulWidget {
   final String? erreur;
   final Color? couleur;
 
+  /// Nombre de chiffres (4 pour un vendeur, 6 pour le patron).
+  final int longueur;
+
   @override
   State<SaisiePin> createState() => _SaisiePinState();
 }
@@ -30,10 +34,10 @@ class _SaisiePinState extends State<SaisiePin> {
   String _pin = '';
 
   void _toucher(String chiffre) {
-    if (_pin.length >= longueurPin) return;
+    if (_pin.length >= widget.longueur) return;
     HapticFeedback.selectionClick();
     setState(() => _pin += chiffre);
-    if (_pin.length == longueurPin) {
+    if (_pin.length == widget.longueur) {
       final pin = _pin;
       Future.microtask(() {
         if (mounted) setState(() => _pin = '');
@@ -82,7 +86,7 @@ class _SaisiePinState extends State<SaisiePin> {
                   key: const Key('pin-points'),
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    for (var i = 0; i < longueurPin; i++)
+                    for (var i = 0; i < widget.longueur; i++)
                       Container(
                         margin: const EdgeInsets.symmetric(horizontal: 10),
                         width: 22,

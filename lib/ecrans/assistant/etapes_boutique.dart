@@ -1090,7 +1090,7 @@ class _EtapeCodePatronState extends State<EtapeCodePatron> {
 
   Future<void> _saisi(String pin) async {
     if (_premier == null) {
-      final probleme = problemePin(pin);
+      final probleme = problemePin(pin, longueur: longueurPinPatron);
       if (probleme != null) {
         setState(() => _erreur = probleme);
         await widget.etat.services.voix.dire(probleme);
@@ -1153,9 +1153,10 @@ class _EtapeCodePatronState extends State<EtapeCodePatron> {
             child: SaisiePin(
               key: ValueKey(_premier == null ? 'choisir' : 'confirmer'),
               titre: _premier == null
-                  ? 'Choisissez 4 chiffres'
+                  ? 'Choisissez 6 chiffres'
                   : 'Tapez encore le même code',
               erreur: _erreur,
+              longueur: longueurPinPatron,
               onComplet: _saisi,
             ),
           ),
