@@ -9,7 +9,7 @@
 | Synchronisation et sauvegarde | **Drive de chaque boutique** (dossier caché de l'application, autorisation `drive.appdata`) : **validé** |
 | Compte Google de la boutique | Créé **à l'installation** par le propriétaire ou ses agents, **avec le patron et SON numéro de téléphone** (procédure au §2.5) |
 | Alertes instantanées | **OUI**, pour les cas graves, via le relais Cloudflare gratuit + Firebase Cloud Messaging (§2.6) |
-| Hébergement des APK | **PAS de dépôt GitHub public.** Solution retenue : **Cloudflare Pages** (§2.2) |
+| Hébergement des APK | Dépôt devenu **public** (décision du propriétaire, étape A1) : **Releases GitHub**, lien fixe « dernière version » (§2.2). Cloudflare Pages abandonné. |
 | Licence | Paiement unique, **2 téléphones** (patron + 1 vendeur), mises à jour gratuites à vie, **téléphone supplémentaire vendu en option** (§2.1) |
 | SMS de secours | **OUI, en option, désactivé par défaut**, payé par la boutique |
 | Huawei sans services Google | **Non pris en charge en V1.** L'application le détecte et l'affiche clairement. |
@@ -26,7 +26,7 @@
 >
 > - **Coût pour le propriétaire : 0 F.** Le stockage appartient au compte de la boutique (15 Go gratuits). La consommation augmente avec le nombre de boutiques, mais elle est **répartie sur leurs comptes**, pas sur le nôtre.
 > - Ce même Drive sert de **sauvegarde** : un téléphone perdu se restaure en se connectant au compte.
-> - Le **code d'activation est signé** et vérifié sans Internet. Les **mises à jour** sont publiées sur **Cloudflare Pages** (gratuit, sans carte bancaire), à une adresse fixe, par GitHub Actions. Le dépôt de code reste privé.
+> - Le **code d'activation est signé** et vérifié sans Internet. Les **mises à jour** sont publiées dans les **Releases GitHub** du dépôt (public), à une adresse fixe, par GitHub Actions.
 > - **Relais Cloudflare gratuit** pour les **alertes graves instantanées** (notification « push »). Le petit volume de messages tient dans l'offre gratuite jusqu'à plusieurs milliers de boutiques.
 
 Il n'y a aucune base de données centrale à nous, aucune carte bancaire enregistrée, et donc **aucune facture possible**. Si un quota gratuit est dépassé, le service ralentit ou refuse les requêtes, mais rien n'est facturé.
@@ -178,7 +178,8 @@ Limites vérifiées : **100 000 requêtes/jour**, 10 ms de calcul par requête. 
 - Un **bouton dans GitHub** (tâche GitHub Actions lancée à la main depuis l'application GitHub du téléphone). Vous saisissez : nom de la boutique, adresse Gmail de la boutique, type (« licence » ou « +1 téléphone »).
 - Vous recevez **un lien et un QR code** à envoyer par WhatsApp.
 - La clé privée est dans les **secrets GitHub**, avec **une copie de secours hors ligne**. Ce n'est pas la même clé que celle qui signe l'APK.
-- Chaque code émis est noté automatiquement dans un **registre des clients** du dépôt privé : votre fichier clients.
+- Chaque code émis est noté automatiquement dans un **registre des clients**, rangé dans le dépôt **privé** `zero-perte-coffre` (jamais dans le dépôt public : il contient des noms et des adresses Gmail).
+- Le dépôt étant public, les **saisies du bouton** (nom de boutique, Gmail) ne doivent pas apparaître dans le journal public : elles seront **masquées**, et le code produit sera rangé dans le coffre privé au lieu d'être affiché (détails à l'étape B2).
 
 **Format :** une signature fait environ 100 caractères, ce qui est trop long à taper. Le code est donc transmis par **lien WhatsApp** (un toucher ouvre l'application et l'active) ou par **QR code**.
 
@@ -186,56 +187,47 @@ Limites vérifiées : **100 000 requêtes/jour**, 10 ms de calcul par requête. 
 
 > **Franchise :** une personne très compétente peut toujours modifier un APK pour contourner la vérification. Aucune protection sans serveur n'empêche cela. Pour vos clients, le risque est faible.
 
-### 2.2 Hébergement des mises à jour (sans dépôt public) — solution retenue : Cloudflare Pages
+### 2.2 Hébergement des mises à jour — solution retenue : Releases GitHub (dépôt public)
 
-**Besoin :**
-- un **lien fixe** pour l'APK et le fichier `version.json` ;
-- une **mise à jour automatique** depuis GitHub Actions (dépôt privé) ;
-- **gratuit**, **sans carte bancaire** si possible ;
-- des fichiers d'environ 10 Mo.
+*Mise à jour de l'étape A1 : le propriétaire a rendu le dépôt **public** (décision définitive). Cloudflare Pages est donc **abandonné** pour les APK. Cloudflare reste utilisé pour le relais d'alertes (§2.6).*
 
-**Comparaison (vérifiée en novembre 2026) :**
+**Pourquoi les Releases GitHub sont plus simples et plus fiables que Cloudflare Pages :**
 
-| Option | Taille max. d'un fichier | Bande passante gratuite | Carte bancaire | Mise à jour depuis GitHub Actions | Lien fixe | Verdict |
-|---|---|---|---|---|---|---|
-| **Cloudflare Pages** (envoi direct) | **25 Mio** | Fichiers statiques **illimités** (selon une source secondaire, à confirmer) | **Non** | Oui : commande `wrangler pages deploy` + clé d'accès Cloudflare dans les secrets GitHub | Oui : `https://<nom>.pages.dev/...` | ⭐ **Retenu** |
-| Cloudflare R2 (stockage) | Très grande | 10 Go stockés, sortie gratuite | **Contradictoire** : Cloudflare dit « sans carte », un guide dit qu'un moyen de paiement est demandé à la création | Oui | Oui | En réserve |
-| Google Drive du propriétaire | Très grande (avertissement antivirus au-delà d'environ 100 Mo seulement) | Quota de téléchargement **non publié** : un fichier très téléchargé peut être bloqué temporairement (« quota dépassé ») | Non | Possible, mais il faut garder dans GitHub une autorisation permanente de votre compte Google | Oui, si on remplace le fichier en gardant son identifiant | **Secours seulement** : quota flou, et Google peut bloquer le partage d'un APK |
-| Firebase App Distribution | — | — | Non | Oui | **Non** : il faut **inviter chaque testeur par e-mail** (500 maximum par projet) ; les versions sont **supprimées après 150 jours** | ❌ Fait pour les tests, pas pour des clients |
-| Firebase Hosting (offre Spark) | 2 Go | 10 Go/mois | Non | Oui | Oui | ❌ **Les fichiers .apk sont interdits** sur l'offre gratuite (vérifié) |
-| Netlify (offre gratuite) | Non vérifiée | 300 crédits/mois, soit environ **15 Go/mois** ; site coupé jusqu'au mois suivant si dépassé | Non | Oui | Oui | ❌ Trop juste : 2 000 boutiques × 2 téléphones × 10 Mo = 40 Go par mise à jour |
-| Dépôt GitHub privé (Releases) | 2 Go | — | Non | Oui | **Non** : téléchargement impossible sans être connecté à GitHub | ❌ |
-| Dépôt GitHub public | 2 Go | Large | Non | Oui | Oui | ❌ Refusé par le propriétaire |
-
-**Règle de l'APK universel (correction du chef de projet, étape A1) :**
-- La **première installation** se fait avec **un seul fichier APK envoyé par WhatsApp**, car le commerçant ne connaît pas le processeur de son téléphone. C'est l'**APK universel**, qui contient les versions 32 bits (`armeabi-v7a`) et 64 bits (`arm64-v8a`).
-- Les **APK par processeur** servent **seulement aux mises à jour automatiques**. L'application choisit elle-même le bon.
-- L'APK universel n'est **pas** publié sur Cloudflare Pages s'il dépasse 25 Mo. Il reste disponible pour WhatsApp, qui accepte de bien plus gros fichiers.
-- **Les trois APK ont le même numéro de version interne** (`versionCode`), grâce à `force-version-code-ignoring-abi=true` dans `android/gradle.properties`. Sans cela, un téléphone mis à jour par un APK par processeur refuserait ensuite un APK universel plus récent reçu par WhatsApp.
-- Les APK ne contiennent pas la version x86 (ordinateurs et émulateurs), qui n'existe pas sur les téléphones visés.
+| Critère | Releases GitHub (dépôt public) ⭐ | Cloudflare Pages |
+|---|---|---|
+| Taille max. d'un fichier | **2 Gio** : l'APK universel passe sans souci | 25 Mio |
+| Lien fixe vers la dernière version | Oui : `…/releases/latest/download/<fichier>` | Oui |
+| Compte et clé d'accès en plus | **Aucun** : GitHub Actions publie avec son jeton automatique | Compte Cloudflare + clé d'accès dans les secrets |
+| Coût, carte bancaire | 0 F, aucune carte | 0 F, aucune carte |
+| Historique des versions | Oui : chaque version garde sa page, ses fichiers et ses notes | Non (écrasé) |
+| Téléchargement sur téléphone | Direct, **sans compte GitHub** (dépôt public) | Direct |
 
 **Fonctionnement retenu :**
-1. GitHub Actions (dépôt privé) fabrique l'APK universel **et** les APK signés **découpés par type de processeur** :
-   - `arm64-v8a` pour les téléphones récents ;
-   - `armeabi-v7a` pour les vieux ou très bas de gamme.
-   
-   Chacun fait environ 8 à 12 Mo, **bien sous la limite de 25 Mio**. Un APK « universel » (environ 20 à 25 Mo) frôlerait la limite : on ne le publie pas.
-2. La même tâche publie sur Cloudflare Pages :
-   - `zeroperte-maj.pages.dev/apk/zeroperte-arm64.apk` (le nom est à choisir) ;
-   - `zeroperte-maj.pages.dev/apk/zeroperte-armv7.apk` ;
-   - `zeroperte-maj.pages.dev/version.json` : numéro de version, nouveautés en français simple, empreinte de chaque APK et **liste noire de licences**. Ce fichier est **signé avec la clé de licence** : si quelqu'un piratait le compte Cloudflare, il ne pourrait ni fabriquer une fausse liste ni pointer vers un faux APK.
-   - `zeroperte-maj.pages.dev/catalogues/*.json` : les catalogues de produits (voir `categories.md`).
-3. L'application lit `version.json` à chaque ouverture avec du réseau, **télécharge le bon APK pour son processeur**, vérifie son empreinte, puis propose « Installer ».
-4. Android n'accepte la mise à jour que si l'APK est **signé avec la même clé** : double protection.
-5. **Première installation** : l'APK est toujours **envoyé par WhatsApp** avec la vidéo. Le lien Cloudflare peut aussi être donné.
+1. À chaque modification de `main`, GitHub Actions fabrique, avec des **noms de fichiers fixes** :
+   - `ZeroPerte.apk` : **APK universel** (32 + 64 bits), pour la **première installation par WhatsApp** ;
+   - `ZeroPerte-arm64.apk` et `ZeroPerte-armv7.apk` : **APK par processeur**, plus légers, pour les **mises à jour automatiques** (moins de données Internet consommées) ;
+   - `version.json` : numéro de version, `versionCode`, canal (officiel ou essai), taille et **empreinte SHA-256** de chaque APK.
+2. Il publie une **Release** :
+   - **version officielle** (signée avec la clé officielle) : marquée « dernière version » ;
+   - **version d'essai** : marquée « pré-version ». Le lien « dernière version » ne la sert **jamais** aux clients.
+3. **Liens fixes** (ils ne changent jamais) :
+   - `https://github.com/ahiankonoujoseph102-wq/zero-perte/releases/latest/download/ZeroPerte.apk` : lien à donner aux commerçants ;
+   - `https://github.com/ahiankonoujoseph102-wq/zero-perte/releases/latest/download/version.json` : lu par l'application ;
+   - idem pour `ZeroPerte-arm64.apk` et `ZeroPerte-armv7.apk`.
+4. L'application (étape A3) lit `version.json`, télécharge l'APK de **son** processeur, vérifie l'empreinte, puis propose « Installer ». Android exige en plus la **même clé de signature**.
 
-**Limites honnêtes de Cloudflare Pages :**
-- **25 Mio par fichier** : on surveille la taille de l'APK à chaque fabrication, et GitHub Actions échoue volontairement si un APK dépasse 22 Mo.
-- **500 déploiements par mois** et **20 000 fichiers** par site : largement suffisant.
-- Les fichiers sont **accessibles à quiconque connaît le lien**. Ce n'est pas grave, car l'APK ne marche pas sans code d'activation et le code reste privé. On ajoute une consigne pour que les moteurs de recherche n'indexent pas le site.
-- La « bande passante illimitée » n'est confirmée que par une source secondaire, et Cloudflare peut changer son offre. Si c'était le cas, le **plan B** est Google Drive du propriétaire, et l'application connaît une **adresse de secours** inscrite dans `version.json`.
-- Cloudflare fait évoluer Pages vers les « Workers static assets », qui ont la même limite de 25 Mio par fichier et sont aussi gratuits. La migration serait simple si nécessaire.
-- **Même compte Cloudflare** que le relais d'alertes (§2.6) : **un seul compte à protéger**, avec une double authentification sur votre téléphone.
+**Règle de l'APK universel (correction du chef de projet) :**
+- La **première installation** se fait avec **un seul fichier**, `ZeroPerte.apk`, envoyé par WhatsApp, car le commerçant ne connaît pas le processeur de son téléphone. Il contient les versions 32 bits (`armeabi-v7a`) et 64 bits (`arm64-v8a`).
+- Les **APK par processeur** servent **seulement aux mises à jour automatiques**. L'application choisit le bon.
+- **Les trois APK ont le même `versionCode`**, grâce à `force-version-code-ignoring-abi=true` dans `android/gradle.properties`. Sans cela, un téléphone mis à jour par un APK par processeur refuserait ensuite un APK universel plus récent reçu par WhatsApp. Le workflow vérifie cette égalité et échoue sinon.
+- Pas de version x86 (ordinateurs et émulateurs) : elle n'existe pas sur les téléphones visés.
+
+**Limites honnêtes :**
+- GitHub ne publie pas de limite de bande passante pour les Releases. Il s'agit d'un usage « raisonnable », largement suffisant pour des APK d'environ 10 à 20 Mo.
+- On **dépend de GitHub** : si le compte était suspendu, plus de mise à jour. Le **plan B** est déjà connu : Cloudflare Pages (APK par processeur, moins de 25 Mo) ou le Google Drive du propriétaire. L'application aura une **adresse de secours** dans sa configuration.
+- `version.json` n'est **pas encore signé** à l'étape A1. Sa signature (clé de licence) et la **liste noire** arrivent à l'étape E1. Les APK, eux, sont déjà protégés par leur signature Android.
+- **Tout le monde peut télécharger l'APK** : ce n'est pas un problème, car il ne fonctionnera pas sans code d'activation (étape B2).
+- Le code étant public, **la protection repose sur les secrets**, jamais sur le secret du code : clé de signature et clé privée des licences restent dans les secrets GitHub, jamais dans le dépôt.
 
 ### 2.3 Restauration après perte du téléphone
 
@@ -372,7 +364,7 @@ Limites vérifiées : **100 000 requêtes/jour**, 10 ms de calcul par requête. 
 
 - **Nom de domaine** : environ 6 000 F par an, seulement si Google refuse l'adresse gratuite pour la vérification de l'écran de consentement. La page de confidentialité peut aussi être hébergée sur **Cloudflare Pages** (`*.pages.dev`) : même question à vérifier à l'étape A6.
 - **Play Store** : 25 $ une seule fois, si un jour vous publiez sur le Play Store (pas prévu en V1).
-- **GitHub Actions** pour le dépôt privé : 2 000 minutes gratuites par mois, soit environ 200 fabrications d'APK. Largement suffisant.
+- **GitHub Actions** : **gratuit et sans limite de minutes** pour un dépôt public (sur le dépôt privé, les fabrications ne démarraient pas, probablement faute de minutes gratuites).
 
 ---
 
@@ -424,7 +416,7 @@ Limites vérifiées : **100 000 requêtes/jour**, 10 ms de calcul par requête. 
 
 - La **liste des types de boutiques et des unités** est dans **`docs/categories.md`**.
 - Un **fichier par type de boutique** : produits, noms courants (y compris les noms locaux), unités et conversions, catégorie et image.
-- Une copie est **intégrée à l'APK** (fonctionne sans Internet). Une version à jour est publiée sur **Cloudflare Pages** (§2.2) : on peut enrichir les catalogues **sans nouvel APK**.
+- Une copie est **intégrée à l'APK** (fonctionne sans Internet). Une version à jour est publiée dans les **Releases GitHub** (§2.2) : on peut enrichir les catalogues **sans nouvel APK**.
 - **Images** : illustrations simples et libres de droits, ou photos prises par votre équipe dans de vraies boutiques. On évite les logos de marques. Le patron peut remplacer chaque image par **sa propre photo**.
 - **Prix** : **non préremplis**, car ils varient trop selon la ville et le quartier. C'est le patron qui les fixe.
 
@@ -445,8 +437,9 @@ Limites vérifiées : **100 000 requêtes/jour**, 10 ms de calcul par requête. 
            └──────────▶ relais Cloudflare Worker (gratuit) ──▶ Firebase Cloud Messaging (gratuit) ┘ instantanée
            (option, désactivée par défaut) SMS de secours sans Internet, payé par la boutique ──────▶ patron
 
- Dépôt GitHub PRIVÉ (code) ──GitHub Actions──▶ Cloudflare Pages : APK arm64 + armv7, version.json signé,
-                                               catalogues, liste noire (lien fixe, 0 F, sans carte bancaire)
+ Dépôt GitHub PUBLIC (code) ──GitHub Actions──▶ Releases GitHub : ZeroPerte.apk (universel), APK arm64 + armv7,
+                                                version.json, catalogues (lien fixe latest/download, 0 F)
+ Clé de signature : secrets GitHub uniquement (+ copie chiffrée dans le dépôt PRIVÉ zero-perte-coffre)
 ```
 
 ---
@@ -463,7 +456,8 @@ Limites vérifiées : **100 000 requêtes/jour**, 10 ms de calcul par requête. 
 - Firebase, offre gratuite : [Firebase pricing](https://firebase.google.com/pricing), [Realtime Database limits](https://firebase.google.com/docs/database/usage/limits)
 - Firebase Hosting (APK interdits sur Spark, fichiers de 2 Go max., 10 Go/mois) : [Hosting FAQ](https://firebase.google.com/docs/hosting/faq-and-troubleshooting)
 - Firebase App Distribution (500 testeurs, 150 jours) : [Troubleshooting](https://firebase.google.com/docs/app-distribution/troubleshooting)
-- Cloudflare Pages (25 Mio par fichier, 20 000 fichiers, 500 déploiements/mois) : [Pages limits](https://developers.cloudflare.com/pages/platform/limits) ; bande passante et usage commercial selon une source secondaire : [temps.sh](https://temps.sh/blog/cloudflare-pages-free-tier-limits-2026)
+- Releases GitHub (2 Gio par fichier, lien `latest/download`) : [About releases](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases), [Linking to releases](https://docs.github.com/en/repositories/releasing-projects-on-github/linking-to-releases)
+- Cloudflare Pages, abandonné pour les APK (25 Mio par fichier, 20 000 fichiers, 500 déploiements/mois) : [Pages limits](https://developers.cloudflare.com/pages/platform/limits) ; bande passante et usage commercial selon une source secondaire : [temps.sh](https://temps.sh/blog/cloudflare-pages-free-tier-limits-2026)
 - Cloudflare R2 (carte bancaire : informations contradictoires) : [R2](https://www.cloudflare.com/developer-platform/products/r2/), [R2 pricing](https://developers.cloudflare.com/r2/pricing)
 - Netlify (crédits, environ 15 Go/mois) : [Credit-based pricing](https://docs.netlify.com/manage/accounts-and-billing/billing/billing-for-credit-based-plans/credit-based-pricing-plans/)
 - Supabase, offre gratuite : [Pricing](https://supabase.com/pricing), [Project pausing](https://supabase.com/docs/guides/platform/free-project-pausing), [Egress](https://www.supabase.com/docs/guides/platform/manage-your-usage/egress)

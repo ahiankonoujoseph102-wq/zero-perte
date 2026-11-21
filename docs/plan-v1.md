@@ -4,7 +4,7 @@
 
 **Ordre décidé :** A (fondations) → B (boutique sur un seul téléphone) → C1 (crédit client) → D (patron à distance) → C2 à C4 (inventaires, crédit fournisseur) → E (mise en service).
 
-**Architecture :** le Drive Google de chaque boutique + un relais Cloudflare gratuit pour les alertes graves + Cloudflare Pages pour les mises à jour. Le détail est dans `decision-serveur.md`.
+**Architecture :** le Drive Google de chaque boutique + un relais Cloudflare gratuit pour les alertes graves + **Releases GitHub** pour les mises à jour (dépôt public depuis l'étape A1). Le détail est dans `decision-serveur.md`.
 
 **Coût pour le propriétaire : 0 F.**
 
@@ -16,19 +16,19 @@
 
 | # | Étape | Résultat visible |
 |---|---|---|
-| A1 | Projet Flutter + GitHub Actions qui fabrique un **APK signé, découpé par processeur** (arm64 et armv7), avec un **contrôle de taille** : la fabrication échoue au-delà de 22 Mo. Création de la **clé de signature** et de sa **copie de secours**. | Une application « Zéro Perte » s'installe |
-| A2 | **Compte Cloudflare** (sans carte bancaire, double authentification) + projet **Cloudflare Pages** ; GitHub Actions y publie les APK et un `version.json` **signé** | Un lien fixe « dernière version » |
+| A1 | Projet Flutter + GitHub Actions qui fabrique l'**APK universel** (32 + 64 bits, pour WhatsApp) **et** les **APK par processeur** (mises à jour), tous avec le **même versionCode**, et les publie dans une **Release GitHub** (lien fixe `latest/download`). Création de la **clé de signature**, stockée **uniquement dans les secrets GitHub**, avec une copie de secours chiffrée dans le dépôt **privé** `zero-perte-coffre`. | Une application « Zéro Perte » s'installe ✅ |
+| A2 | ~~Cloudflare Pages~~ → **remplacé par les Releases GitHub, déjà fait en A1**. Reste : décrire dans `version.json` les nouveautés en français simple | `version.json` complet |
 | A3 | **Mise à jour intégrée** : l'application lit `version.json`, télécharge l'APK de son processeur, vérifie l'empreinte, puis affiche « Installer » | Mise à jour en un geste |
 | A4 | Base locale « on ajoute, on ne modifie jamais » : montants entiers, identifiants uniques, **numéro de suite par téléphone**, **chaîne d'empreintes**, heure du téléphone + contrôle de l'horloge | Tests automatiques |
 | A5 | Style visuel : gros boutons, vert = entre, rouge = sort, chiffres géants, `12 500 F`, **thème de couleur variable** | Écran d'accueil de démonstration |
-| A6 | **Démarches (sans code, à lancer tôt)** : projet Google Cloud **sans facturation**, écran de consentement, page de confidentialité (Cloudflare Pages), demande de vérification simple ; projet Firebase (offre gratuite) pour les notifications | Dossier Google en cours de validation |
+| A6 | **Démarches (sans code, à lancer tôt)** : projet Google Cloud **sans facturation**, écran de consentement, page de confidentialité (**GitHub Pages**, gratuit pour un dépôt public), demande de vérification simple ; projet Firebase (offre gratuite) pour les notifications ; **compte Cloudflare** (relais d'alertes, étape D8) | Dossier Google en cours de validation |
 
 ## Bloc B — Boutique sur un seul téléphone (hors ligne)
 
 | # | Étape |
 |---|---|
 | B1 | **Assistant d'installation, partie 1** (`decision-serveur.md` §4.0, étapes 1, 5, 6 à 12) : vérification du téléphone (**refus clair si pas de services Google**), voix, bouton « J'ai besoin d'aide », reprise après interruption |
-| B2 | **Code d'activation signé** : vérification hors ligne, activation par lien WhatsApp ou QR code, **licence 2 téléphones** ; bouton GitHub « Générer un code » (licence ou **+1 téléphone**) + registre des clients |
+| B2 | **Code d'activation signé** : vérification hors ligne, activation par lien WhatsApp ou QR code, **licence 2 téléphones** ; bouton GitHub « Générer un code » (licence ou **+1 téléphone**), saisies masquées dans le journal public ; code et **registre des clients rangés dans le coffre privé** |
 | B3 | **Personnalisation** : type de boutique, nom, logo, téléphone, adresse, couleur, en-tête du reçu, PIN du patron, **raccourci d'écran d'accueil** au nom de la boutique |
 | B4 | **Catalogues préremplis** selon `categories.md` : sélection « Je vends ça », prix, unités et conditionnements, **ouverture d'un sac ou d'un carton**, **vente au montant** (« donne pour 100 F »), **emballages consignés** (casiers, bouteilles, gaz) |
 | B5 | **Arrivages** (patron seulement) : entrée de stock, prix d'achat |
@@ -80,7 +80,7 @@
 | # | Étape |
 |---|---|
 | E1 | **Liste noire de licences** dans `version.json` signé ; **codes d'extension « +1 téléphone »** |
-| E2 | **Catalogues mis à jour à distance** depuis Cloudflare Pages, sans nouvel APK |
+| E2 | **Catalogues mis à jour à distance** depuis les Releases GitHub, sans nouvel APK |
 | E3 | **Kit d'installation** : vidéo (installer l'APK, créer le compte, utiliser l'application), **fiche d'installation** et **enveloppe du patron** imprimables, procédure de création du compte (§2.5) pour les agents |
 | E4 | Déploiement chez les plus de 20 clients, puis diffusion large |
 
@@ -89,6 +89,13 @@
 Voix en éwé, mina et kabiyè ; code-barres ; impression Bluetooth ; plusieurs boutiques par patron ; Play Store ; catégories « services » avancées (restauration avec stock d'ingrédients, pharmacie avec lots et dates de péremption).
 
 ---
+
+## Ce qui a changé à l'étape A1 (dépôt devenu public)
+
+- **Hébergement des APK** : **Releases GitHub** (lien fixe `latest/download`, 2 Gio par fichier) au lieu de Cloudflare Pages. Plus de compte ni de clé d'accès supplémentaires. Cloudflare reste prévu pour le **relais d'alertes** (D8).
+- **Clé de signature** : uniquement dans les **secrets GitHub**, jamais dans le dépôt, même chiffrée. La copie de secours est dans le dépôt **privé** `zero-perte-coffre`, puis dans le Google Drive du propriétaire.
+- **Registre des clients et codes d'activation** : dans le **coffre privé**, jamais dans le dépôt public.
+- **APK universel** (`ZeroPerte.apk`) pour WhatsApp ; APK par processeur pour les mises à jour ; même `versionCode` pour les trois.
 
 ## Ce qui a changé depuis la mission 2
 
