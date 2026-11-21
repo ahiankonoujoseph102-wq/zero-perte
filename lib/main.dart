@@ -1,114 +1,144 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:path/path.dart' as chemins;
+import 'package:sqflite/sqflite.dart';
+
+import 'donnees/journal_local.dart';
+import 'ecrans/accueil_vendeur.dart';
+import 'theme/couleurs.dart';
+import 'theme/theme_zp.dart';
 
 /// Canal de fabrication, fixé par GitHub Actions avec
 /// `--dart-define=ZP_CANAL=officiel` quand l'APK est signé avec la clé officielle.
 /// Toute autre valeur (ou aucune) signifie : version d'essai, à ne pas distribuer.
-const String canalFabrication =
-    String.fromEnvironment('ZP_CANAL', defaultValue: 'essai');
+const String canalFabrication = String.fromEnvironment(
+  'ZP_CANAL',
+  defaultValue: 'essai',
+);
 
 bool get estVersionOfficielle => canalFabrication == 'officiel';
 
-/// Couleurs fixes de Zéro Perte. Le vert et le rouge sont réservés à
-/// l'argent qui entre et à l'argent qui sort : ils ne servent à rien d'autre.
-class CouleursZp {
-  static const Color marque = Color(0xFF0B5D3B);
-  static const Color argentEntre = Color(0xFF1B8A3C);
-  static const Color argentSort = Color(0xFFC62828);
-  static const Color fond = Color(0xFFF7F7F2);
-  static const Color texte = Color(0xFF1A1A1A);
-}
-
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const ZeroPerteApp());
+  runApp(ZeroPerteApp(journal: ouvrirJournalDuTelephone()));
+}
+
+/// Ouvre (ou crée) la base locale du téléphone.
+Future<JournalLocal> ouvrirJournalDuTelephone() async {
+  final dossier = await getDatabasesPath();
+  return JournalLocal.ouvrir(
+    fabrique: databaseFactory,
+    chemin: chemins.join(dossier, 'zero_perte.db'),
+  );
 }
 
 class ZeroPerteApp extends StatelessWidget {
-  const ZeroPerteApp({super.key, this.infosPaquet});
+  const ZeroPerteApp({
+    super.key,
+    this.infosPaquet,
+    this.journal,
+    this.maintenant,
+  });
 
-  /// Permet aux tests de fournir les informations de version.
+  /// Permettent aux tests de fournir la version, la base et la date.
   final Future<PackageInfo>? infosPaquet;
+  final Future<JournalLocal>? journal;
+  final DateTime? maintenant;
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Zéro Perte',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: CouleursZp.marque),
-        scaffoldBackgroundColor: CouleursZp.fond,
-        useMaterial3: true,
+      theme: themeZeroPerte(),
+      builder: (context, enfant) {
+        final contenu = enfant ?? const SizedBox.shrink();
+        if (estVersionOfficielle) return contenu;
+        // Le bandeau occupe déjà la zone de la barre d'état : on ne la compte pas deux fois.
+        return Column(
+          children: [
+            const BandeauEssai(),
+            Expanded(
+              child: MediaQuery.removePadding(
+                context: context,
+                removeTop: true,
+                child: contenu,
+              ),
+            ),
+          ],
+        );
+      },
+      home: AccueilVendeur(
+        nomBoutique: 'Ma boutique',
+        nomVendeur: 'Vendeur',
+        maintenant: maintenant,
+        pied: PiedDePage(
+          infosPaquet: infosPaquet ?? PackageInfo.fromPlatform(),
+          journal: journal,
+        ),
       ),
-      home: EcranAccueil(infosPaquet: infosPaquet ?? PackageInfo.fromPlatform()),
     );
   }
 }
 
-class EcranAccueil extends StatelessWidget {
-  const EcranAccueil({super.key, required this.infosPaquet});
+/// Ligne du bas : version de l'application et état de la base locale.
+class PiedDePage extends StatelessWidget {
+  const PiedDePage({super.key, required this.infosPaquet, this.journal});
 
   final Future<PackageInfo> infosPaquet;
+  final Future<JournalLocal>? journal;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            if (!estVersionOfficielle) const BandeauEssai(),
-            Expanded(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const LogoZp(),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'Zéro Perte',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 44,
-                          fontWeight: FontWeight.w800,
-                          color: CouleursZp.marque,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Votre boutique, sans perte.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 20, color: CouleursZp.texte),
-                      ),
-                      const SizedBox(height: 40),
-                      FutureBuilder<PackageInfo>(
-                        future: infosPaquet,
-                        builder: (context, instantane) {
-                          final infos = instantane.data;
-                          final texte = infos == null
-                              ? 'Version …'
-                              : 'Version ${infos.version} (${infos.buildNumber})';
-                          return Text(
-                            texte,
-                            key: const Key('texte-version'),
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w600,
-                              color: CouleursZp.texte,
-                            ),
-                          );
-                        },
-                      ),
-                    ],
+    const style = TextStyle(fontSize: 14, color: CouleursZp.texteDoux);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        if (journal != null)
+          FutureBuilder<JournalLocal>(
+            future: journal,
+            builder: (context, etat) {
+              final pret = etat.hasData;
+              final erreur = etat.hasError;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Icon(
+                  Icons.circle,
+                  size: 10,
+                  key: Key(
+                    erreur
+                        ? 'base-erreur'
+                        : (pret ? 'base-prete' : 'base-ouverture'),
                   ),
+                  color: erreur
+                      ? CouleursZp.argentSort
+                      : (pret ? CouleursZp.argentEntre : CouleursZp.ligne),
+                  semanticLabel: erreur
+                      ? 'Base de données en erreur'
+                      : 'Base de données prête',
                 ),
+              );
+            },
+          ),
+        FutureBuilder<PackageInfo>(
+          future: infosPaquet,
+          builder: (context, instantane) {
+            final infos = instantane.data;
+            final texte = infos == null
+                ? 'Zéro Perte'
+                : 'Zéro Perte · version ${infos.version} (${infos.buildNumber})';
+            return Flexible(
+              child: Text(
+                texte,
+                key: const Key('texte-version'),
+                style: style,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
-          ],
+            );
+          },
         ),
-      ),
+      ],
     );
   }
 }
@@ -119,43 +149,23 @@ class BandeauEssai extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
+    return Material(
       color: CouleursZp.argentSort,
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-      child: const Text(
-        'VERSION D\'ESSAI — NE PAS DONNER AUX CLIENTS',
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 16,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
-/// Logo provisoire : un cercle aux couleurs de la marque avec « ZP ».
-class LogoZp extends StatelessWidget {
-  const LogoZp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 120,
-      height: 120,
-      decoration: const BoxDecoration(
-        color: CouleursZp.marque,
-        shape: BoxShape.circle,
-      ),
-      alignment: Alignment.center,
-      child: const Text(
-        'ZP',
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 48,
-          fontWeight: FontWeight.w800,
+      child: SafeArea(
+        bottom: false,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+          child: const Text(
+            'ESSAI — NE PAS DONNER AUX CLIENTS',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              fontFamily: policeZp,
+            ),
+          ),
         ),
       ),
     );
