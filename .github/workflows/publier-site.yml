@@ -1,0 +1,53 @@
+name: "5 - Publier le site (pages publiques)"
+
+# Met en ligne, avec GitHub Pages, les 3 pages publiques demandées par Google
+# (accueil, politique de confidentialité, conditions d'utilisation).
+# Seul le dossier docs/site/ est publié : rien d'autre du dépôt.
+# Ne touche pas à la fabrication de l'application (docs/** est ignoré par
+# l'action « 2 - Fabriquer l'APK »).
+#
+# Une seule fois avant : Settings → Pages → Build and deployment → Source :
+# « GitHub Actions » (voir docs/etapes-proprietaire.md, partie G).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/site/**"
+      - ".github/workflows/publier-site.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: publier-site
+  cancel-in-progress: false
+
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deploiement.outputs.page_url }}
+    steps:
+      - name: Récupérer les pages
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: docs/site
+
+      - name: Préparer GitHub Pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+
+      - name: Emballer docs/site
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: docs/site
+
+      - name: Mettre en ligne
+        id: deploiement
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

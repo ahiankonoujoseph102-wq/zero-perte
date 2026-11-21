@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Politique de confidentialité — Zéro Perte</title>
+  <meta name="description" content="Ce que l'application Zéro Perte enregistre, où, et ce qui passe par Google Drive, le relais d'alertes et les notifications.">
+  <meta name="theme-color" content="#0b1730">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="haut">
+  <div class="dedans">
+    <a class="marque" href="index.html"><span class="logo" aria-hidden="true">ZP</span>Zéro Perte</a>
+    <nav aria-label="Pages">
+      <a href="index.html">Accueil</a>
+      <a href="confidentialite.html" aria-current="page">Confidentialité</a>
+      <a href="conditions.html">Conditions d'utilisation</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <h1>Politique de confidentialité</h1>
+  <p class="date">Dernière mise à jour : 21 novembre 2026 — application Zéro Perte, version 0.28 et suivantes.</p>
+
+  <div class="encadre">
+    <strong>En bref :</strong> les données de votre boutique sont enregistrées sur vos appareils et, si vous le choisissez, dans le dossier caché de l'application dans le Google Drive de <em>votre</em> boutique. Zéro Perte ne lit aucun autre fichier de votre Drive. Nous n'avons pas de serveur qui garde vos ventes. Pas de publicité, pas de statistiques d'utilisation, pas de revente de données.
+  </div>
+
+  <h2>1. Qui sommes-nous ?</h2>
+  <p>Zéro Perte est une application de gestion pour les boutiques, éditée au Togo. Pour toute question sur vos données :</p>
+  <ul class="contacts">
+  <li>WhatsApp : <a href="https://wa.me/22872240231">+228 72 24 02 31</a></li>
+  <li>WhatsApp : <a href="https://wa.me/22879162390">+228 79 16 23 90</a></li>
+  <li>E-mail : <a href="mailto:ahiankonoujoseph102@gmail.com">ahiankonoujoseph102@gmail.com</a></li>
+</ul>
+  <p>La boutique qui utilise Zéro Perte reste responsable des informations qu'elle enregistre sur ses propres clients (nom, téléphone, dettes) ; Zéro Perte est l'outil qui les garde pour elle.</p>
+
+  <h2>2. Ce que l'application enregistre</h2>
+  <p>Ce que la boutique tape ou photographie dans l'application :</p>
+  <ul>
+    <li>la boutique : nom, téléphone, ville, quartier, repère, couleur, logo ou photo ;</li>
+    <li>les produits, prix, arrivages, stock, pertes et inventaires ;</li>
+    <li>les ventes, devis, retours, annulations (avec leur motif), dépenses, fonds et fermetures de caisse ;</li>
+    <li>les clients (si la boutique les ajoute) : nom, téléphone, quartier, e-mail et photo facultatifs, crédit et remboursements ;</li>
+    <li>les fournisseurs : nom, téléphone facultatif, achats à crédit et paiements ;</li>
+    <li>les personnes qui utilisent l'application (patron, vendeurs) : prénom et rôle. Les codes secrets ne sont <strong>jamais</strong> gardés en clair : seule une empreinte (calcul à sens unique) est enregistrée.</li>
+  </ul>
+  <p>Chaque opération garde aussi l'heure, l'appareil et la personne qui l'a faite. Rien n'est jamais effacé de cet historique : une erreur se corrige par une nouvelle opération (annulation, retour).</p>
+
+  <h2>3. Où ces données sont gardées</h2>
+  <h3>Sur vos appareils</h3>
+  <p>Dans la mémoire de l'application, sur le téléphone, la tablette ou le PC de la boutique. L'application fonctionne sans Internet.</p>
+
+  <h3>Dans le Google Drive de la boutique (si le patron le connecte)</h3>
+  <ul>
+    <li>Pour que les appareils de la boutique s'échangent les ventes, chaque appareil dépose une copie de ses opérations dans le <strong>dossier caché de l'application</strong> du Google Drive de la boutique.</li>
+    <li>Zéro Perte demande une seule autorisation Google Drive : <code>drive.appdata</code>. Elle ne donne accès <strong>qu'à ce dossier caché</strong>. L'application ne peut ni voir, ni lire, ni modifier aucun autre fichier de votre Drive (photos, documents…). Ces fichiers n'apparaissent pas dans la liste de vos fichiers Drive.</li>
+    <li>On y trouve : les opérations de la boutique (tout ce qui est décrit au point 2), un fichier par appareil (lettre des reçus, prénom de la personne) et un petit fichier de la boutique (son identifiant et le jeton secret du relais d'alertes, voir point 5).</li>
+    <li>L'application lit l'adresse e-mail du compte Google connecté, pour vous l'afficher (« connecté à … ») ; cette adresse reste sur l'appareil.</li>
+    <li>Les échanges avec Google se font en connexion chiffrée (HTTPS). Les fichiers du Drive sont protégés par le compte Google de la boutique ; Zéro Perte ne les chiffre pas en plus. Gardez ce compte avec un bon mot de passe.</li>
+  </ul>
+
+  <h3>Nous n'avons pas de serveur qui garde vos ventes</h3>
+  <p>Ni vos ventes, ni votre stock, ni vos clients ne sont envoyés chez nous. Nous ne pouvons pas les lire.</p>
+
+  <h2>4. Notifications (Firebase, de Google)</h2>
+  <p>Seulement sur le téléphone du <strong>patron</strong>, et seulement s'il accepte les notifications : le téléphone s'inscrit au canal de sa boutique auprès de Firebase Cloud Messaging (service de Google), pour recevoir les alertes même quand l'application est fermée.</p>
+  <ul>
+    <li>Ce qui passe : le titre « Zéro Perte : alerte » et le texte de l'alerte (voir point 5). Le nom du canal est fait à partir d'une empreinte du jeton secret de la boutique : il ne contient ni le nom de la boutique, ni le téléphone.</li>
+    <li>Pour délivrer les notifications, Firebase attribue au téléphone un identifiant technique, géré par Google selon ses propres règles.</li>
+    <li>Nous ne gardons pas les notifications. Zéro Perte n'utilise pas Firebase Analytics ni aucun outil de mesure d'audience.</li>
+  </ul>
+
+  <h2>5. Relais d'alertes graves (Cloudflare)</h2>
+  <p>Pour prévenir le patron dans la minute, un appareil de la boutique peut déposer une <strong>alerte grave</strong> sur un petit relais hébergé chez Cloudflare. Il n'y a que quatre sortes d'alertes :</p>
+  <ul>
+    <li>caisse fermée avec 1 000 F ou plus de manque ;</li>
+    <li>vente de 5 000 F ou plus annulée ;</li>
+    <li>retour fait par un vendeur ;</li>
+    <li>5 codes faux de suite.</li>
+  </ul>
+  <div class="tableau">
+  <table>
+    <tr><th>Ce qui est envoyé</th><th>Exemple</th></tr>
+    <tr><td>le type d'alerte</td><td><code>ecart</code>, <code>annulation</code>, <code>retour</code>, <code>code</code></td></tr>
+    <tr><td>un court message (300 caractères au plus)</td><td>« Caisse fermée par Kossi : il manque 2 000 F » — il contient le prénom de la personne, le n° de reçu, le montant et le motif écrit</td></tr>
+    <tr><td>la lettre de l'appareil</td><td>« A », « B »</td></tr>
+    <tr><td>l'heure</td><td>heure de réception</td></tr>
+  </table>
+  </div>
+  <ul>
+    <li>Aucune vente, aucun stock, aucun client n'y passe.</li>
+    <li>La boutique y est désignée seulement par l'empreinte de son jeton secret (le jeton lui-même est rangé dans le Google Drive de la boutique). Sans ce jeton, personne ne peut lire ni écrire les alertes d'une boutique.</li>
+    <li><strong>Chaque alerte est effacée automatiquement au bout de 7 jours.</strong> Un compteur anti-abus (60 alertes par heure au plus) est effacé au bout de 2 heures.</li>
+    <li>Sans réseau, l'alerte attend sur l'appareil et part dès que le réseau revient.</li>
+    <li>Comme tout hébergeur, Cloudflare reçoit techniquement l'adresse IP de la connexion, selon ses propres règles ; notre relais ne l'enregistre pas.</li>
+  </ul>
+
+  <h2>6. Ce que vous envoyez vous-même</h2>
+  <ul>
+    <li><strong>WhatsApp</strong> : reçus, devis, reçus de retour, rappels de crédit et rapports ne partent que lorsque vous touchez le bouton, par votre WhatsApp, à la personne que vous choisissez.</li>
+    <li><strong>Bouton « Aide »</strong> : il ouvre WhatsApp vers notre assistance avec un message déjà écrit qui contient l'étape de l'application et le modèle du téléphone, sans aucune donnée de la boutique. Vous choisissez de l'envoyer ou non.</li>
+    <li><strong>Export des clients et des rapports</strong> (fichier Excel) : envoyé là où vous le choisissez.</li>
+  </ul>
+
+  <h2>7. Sauvegarde chiffrée</h2>
+  <p>Le patron peut créer un fichier de sauvegarde (<code>.zps</code>) de toute la boutique. Il est <strong>chiffré</strong> (AES-256-GCM) avec une clé tirée du code secret du patron (6 chiffres, calcul lent volontairement). Sans ce code, le fichier ne peut pas être ouvert, y compris par nous. Le patron l'envoie là où il le choisit (son WhatsApp, son Drive…).</p>
+  <p>Sur Android, la sauvegarde automatique du téléphone (service de Google, si elle est activée dans les réglages du téléphone) peut aussi copier les données de l'application dans le compte Google du téléphone, pour les remettre sur un téléphone neuf.</p>
+
+  <h2>8. Autres fonctions de l'appareil</h2>
+  <ul>
+    <li><strong>Appareil photo et galerie</strong> : seulement quand vous ajoutez un logo ou une photo ; l'image est réduite et gardée dans les données de la boutique.</li>
+    <li><strong>Voix</strong> : l'application parle avec la voix installée sur le téléphone.</li>
+    <li><strong>Vérification du téléphone</strong> à l'installation (version d'Android, place libre, services Google, voix) : faite sur l'appareil, rien n'est envoyé.</li>
+    <li><strong>Code d'activation</strong> : vérifié sur l'appareil, sans Internet.</li>
+  </ul>
+
+  <h2>9. Licences</h2>
+  <p>Pour vendre et suivre les licences, nous gardons un registre privé : nom de la boutique, identifiant de licence, date et nombre d'appareils, ainsi que nos échanges WhatsApp ou e-mail avec le patron. Ce registre ne contient aucune vente.</p>
+
+  <h2>10. Supprimer vos données</h2>
+  <ul>
+    <li><strong>Sur un appareil</strong> : désinstaller Zéro Perte efface ses données de l'appareil.</li>
+    <li><strong>Dans le Google Drive</strong> : sur un ordinateur, ouvrez <a href="https://drive.google.com">drive.google.com</a> → roue ⚙ <em>Paramètres</em> → <em>Gérer les applications</em> → Zéro Perte → <em>Options</em> → <em>Supprimer les données d'application masquées</em>.</li>
+    <li><strong>Retirer l'accès au Drive</strong> : <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a> → Zéro Perte → supprimer l'accès.</li>
+    <li><strong>Alertes</strong> : effacées automatiquement après 7 jours.</li>
+    <li><strong>Sauvegardes .zps</strong> : supprimez les fichiers là où vous les avez envoyés.</li>
+    <li><strong>Registre des licences</strong> : demandez-nous la suppression par WhatsApp ou e-mail ; nous répondons sous 30 jours.</li>
+  </ul>
+
+  <h2>11. Vos droits</h2>
+  <p>Vous pouvez nous demander quelles informations nous avons sur vous (registre des licences), les faire corriger ou supprimer. Les données de votre boutique, elles, sont entre vos mains : elles se consultent et se corrigent dans l'application.</p>
+
+  <h2>12. Enfants</h2>
+  <p>Zéro Perte est un outil professionnel pour les commerçants. Il ne s'adresse pas aux enfants.</p>
+
+  <h2>13. Changements</h2>
+  <p>Si l'application change sa façon de traiter les données, cette page sera mise à jour avant, avec une nouvelle date.</p>
+
+  <h2>14. Contact</h2>
+  <ul class="contacts">
+  <li>WhatsApp : <a href="https://wa.me/22872240231">+228 72 24 02 31</a></li>
+  <li>WhatsApp : <a href="https://wa.me/22879162390">+228 79 16 23 90</a></li>
+  <li>E-mail : <a href="mailto:ahiankonoujoseph102@gmail.com">ahiankonoujoseph102@gmail.com</a></li>
+</ul>
+
+</main>
+<footer>
+  <div class="dedans">
+    <span>© 2026 Zéro Perte — Lomé, Togo</span>
+    <a href="confidentialite.html">Politique de confidentialité</a>
+    <a href="conditions.html">Conditions d'utilisation</a>
+    <a href="mailto:ahiankonoujoseph102@gmail.com">ahiankonoujoseph102@gmail.com</a>
+  </div>
+</footer>
+</body>
+</html>

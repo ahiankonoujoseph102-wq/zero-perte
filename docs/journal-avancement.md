@@ -759,3 +759,18 @@ utiliser ») :** réussie. Journal de l'action : « Code accepté par l'applicat
 ce jeton. Aucun secret ni code affiché (masqués). La ligne de test reste dans `registre-clients.csv` du coffre
 (à ignorer).
 **Publiée :** v0.28.1-n46 — APK universel 17,6 Mo, Windows 13,3 Mo. (Ligne ajoutée sur les branches de travail.)
+
+### Pages publiques pour Google (sans nouvelle version de l'application)
+- `docs/site/` : `index.html` (présentation, contacts), `confidentialite.html` (politique conforme au code :
+  données sur les appareils et dans le dossier caché `drive.appdata` du Drive de la boutique, e-mail du compte
+  gardé sur l'appareil, aucun serveur de ventes, relais Cloudflare : type + message ≤ 300 caractères + lettre
+  de l'appareil + heure, effacés après 7 jours, compteur 2 h ; Firebase : titre + message de l'alerte,
+  identifiant technique Google, pas d'Analytics ; sauvegarde `.zps` AES-256-GCM ; sauvegarde Android ;
+  registre des licences ; suppression), `conditions.html` (paiement unique, 2 appareils, mises à jour
+  gratuites, assistance WhatsApp, responsabilité limitée au prix payé, droit togolais), `style.css` bleu nuit.
+  Vérifiées dans Chromium à 360 px et 1366 px : aucun débordement.
+- Action **« 5 - Publier le site »** (`.github/workflows/publier-site.yml`) : publie seulement `docs/site/`
+  avec GitHub Pages (actions officielles épinglées par empreinte). Ne touche pas à la fabrication : `docs/**`
+  est ignoré par l'action 2, et le commit qui ajoute l'action porte `[skip ci]`.
+- **À faire par le propriétaire** : Settings → Pages → Source « GitHub Actions » (partie G de
+  `docs/etapes-proprietaire.md`) : Claude n'a pas le droit de l'activer.

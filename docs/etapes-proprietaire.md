@@ -223,3 +223,33 @@ Gratuit. Le code est prêt (téléphone et relais) ; il manque seulement le comp
 ### F4. Vérifier
 Application du patron **fermée** ; sur le téléphone d'un vendeur, fermez la caisse avec 2 000 F de moins :
 une notification « Zéro Perte : alerte — Caisse fermée par … : il manque 2 000 F » arrive en quelques secondes.
+
+---
+
+## G. Pages publiques pour Google (accueil, confidentialité, conditions)
+
+Les 3 pages sont prêtes dans le dépôt (`docs/site/`) et se publient avec l'action « 5 - Publier le site ».
+Il faut seulement **autoriser GitHub Pages une fois** (Claude n'a pas ce droit).
+
+### G1. Activer GitHub Pages (une seule fois)
+1. Dans Chrome, ouvrez : **github.com/ahiankonoujoseph102-wq/zero-perte/settings/pages**
+   (si la page est trop petite : menu ⋮ → cochez **Version pour ordinateur**).
+2. Partie **Build and deployment** → **Source** → choisissez **GitHub Actions** (pas « Deploy from a branch »).
+   Il n'y a rien d'autre à remplir ni à enregistrer.
+
+### G2. Publier
+1. Dépôt **zero-perte** → **Actions** → à gauche **« 5 - Publier le site (pages publiques) »** →
+   **Run workflow** → branche **main** → **Run workflow**. (Ou dites à Claude de la lancer.)
+2. Attendez la coche verte (moins d'une minute). Ensuite, chaque changement de `docs/site/` sur `main` est
+   publié tout seul.
+
+### G3. Les adresses à donner à Google
+- Page d'accueil : **https://ahiankonoujoseph102-wq.github.io/zero-perte/**
+- Règles de confidentialité : **https://ahiankonoujoseph102-wq.github.io/zero-perte/confidentialite.html**
+- Conditions d'utilisation : **https://ahiankonoujoseph102-wq.github.io/zero-perte/conditions.html**
+- Domaine autorisé : **ahiankonoujoseph102-wq.github.io**
+
+Dans Google Cloud : Menu ☰ → **Google Auth Platform** → **Personnalisation de la marque** (« Branding ») →
+remplissez les 3 liens, puis **Domaines autorisés** → **Ajouter un domaine** → `ahiankonoujoseph102-wq.github.io`
+→ **Enregistrer**. Si Google demande de prouver que le domaine est à vous (Search Console), dites-le à Claude :
+la preuve se fait en ajoutant un petit fichier aux pages.
