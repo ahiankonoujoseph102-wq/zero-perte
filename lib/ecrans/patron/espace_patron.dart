@@ -6,6 +6,7 @@ import '../caisse/fermeture.dart';
 import '../caisse/saisie_montant.dart';
 import '../communs.dart';
 import 'arrivages.dart';
+import 'tableau.dart';
 import 'vendeurs.dart';
 
 /// Une entrée du menu du patron.
@@ -28,6 +29,13 @@ class EntreePatron {
 
 /// Entrées du menu (les étapes suivantes en ajoutent).
 final List<EntreePatron> entreesPatron = [
+  EntreePatron(
+    'tableau',
+    Icons.insights_rounded,
+    'Tableau',
+    CouleursZp.argentEntre,
+    (etat) => PageTableau(etat: etat),
+  ),
   EntreePatron(
     'arrivages',
     Icons.local_shipping_rounded,

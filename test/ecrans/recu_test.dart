@@ -51,7 +51,10 @@ void main() {
       final (png, texte) = env.partages.single;
       // Une vraie image PNG (signature 89 50 4E 47).
       expect(png.sublist(0, 4), [0x89, 0x50, 0x4E, 0x47]);
-      expect(texte, startsWith('Reçu n° A-000001 – Boutique Mama Ama : 1 200 F.'));
+      expect(
+        texte,
+        startsWith('Reçu n° A-000001 – Boutique Mama Ama : 1 200 F.'),
+      );
     },
   );
 

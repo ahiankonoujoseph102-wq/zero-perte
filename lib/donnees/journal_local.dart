@@ -947,6 +947,59 @@ class JournalLocal implements ReglagesLocaux {
     ];
   }
 
+  /// Quantités vendues par produit depuis [depuis] (millièmes, annulations
+  /// déduites), et chiffre d'affaires par produit.
+  Future<Map<String, ({int milliemes, int montant})>> ventesParProduit({
+    required int depuis,
+  }) async {
+    final r = await _db.rawQuery(
+      'SELECT m.produit_id AS p, -SUM(m.quantite_milliemes) AS q, SUM(m.prix_total) AS t '
+      'FROM mouvements_stock m JOIN operations o ON o.id = m.operation_id '
+      "WHERE m.nature IN ('vente', 'annulation') AND o.heure_telephone >= ? "
+      'GROUP BY m.produit_id',
+      [depuis],
+    );
+    return {
+      for (final l in r)
+        l['p'] as String: (
+          milliemes: (l['q'] as int?) ?? 0,
+          montant: (l['t'] as int?) ?? 0,
+        ),
+    };
+  }
+
+  /// Produits ayant déjà reçu au moins un arrivage.
+  Future<Set<String>> produitsDejaRecus() async {
+    final r = await _db.rawQuery(
+      "SELECT DISTINCT produit_id AS p FROM mouvements_stock WHERE nature = 'arrivage'",
+    );
+    return {for (final l in r) l['p'] as String};
+  }
+
+  /// Chiffres des ventes depuis [depuis] : total encaissé (annulations
+  /// déduites) et nombre de ventes non annulées.
+  Future<({int total, int nombre})> resumeVentes({required int depuis}) async {
+    final r = await _db.rawQuery(
+      'SELECT COALESCE(SUM(v.total), 0) AS t, COUNT(*) AS n FROM ventes v '
+      'JOIN operations o ON o.id = v.operation_id '
+      'LEFT JOIN ventes_annulees an ON an.vente_operation_id = v.operation_id '
+      'WHERE o.heure_telephone >= ? AND an.operation_id IS NULL',
+      [depuis],
+    );
+    return (total: r.first['t'] as int, nombre: r.first['n'] as int);
+  }
+
+  /// Total des dépenses (tous moyens de paiement) depuis [depuis].
+  Future<int> totalDepenses({required int depuis}) async {
+    final r = await _db.rawQuery(
+      'SELECT COALESCE(SUM(c.montant), 0) AS s FROM mouvements_caisse c '
+      'JOIN operations o ON o.id = c.operation_id '
+      'WHERE c.nature = ? AND o.heure_telephone >= ?',
+      [TypeOperation.depense, depuis],
+    );
+    return r.first['s'] as int;
+  }
+
   /// Bénéfice estimé entre deux heures (millisecondes), bornes comprises.
   Future<ResumeBenefice> beneficeEstime({int? depuis, int? jusqua}) async {
     final r = await _db.rawQuery(

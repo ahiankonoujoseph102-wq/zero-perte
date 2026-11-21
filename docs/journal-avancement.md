@@ -9,9 +9,9 @@ Il est mis à jour **à la fin de chaque étape**.
 
 | | |
 |---|---|
-| **Dernière étape terminée** | **B11** — Reçu partagé sur WhatsApp |
-| **Version publiée** | 0.12.0 (voir les Releases GitHub) |
-| **Prochaine étape** | **B12** — Tableau du patron |
+| **Dernière étape terminée** | **B12** — Tableau du patron |
+| **Version publiée** | 0.13.0 (voir les Releases GitHub) |
+| **Prochaine étape** | **B13** — Export de sauvegarde chiffré |
 | **Méthode** | Enchaîner les étapes de `docs/plan-v1.md` sans validation intermédiaire : B1→B13, puis C1, D, C2→C4, E. Rapport au chef de projet **à la fin de chaque bloc**, ou si une décision appartient au propriétaire, ou si on est bloqué. |
 | **Ordre des blocs** | A ✅ → **B (en cours)** → C1 → D → C2–C4 → E |
 
@@ -217,6 +217,21 @@ Police Atkinson Hyperlegible, marque bleu nuit, écran d'accueil vendeur à 4 gr
 - Trois ventes → numéros **1, 2, 3**, aucun manquant.
 
 **Problèmes restants :** le partage réel vers WhatsApp ne peut être vérifié que sur un téléphone (les tests simulent Android). Le **texte envoyé au client** est à valider par le propriétaire (question du rapport de fin de bloc B).
+
+### B12 — Tableau du patron ✅ (version 0.13.0)
+**Fait :**
+- Espace patron → première tuile **« Tableau »**, avec trois choix : **Aujourd'hui**, **Cette semaine** (depuis lundi), **Ce mois** (depuis le 1er).
+- Chiffres en grand : **Ventes** (annulations déduites, nombre de ventes), **Bénéfice estimé** (prix de vente − prix d'achat du dernier arrivage ; les produits sans prix d'achat connu sont exclus et le patron est prévenu), **Dépenses**.
+- **Les plus vendus** : les 3 produits qui ont rapporté le plus sur la période.
+- **Stock bas**, sans réglage : un produit apparaît s'il est **épuisé** (déjà reçu ou vendu), s'il est **sous le seuil** fixé par le patron (champ prévu, pas encore d'écran pour le régler), ou s'il reste **moins que ce qui s'est vendu ces 7 derniers jours**.
+
+**Tests (199 au total, tous réussis)**, par exemple :
+- Riz : 100 kg reçus à 500 F/kg, 2 kg vendus 1 200 F ; sucre : 1 paquet reçu 700 F, vendu 800 F ; dépense 1 500 F → **Ventes 2 000 F (1 vente), Bénéfice 300 F, Dépenses 1 500 F**, plus vendu « 1. Riz », **Sucre épuisé**, riz absent du stock bas.
+- Samedi 21 novembre 15 h 30 → « Cette semaine » commence le **lundi 16 novembre**, « Ce mois » le **1er novembre**.
+- Sans seuil : **3 kg** restants alors que **10 kg** se sont vendus en 7 jours → « Moins d'une semaine de vente » ; 30 kg restants → pas d'alerte.
+
+**Problèmes restants :** pas encore d'écran pour régler le seuil d'alerte d'un produit (la règle automatique suffit pour le pilote) ; le tableau compte les ventes **de ce téléphone** jusqu'à la synchronisation (bloc D).
+
 
 
 

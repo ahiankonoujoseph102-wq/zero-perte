@@ -6,6 +6,7 @@ import '../domaine/licence.dart';
 import '../domaine/operation.dart';
 import '../domaine/panier.dart';
 import '../domaine/quantites.dart';
+import '../domaine/tableau.dart';
 import '../domaine/utilisateurs.dart';
 import '../donnees/journal_local.dart';
 import '../services/partage.dart';
@@ -508,6 +509,55 @@ class EtatApplication extends ChangeNotifier {
     return f;
   }
 
+  /// Chiffres du tableau du patron pour une période.
+  Future<TableauPatron> tableau(Periode periode) async {
+    final m = maintenant();
+    final depuis = periode.debut(m).millisecondsSinceEpoch;
+    final ilYa7Jours = DateTime(
+      m.year,
+      m.month,
+      m.day,
+    ).subtract(const Duration(days: 6)).millisecondsSinceEpoch;
+    final ventes = await journal.resumeVentes(depuis: depuis);
+    final benefice = await journal.beneficeEstime(depuis: depuis);
+    final depenses = await journal.totalDepenses(depuis: depuis);
+    final parProduit = await journal.ventesParProduit(depuis: depuis);
+    final semaine = await journal.ventesParProduit(depuis: ilYa7Jours);
+    final recus = await journal.produitsDejaRecus();
+    final stocks = await journal.stocks();
+
+    final meilleurs =
+        parProduit.entries.where((e) => e.value.montant > 0).toList()
+          ..sort((a, b) => b.value.montant.compareTo(a.value.montant));
+    final bas = <(Produit, int, RaisonStockBas)>[];
+    for (final p in _produits) {
+      final stock = stocks[p.id] ?? 0;
+      final raison = stockBas(
+        stock: stock,
+        seuil: p.seuilAlerteMilliemes,
+        venduSur7Jours: semaine[p.id]?.milliemes ?? 0,
+        dejaRecu: recus.contains(p.id),
+      );
+      if (raison != null) bas.add((p, stock, raison));
+    }
+    bas.sort((a, b) => a.$3.index.compareTo(b.$3.index));
+    return TableauPatron(
+      periode: periode,
+      ventes: ventes.total,
+      nombreVentes: ventes.nombre,
+      benefice: benefice,
+      depenses: depenses,
+      meilleurs: [
+        for (final e in meilleurs.take(3))
+          (
+            _produits.where((p) => p.id == e.key).firstOrNull?.nom ?? 'Produit',
+            e.value.montant,
+          ),
+      ],
+      stockBas: bas,
+    );
+  }
+
   /// La personne connectée est-elle le patron ?
   bool get estPatron => utilisateurActuel?.role == Role.patron;
 
@@ -598,4 +648,31 @@ class EtatApplication extends ChangeNotifier {
     }
     await rechargerProduits();
   }
+}
+
+/// Chiffres affichés dans le tableau du patron.
+class TableauPatron {
+  const TableauPatron({
+    required this.periode,
+    required this.ventes,
+    required this.nombreVentes,
+    required this.benefice,
+    required this.depenses,
+    required this.meilleurs,
+    required this.stockBas,
+  });
+
+  final Periode periode;
+
+  /// Argent des ventes (annulations déduites), tous moyens de paiement.
+  final int ventes;
+  final int nombreVentes;
+  final ResumeBenefice benefice;
+  final int depenses;
+
+  /// Les 3 produits qui ont rapporté le plus : (nom, montant).
+  final List<(String, int)> meilleurs;
+
+  /// Produits à racheter : (produit, stock en millièmes, raison).
+  final List<(Produit, int, RaisonStockBas)> stockBas;
 }
