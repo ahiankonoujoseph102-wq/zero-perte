@@ -93,7 +93,10 @@ void main() {
       await toucher(tester, find.byKey(const Key('bouton-coller-code')));
       expect(find.byKey(const Key('activation-reussie')), findsOneWidget);
       expect(find.textContaining('Boutique Mama Ama'), findsOneWidget);
-      expect(find.textContaining('2 téléphones'), findsOneWidget);
+      expect(
+        find.textContaining('2 appareils (téléphone, tablette ou PC)'),
+        findsOneWidget,
+      );
       expect(env.voix.phrases.last, contains('Code accepté'));
       // Le nom du code devient le nom de la boutique.
       expect(env.etat.config.nom, 'Boutique Mama Ama');

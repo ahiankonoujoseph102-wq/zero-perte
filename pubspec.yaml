@@ -69,6 +69,8 @@ flutter:
   assets:
     - assets/licence/cle_publique.txt
     - assets/catalogues/catalogues.json
+    # Voix de la démonstration guidée (action « 6 ») : fichiers .webm + bouches.json.
+    - assets/demo/voix/
 
   # Police Atkinson Hyperlegible (Braille Institute, licence OFL) : très lisible
   # pour les personnes qui lisent difficilement.

@@ -50,14 +50,14 @@ class CodeActivation {
 /// Erreurs possibles, avec un message simple pour le patron.
 enum ProblemeCode {
   introuvable(
-    'Aucun code Zéro Perte dans ce texte. Copiez tout le message reçu sur WhatsApp.',
+    'Le texte copié ne contient pas de code Zéro Perte. Dans WhatsApp, copiez le message entier de Zéro Perte, ou touchez « Écrire le code ».',
   ),
   abime('Ce code est abîmé ou incomplet. Copiez de nouveau tout le message.'),
   signatureFausse('Ce code n\'est pas un vrai code Zéro Perte.'),
   autreBoutique('Ce code appartient à une autre boutique.'),
-  dejaUtilise('Ce code a déjà été utilisé sur ce téléphone.'),
+  dejaUtilise('Ce code a déjà été utilisé sur cet appareil.'),
   extensionSansLicence(
-    'Activez d\'abord la licence de la boutique, puis ce code « téléphone en plus ».',
+    'Activez d\'abord la licence de la boutique, puis ce code « appareil en plus ».',
   ),
   cleAbsente(
     'Cette version de l\'application ne peut pas encore vérifier les codes. Contactez l\'assistance.',

@@ -17,6 +17,7 @@ import 'patron/tableau.dart';
 import 'patron/tableau_de_bord.dart';
 import 'patron/vendeurs.dart';
 import 'patron/rapports.dart';
+import 'logo_zero_perte.dart';
 import 'vente/devis.dart';
 import 'vente/page_vendre.dart';
 import 'vente/retour.dart';
@@ -795,45 +796,14 @@ class _EnTete extends StatelessWidget {
   }
 }
 
-/// Logo provisoire : disque bleu nuit avec « ZP » (remplacé par le logo de la
-/// boutique à l'étape B3).
+/// Logo Zéro Perte (anciennement le rond « ZP ») : voir [LogoZeroPerte].
 class LogoZp extends StatelessWidget {
   const LogoZp({super.key, this.taille = 120});
 
   final double taille;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: taille,
-      height: taille,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF2E4A72), CouleursZp.marque],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: CouleursZp.marque.withValues(alpha: 0.25),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        'ZP',
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: taille * 0.4,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 1,
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => LogoZeroPerte(taille: taille);
 }
 
 const _jours = [

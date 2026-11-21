@@ -49,12 +49,34 @@ class _AssistantInstallationState extends State<AssistantInstallation> {
       _activationEnCours = true;
       _erreurActivation = null;
     });
+    final texte = await etat.services.lirePressePapiers();
+    await _activerTexte(texte);
+  }
+
+  /// Message si rien n'a été copié avant « Coller le code ».
+  static const messagePressePapiersVide =
+      'Rien n\'a été copié. Dans WhatsApp, appuyez longtemps sur le message '
+      'de Zéro Perte, touchez « Copier », puis revenez ici. '
+      'Ou touchez « Écrire le code ».';
+
+  Future<void> _activerTexte(String? texte) async {
+    if (texte == null || texte.trim().isEmpty) {
+      setState(() {
+        _activationEnCours = false;
+        _erreurActivation = messagePressePapiersVide;
+      });
+      await etat.services.voix.dire(messagePressePapiersVide);
+      return;
+    }
+    setState(() {
+      _activationEnCours = true;
+      _erreurActivation = null;
+    });
     try {
-      final texte = await etat.services.lirePressePapiers();
-      await etat.activer(texte ?? '');
+      await etat.activer(texte);
       final l = etat.licence!;
       await etat.services.voix.dire(
-        'Code accepté. Boutique ${l.nomBoutique}. ${l.telephones} téléphones. Touchez Continuer.',
+        'Code accepté. Boutique ${l.nomBoutique}. ${l.telephones} appareils : téléphone, tablette ou ordinateur. Touchez Continuer.',
       );
     } on ErreurCode catch (e) {
       _erreurActivation = e.probleme.message;
@@ -62,6 +84,49 @@ class _AssistantInstallationState extends State<AssistantInstallation> {
     } finally {
       if (mounted) setState(() => _activationEnCours = false);
     }
+  }
+
+  /// « Écrire le code » : le patron tape ou colle le code (ou le message)
+  /// à la main.
+  Future<void> _ecrireCode() async {
+    final champ = TextEditingController();
+    final texte = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Écrire le code'),
+        content: SizedBox(
+          width: 520,
+          child: TextField(
+            key: const Key('champ-code-activation'),
+            controller: champ,
+            autofocus: true,
+            minLines: 3,
+            maxLines: 6,
+            style: const TextStyle(fontSize: 17),
+            decoration: const InputDecoration(
+              hintText:
+                  'Collez ou écrivez ici le message ou le code '
+                  '(il commence par ZP1.)',
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Annuler', style: TextStyle(fontSize: 18)),
+          ),
+          FilledButton(
+            key: const Key('bouton-valider-code-ecrit'),
+            onPressed: () => Navigator.of(context).pop(champ.text),
+            child: const Text('Valider', style: TextStyle(fontSize: 18)),
+          ),
+        ],
+      ),
+    );
+    champ.dispose();
+    if (texte == null || !mounted) return;
+    await _activerTexte(texte);
   }
 
   Future<_ResultatVerification> _verifier() async {
@@ -136,76 +201,137 @@ class _AssistantInstallationState extends State<AssistantInstallation> {
         _lireSiNouvelle(e);
         if (e == EtapeAssistant.verification) _verification ??= _verifier();
         final numero = (_etapes.indexOf(e) + 1).clamp(1, _etapes.length);
-        return Scaffold(
-          body: ColonneCentree(
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    MediaQuery.withClampedTextScaling(
-                      maxScaleFactor: 1.3,
-                      child: Row(
-                        children: [
-                          const LogoZp(taille: 40),
-                          const SizedBox(width: 12),
-                          const Expanded(
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                'Installation',
-                                maxLines: 1,
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w700,
+        // Le geste « retour » d'Android revient à l'étape précédente (sauf à
+        // la première étape, où il ferme l'application comme d'habitude).
+        return PopScope(
+          canPop: e == EtapeAssistant.bienvenue,
+          onPopInvokedWithResult: (aFerme, _) {
+            if (!aFerme) _revenir();
+          },
+          child: Scaffold(
+            body: ColonneCentree(
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      MediaQuery.withClampedTextScaling(
+                        maxScaleFactor: 1.3,
+                        child: Row(
+                          children: [
+                            if (e != EtapeAssistant.bienvenue) ...[
+                              // Petit écran : flèche seule (le mot « Retour »
+                              // reste lu par la voix d'Android).
+                              if (MediaQuery.sizeOf(context).width < 400)
+                                IconButton.filledTonal(
+                                  key: const Key('bouton-etape-precedente'),
+                                  tooltip: 'Retour',
+                                  onPressed: _revenir,
+                                  iconSize: 28,
+                                  icon: const Icon(Icons.arrow_back_rounded),
+                                )
+                              else
+                                TextButton.icon(
+                                  key: const Key('bouton-etape-precedente'),
+                                  onPressed: _revenir,
+                                  icon: const Icon(
+                                    Icons.arrow_back_rounded,
+                                    size: 26,
+                                  ),
+                                  label: const Text(
+                                    'Retour',
+                                    style: TextStyle(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  style: TextButton.styleFrom(
+                                    minimumSize: const Size(0, 48),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                    ),
+                                  ),
+                                ),
+                              const SizedBox(width: 6),
+                            ],
+                            const LogoZp(taille: 40),
+                            const SizedBox(width: 10),
+                            const Expanded(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  'Installation',
+                                  maxLines: 1,
+                                  style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          _BoutonAide(onTap: () => _aideDepuisEtape(e)),
-                        ],
+                            const SizedBox(width: 8),
+                            _BoutonAide(onTap: () => _aideDepuisEtape(e)),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 14),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: LinearProgressIndicator(
-                        value: numero / _etapes.length,
-                        minHeight: 10,
-                        backgroundColor: CouleursZp.ligne,
-                        color: Theme.of(context).colorScheme.primary,
+                      const SizedBox(height: 14),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: LinearProgressIndicator(
+                          value: numero / _etapes.length,
+                          minHeight: 10,
+                          backgroundColor: CouleursZp.ligne,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Étape $numero sur ${_etapes.length}',
-                      textScaler: TextScaler.noScaling,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: CouleursZp.texteDoux,
+                      const SizedBox(height: 6),
+                      Text(
+                        'Étape $numero sur ${_etapes.length}',
+                        textScaler: TextScaler.noScaling,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: CouleursZp.texteDoux,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    if (e.index >= EtapeAssistant.typeBoutique.index)
-                      Expanded(child: pageEtapeBoutique(etat, e))
-                    else ...[
-                      Expanded(child: _contenu(e)),
                       const SizedBox(height: 12),
-                      MediaQuery.withClampedTextScaling(
-                        maxScaleFactor: 1.3,
-                        child: _barreBas(e),
-                      ),
+                      if (e.index >= EtapeAssistant.typeBoutique.index)
+                        Expanded(child: pageEtapeBoutique(etat, e))
+                      else ...[
+                        Expanded(child: _contenu(e)),
+                        const SizedBox(height: 12),
+                        MediaQuery.withClampedTextScaling(
+                          maxScaleFactor: 1.3,
+                          child: _barreBas(e),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),
           ),
         );
       },
+    );
+  }
+
+  /// Étape précédente, en gardant ce qui a été rempli (tout est déjà
+  /// enregistré dans l'état de la boutique). La vérification du téléphone,
+  /// qui passe toute seule, est sautée. L'activation n'est jamais annulée :
+  /// l'étape « Code d'activation » affiche alors « Boutique activée ».
+  Future<void> _revenir() async {
+    final e = etat.etape;
+    if (e == EtapeAssistant.bienvenue) return;
+    final avant = EtapeAssistant.values[e.index - 1];
+    if (avant.index <= EtapeAssistant.verification.index) {
+      // Au prochain « Commencer », la vérification se refait (et repasse
+      // toute seule si le téléphone convient).
+      setState(() => _verification = null);
+    }
+    await etat.allerA(
+      avant == EtapeAssistant.verification ? EtapeAssistant.bienvenue : avant,
     );
   }
 
@@ -256,6 +382,7 @@ class _AssistantInstallationState extends State<AssistantInstallation> {
       licence: etat.licence,
       erreur: _erreurActivation,
       onDemonstration: widget.onDemonstration,
+      onEcrireCode: _activationEnCours ? null : _ecrireCode,
     ),
     _ => const SizedBox.shrink(),
   };
@@ -639,11 +766,13 @@ class _Activation extends StatelessWidget {
     required this.licence,
     required this.erreur,
     this.onDemonstration,
+    this.onEcrireCode,
   });
 
   final Licence? licence;
   final String? erreur;
   final VoidCallback? onDemonstration;
+  final VoidCallback? onEcrireCode;
 
   @override
   Widget build(BuildContext context) {
@@ -654,7 +783,8 @@ class _Activation extends StatelessWidget {
         icone: Icons.verified_rounded,
         couleur: CouleursZp.argentEntre,
         titre: 'Boutique activée',
-        texte: '${l.nomBoutique}\n${l.telephones} téléphones autorisés',
+        texte:
+            '${l.nomBoutique}\n${l.telephones} appareils (téléphone, tablette ou PC)',
       );
     }
     return ListView(
@@ -710,6 +840,37 @@ class _Activation extends StatelessWidget {
           numero: 3,
           icone: Icons.content_paste_rounded,
           texte: 'Revenez ici et touchez « Coller le code ».',
+        ),
+        Container(
+          key: const Key('activation-message-entier'),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: CouleursZp.marquePale,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: const Row(
+            children: [
+              Icon(Icons.info_rounded, color: CouleursZp.marque, size: 28),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Copiez le message entier dans WhatsApp, inutile de choisir '
+                  'le code.',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextButton.icon(
+          key: const Key('bouton-ecrire-code'),
+          onPressed: onEcrireCode,
+          icon: const Icon(Icons.keyboard_rounded, size: 26),
+          label: const Text(
+            'Écrire le code',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+          ),
         ),
         if (onDemonstration != null) ...[
           const SizedBox(height: 8),

@@ -4,6 +4,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ShortcutInfo
 import android.content.pm.ShortcutManager
+import android.media.MediaPlayer
 import android.graphics.BitmapFactory
 import android.graphics.drawable.Icon
 import android.os.Build
@@ -55,9 +56,72 @@ class MainActivity : FlutterActivity() {
                             appel.argument<String>("sujet"),
                         )
                     )
+                    // Démonstration guidée : voix d'Afi (fichier Opus/WebM).
+                    "jouerSon" -> jouerSon(appel.argument<String>("chemin"), resultat)
+                    "arreterSon" -> {
+                        arreterSon()
+                        resultat.success(true)
+                    }
                     else -> resultat.notImplemented()
                 }
             }
+    }
+
+    // --- Voix de la démonstration (lecteur d'Android, sans bibliothèque) ---
+    private var lecteur: MediaPlayer? = null
+    private var resultatSon: MethodChannel.Result? = null
+
+    /** Joue un fichier ; répond « vrai » à la fin de la lecture, « faux » si
+     *  le fichier ne peut pas être lu (la démonstration prend alors la voix
+     *  de synthèse du téléphone). */
+    private fun jouerSon(chemin: String?, resultat: MethodChannel.Result) {
+        arreterSon()
+        if (chemin == null) {
+            resultat.success(false)
+            return
+        }
+        try {
+            val m = MediaPlayer()
+            m.setDataSource(chemin)
+            m.setOnCompletionListener { finirSon(true) }
+            m.setOnErrorListener { _, _, _ ->
+                finirSon(false)
+                true
+            }
+            m.prepare()
+            lecteur = m
+            resultatSon = resultat
+            m.start()
+        } catch (e: Exception) {
+            lecteur?.release()
+            lecteur = null
+            resultat.success(false)
+        }
+    }
+
+    private fun finirSon(ok: Boolean) {
+        val r = resultatSon
+        resultatSon = null
+        lecteur?.release()
+        lecteur = null
+        r?.success(ok)
+    }
+
+    private fun arreterSon() {
+        val r = resultatSon
+        resultatSon = null
+        try {
+            lecteur?.stop()
+        } catch (_: Exception) {
+        }
+        lecteur?.release()
+        lecteur = null
+        r?.success(false)
+    }
+
+    override fun onDestroy() {
+        arreterSon()
+        super.onDestroy()
     }
 
     private fun infosTelephone(): Map<String, Any> {

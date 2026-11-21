@@ -21,8 +21,8 @@ Future<void> main(List<String> args) async {
     final licence = calculerLicence([code]);
     stdout.writeln(
       'Code accepté par l\'application : ${code.type.name}, '
-      '${code.telephones} téléphone(s)'
-      '${licence == null ? '' : ', licence de ${licence.telephones} téléphone(s)'}.',
+      '${code.telephones} appareil(s)'
+      '${licence == null ? '' : ', licence de ${licence.telephones} appareil(s)'}.',
     );
   } on ErreurCode catch (e) {
     stderr.writeln('Code REFUSÉ par l\'application : ${e.probleme.message}');

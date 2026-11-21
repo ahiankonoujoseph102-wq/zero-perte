@@ -8,6 +8,8 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart'
     show sqfliteFfiInit, databaseFactoryFfi;
 
 import 'app/demo.dart';
+import 'demo_guidee/visite_guidee.dart';
+import 'demo_guidee/voix_demo.dart';
 import 'app/etat_application.dart';
 import 'domaine/licence.dart';
 import 'donnees/journal_local.dart';
@@ -172,9 +174,17 @@ class ZeroPerteApp extends StatelessWidget {
     this.maintenant,
     this.creerDemo,
     this.quitterDemo,
+    this.visite,
+    this.navigateur,
   });
 
   final EtatApplication etat;
+
+  /// Démonstration : la visite guidée (nulle hors démonstration).
+  final ControleurVisite? visite;
+
+  /// Navigateur de l'application (la visite ferme les pages ouvertes).
+  final GlobalKey<NavigatorState>? navigateur;
 
   /// Crée une boutique de démonstration neuve (bouton de l'étape d'activation).
   final Future<EtatApplication> Function()? creerDemo;
@@ -189,6 +199,7 @@ class ZeroPerteApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigateur,
       title: 'Zéro Perte',
       debugShowCheckedModeBanner: false,
       theme: themeZeroPerte(couleurMarque: Color(etat.config.couleur)),
@@ -230,14 +241,27 @@ class ZeroPerteApp extends StatelessWidget {
         );
         final quitter = quitterDemo;
         if (quitter != null) {
+          final v = visite;
+          final nav = navigateur;
           return Column(
             children: [
-              BandeauDemo(onQuitter: quitter),
+              BandeauDemo(onQuitter: quitter, visite: v),
               Expanded(
                 child: MediaQuery.removePadding(
                   context: context,
                   removeTop: true,
-                  child: contenu,
+                  child: v == null || nav == null
+                      ? contenu
+                      : VisiteGuidee(
+                          etat: etat,
+                          controleur: v,
+                          navigateur: nav,
+                          voix: etat.services.voix,
+                          lecteur: lecteurParDefaut(),
+                          dureeParole: dureeParoleVisite,
+                          pauseEntrePhrases: pauseEntrePhrasesVisite,
+                          child: contenu,
+                        ),
                 ),
               ),
             ],
@@ -395,6 +419,14 @@ class PageDemonstration extends StatefulWidget {
 
 class _PageDemonstrationState extends State<PageDemonstration> {
   late final Future<EtatApplication> _demo = widget.creer();
+  final _visite = ControleurVisite();
+  final _navigateur = GlobalKey<NavigatorState>();
+
+  @override
+  void dispose() {
+    _visite.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -407,6 +439,8 @@ class _PageDemonstrationState extends State<PageDemonstration> {
             infosPaquet: widget.infosPaquet,
             maintenant: widget.maintenant,
             quitterDemo: () => Navigator.of(context).pop(),
+            visite: _visite,
+            navigateur: _navigateur,
           );
         }
         return Scaffold(
@@ -427,46 +461,112 @@ class _PageDemonstrationState extends State<PageDemonstration> {
 
 /// Bandeau permanent de la démonstration, avec le code du patron et « Quitter ».
 class BandeauDemo extends StatelessWidget {
-  const BandeauDemo({super.key, required this.onQuitter});
+  const BandeauDemo({super.key, required this.onQuitter, this.visite});
 
   final VoidCallback onQuitter;
 
+  /// Visite guidée : bouton « Visite » pour la relancer quand elle est fermée.
+  final ControleurVisite? visite;
+
   @override
   Widget build(BuildContext context) {
+    final v = visite;
+    if (v == null) return _contenu(null);
+    return ListenableBuilder(
+      listenable: v,
+      builder: (context, _) => _contenu(v.visible ? null : v.relancer),
+    );
+  }
+
+  Widget _contenu(VoidCallback? relancer) {
     return Material(
       color: CouleursZp.credit,
       child: SafeArea(
         bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 6, 8, 6),
-          child: Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  'DÉMONSTRATION — rien n\'est gardé\nCode du patron : $codePatronDemo',
-                  key: Key('bandeau-demo'),
-                  style: TextStyle(
-                    color: CouleursZp.texteSurCredit,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    fontFamily: policeZp,
+        child: LayoutBuilder(
+          builder: (context, c) {
+            // Avec deux boutons sur un téléphone : boutons compacts (icône
+            // et mot en dessous) pour garder le texte sur deux lignes.
+            final compact = relancer != null && c.maxWidth < 480;
+            return Padding(
+              padding: EdgeInsets.fromLTRB(compact ? 10 : 16, 6, 8, 6),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      compact
+                          ? 'DÉMONSTRATION\nCode du patron : $codePatronDemo'
+                          : 'DÉMONSTRATION — rien n\'est gardé\nCode du patron : $codePatronDemo',
+                      key: const Key('bandeau-demo'),
+                      style: const TextStyle(
+                        color: CouleursZp.texteSurCredit,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        fontFamily: policeZp,
+                      ),
+                    ),
                   ),
-                ),
+                  if (relancer != null) ...[
+                    _bouton(
+                      cle: 'bouton-relancer-visite',
+                      icone: Icons.play_circle_rounded,
+                      texte: 'Visite',
+                      couleur: CouleursZp.marque,
+                      onPressed: relancer,
+                      compact: compact,
+                    ),
+                    const SizedBox(width: 6),
+                  ],
+                  _bouton(
+                    cle: 'bouton-quitter-demo',
+                    icone: Icons.close_rounded,
+                    texte: 'Quitter',
+                    couleur: CouleursZp.texteSurCredit,
+                    onPressed: onQuitter,
+                    compact: compact,
+                  ),
+                ],
               ),
-              FilledButton.icon(
-                key: const Key('bouton-quitter-demo'),
-                onPressed: onQuitter,
-                icon: const Icon(Icons.close_rounded),
-                label: const Text('Quitter'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: CouleursZp.texteSurCredit,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(0, 48),
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         ),
+      ),
+    );
+  }
+
+  Widget _bouton({
+    required String cle,
+    required IconData icone,
+    required String texte,
+    required Color couleur,
+    required VoidCallback onPressed,
+    required bool compact,
+  }) {
+    final style = FilledButton.styleFrom(
+      backgroundColor: couleur,
+      foregroundColor: Colors.white,
+      minimumSize: Size(compact ? 64 : 0, compact ? 52 : 48),
+      padding: EdgeInsets.symmetric(horizontal: compact ? 6 : 14),
+    );
+    if (!compact) {
+      return FilledButton.icon(
+        key: Key(cle),
+        onPressed: onPressed,
+        icon: Icon(icone),
+        label: Text(texte),
+        style: style,
+      );
+    }
+    return FilledButton(
+      key: Key(cle),
+      onPressed: onPressed,
+      style: style,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icone, size: 22),
+          Text(texte, style: const TextStyle(fontSize: 12)),
+        ],
       ),
     );
   }

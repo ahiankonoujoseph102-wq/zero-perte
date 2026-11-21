@@ -101,7 +101,7 @@ class _PageSynchronisationState extends State<PageSynchronisation> {
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        'Les téléphones de la boutique s\'échangent les ventes par le Google Drive de la boutique. '
+                        'Les appareils de la boutique (téléphone, tablette ou PC) s\'échangent les ventes par le Google Drive de la boutique. '
                         'Vous voyez les ventes des autres appareils avec 0 à 30 minutes de retard.',
                         style: TextStyle(fontSize: 18),
                       ),

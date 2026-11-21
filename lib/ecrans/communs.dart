@@ -335,3 +335,20 @@ int lireEntier(String texte) =>
 /// Message d'erreur métier lisible.
 String messageErreur(Object e) =>
     e is ErreurZeroPerte ? e.message : 'Une erreur est survenue.';
+
+/// Navigateur de l'application elle-même (celui de son MaterialApp), et non
+/// le plus extérieur : dans la démonstration (une application ouverte
+/// par-dessus l'installation), les fenêtres restent ainsi DANS la démo, sous
+/// le bandeau et sous la visite guidée. Hors démo, c'est le navigateur
+/// principal, comme avant.
+NavigatorState navigateurDeLApplication(BuildContext context) {
+  NavigatorState? dernier = Navigator.maybeOf(context);
+  context.visitAncestorElements((el) {
+    if (el.widget is WidgetsApp || el.widget is MaterialApp) return false;
+    if (el is StatefulElement && el.state is NavigatorState) {
+      dernier = el.state as NavigatorState;
+    }
+    return true;
+  });
+  return dernier ?? Navigator.of(context, rootNavigator: true);
+}

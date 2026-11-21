@@ -16,12 +16,12 @@ on:
         description: "Nom de la boutique (affiché au patron à l'activation)"
         required: true
       type:
-        description: "licence = nouvelle boutique ; extension = téléphone(s) en plus"
+        description: "licence = nouvelle boutique ; extension = appareil(s) en plus"
         type: choice
         options: [licence, extension]
         default: licence
       telephones:
-        description: "Nombre de téléphones (2 pour une licence, 1 pour une extension)"
+        description: "Nombre d'appareils : téléphone, tablette ou PC (2 pour une licence, 1 pour une extension)"
         required: true
         default: "2"
       boutique_id:
@@ -60,7 +60,7 @@ jobs:
           BQ=$(jq -r '.inputs.boutique_id // ""' "$GITHUB_EVENT_PATH")
           echo "::add-mask::$NOM"
           [ -n "$(echo "$NOM" | tr -d '[:space:]')" ] || { echo "::error::Le nom de la boutique est vide."; exit 1; }
-          [[ "$TEL" =~ ^[0-9]+$ ]] && [ "$TEL" -ge 1 ] && [ "$TEL" -le 50 ] || { echo "::error::Nombre de téléphones invalide."; exit 1; }
+          [[ "$TEL" =~ ^[0-9]+$ ]] && [ "$TEL" -ge 1 ] && [ "$TEL" -le 50 ] || { echo "::error::Nombre d'appareils invalide."; exit 1; }
           if [ "$TYPE" = "extension" ]; then
             [[ "$BQ" =~ ^bq-[0-9a-f]{12}$ ]] || { echo "::error::Pour une extension, indiquez l'identifiant de la boutique (bq-…) tel qu'il est dans le registre."; exit 1; }
           else
@@ -121,9 +121,9 @@ jobs:
           PRIVE=$(gh api "repos/$COFFRE" --jq .private 2>/dev/null || echo "introuvable")
           [ "$PRIVE" = "true" ] || { echo "::error::Coffre $COFFRE inaccessible (jeton expiré ?) ou non privé."; exit 1; }
           if [ "$TYPE" = "licence" ]; then
-            QUOI="le code d'activation Zéro Perte de votre boutique « $NOM » ($TEL téléphones)"
+            QUOI="le code d'activation Zéro Perte de votre boutique « $NOM » ($TEL appareils : téléphone, tablette ou PC)"
           else
-            QUOI="le code Zéro Perte pour ajouter $TEL téléphone(s) à votre boutique « $NOM »"
+            QUOI="le code Zéro Perte pour ajouter $TEL appareil(s) (téléphone, tablette ou PC) à votre boutique « $NOM »"
           fi
           # Texte proposé (à valider par le propriétaire).
           printf '%s\n' "Bonjour," "" "Voici $QUOI :" "" "$CODE" "" \

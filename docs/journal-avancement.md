@@ -814,3 +814,23 @@ domaine `ahiankonoujoseph102-wq.github.io`), identifiant Android (SHA-1 49:27:�
 **Publiée :** v0.29.0-n53 (Android et Windows réussis ; vérification de la connexion Google sur PC réussie) —
 APK universel **17,7 Mo** (arm64 9,6 Mo, armv7 9,1 Mo), Windows **13,3 Mo**. Site republié avec le logo
 (les 3 pages, `logo.svg`, icônes d'onglet : réponse 200).
+
+### En cours (0.30.0, NON publié) — corrections + démonstration guidée avec Afi
+**Écrit et poussé sur la branche de travail seulement (pas sur main) :**
+- Installation : bouton « Retour » à chaque étape sauf la première (+ geste retour d'Android), l'activation
+  n'est jamais annulée ; logo dessiné par l'application (`lib/ecrans/logo_zero_perte.dart`) à la place du rond
+  « ZP » ; « 2 appareils (téléphone, tablette ou PC) » (application + action 4) ; écran « Code d'activation » :
+  phrase « Copiez le message entier… », message clair si rien n'est copié, bouton « Écrire le code ».
+- Démonstration guidée : `lib/demo_guidee/` (avatar Afi en CustomPainter, visite de 13 chapitres / 50 phrases,
+  Pause / Rejouer / Suivant / Quitter, sous-titres, flèche + cadre or), `docs/demo/texte-voix.md`, lecture
+  audio Android par MediaPlayer (canal natif, sans bibliothèque), voix de synthèse sinon ; fenêtre
+  d'encaissement ouverte dans le navigateur de l'application (`navigateurDeLApplication`).
+- Tests : `test/ecrans/visite_guidee_test.dart` (11 tests, tous réussis : visite complète sur 4 tailles).
+**Reste à faire (prochaine session) :**
+1. Corriger les anciens tests : `demo_test.dart` (la visite démarre seule et bloque les touchers → quitter la
+   visite d'abord), `assistant_test.dart` (« Aucun code Zéro Perte » → nouveau message ; en-tête de
+   l'installation déborde de 35 px sur grand téléphone avec texte ×1,5 → passer la flèche seule sous ~450 px
+   ou avec grand texte). Écrire les tests de la partie 1 (Retour, Écrire le code).
+2. Action « 6 - Fabriquer la voix » (Gemini, secours OpenAI, secret ZP_CLE_VOIX, Opus/WebM 24 kbit/s mono,
+   bouches.json calculé), LICENCES-TIERS.md, partie H de docs/etapes-proprietaire.md.
+3. Captures 4 tailles, mesure APK, version 0.30.0, publication.
