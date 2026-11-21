@@ -223,7 +223,7 @@ class PageResultatFermeture extends StatelessWidget {
   Widget build(BuildContext context) {
     final f = fermeture;
     final modes = [
-      for (final m in ModePaiement.values)
+      for (final m in ModePaiement.caisses)
         if (m == ModePaiement.especes ||
             (f.attendus[m] ?? 0) != 0 ||
             (f.comptes[m] ?? 0) != 0)

@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:zero_perte/app/etat_application.dart';
 import 'package:zero_perte/main.dart';
 
+import 'package:zero_perte/ecrans/credit/clients.dart';
+
 import 'support/outils.dart';
 
 void main() {
@@ -87,12 +89,14 @@ void main() {
     expect(find.byType(BandeauEssai), findsOneWidget);
   });
 
-  testWidgets('un bouton sans fonction affiche « arrive bientôt »', (
-    tester,
-  ) async {
-    await afficherAccueil(tester, const Size(360, 640), 2.0);
-    await tester.tap(find.byKey(const Key('bouton-credit')));
-    await tester.pump();
-    expect(find.text('« Crédit » arrive bientôt.'), findsOneWidget);
-  });
+  testWidgets(
+    'les 4 boutons de l\'accueil fonctionnent (« Crédit » ouvre la liste)',
+    (tester) async {
+      await afficherAccueil(tester, const Size(360, 640), 2.0);
+      await toucher(tester, find.byKey(const Key('bouton-credit')));
+      await attendre(tester, tours: 6);
+      expect(find.byType(PageClients), findsOneWidget);
+      expect(find.textContaining('arrive bientôt'), findsNothing);
+    },
+  );
 }

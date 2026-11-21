@@ -26,15 +26,19 @@ import '../domaine/utilisateurs.dart';
 import 'reglages.dart';
 import 'schema.dart';
 
-/// Moyens de paiement. Chacun a sa propre caisse (espèces et Mobile Money séparés).
-/// Le crédit client arrive à l'étape C1.
+/// Moyens de paiement. Espèces, Flooz et Mixx ont chacun leur caisse ;
+/// le crédit n'est PAS une caisse : l'argent arrivera plus tard (remboursement).
 enum ModePaiement {
   especes('especes'),
   flooz('flooz'),
-  mixx('mixx');
+  mixx('mixx'),
+  credit('credit');
 
   const ModePaiement(this.code);
   final String code;
+
+  /// Les moyens de paiement qui ont une caisse (fermeture, dépenses…).
+  static const List<ModePaiement> caisses = [especes, flooz, mixx];
 
   static ModePaiement depuisCode(String code) =>
       values.firstWhere((m) => m.code == code);
@@ -395,6 +399,16 @@ class JournalLocal implements ReglagesLocaux {
                 : -signe * (l['cout_total'] as int),
           });
         }
+        if (d['mode_paiement'] == ModePaiement.credit.code &&
+            d['client'] != null) {
+          await t.insert('mouvements_credit', {
+            'operation_id': op.id,
+            'client_id': d['client'],
+            'montant': annulation ? -(d['total'] as int) : d['total'],
+            'nature': annulation ? 'annulation' : 'vente',
+            'mode_paiement': null,
+          });
+        }
         if (annulation) {
           await t.insert('ventes_annulees', {
             'operation_id': op.id,
@@ -414,6 +428,7 @@ class JournalLocal implements ReglagesLocaux {
             'montant_recu': d['montant_recu'],
             'monnaie_rendue': d['monnaie_rendue'],
             'reference_paiement': d['reference_paiement'],
+            'client_id': d['client'],
           });
         }
       case TypeOperation.emballage:
@@ -423,6 +438,32 @@ class JournalLocal implements ReglagesLocaux {
           'emballage': d['emballage'],
           'quantite': d['quantite'],
           'consigne': d['consigne'] ?? 0,
+        });
+      case TypeOperation.clientDefini:
+        await t.insert('clients_versions', {
+          'operation_id': op.id,
+          'client_id': d['client'],
+          'nom': d['nom'],
+          'telephone': d['telephone'] ?? '',
+          'photo': d['photo'],
+          'plafond': d['plafond'],
+          'actif': (d['actif'] ?? true) == true ? 1 : 0,
+        });
+      case TypeOperation.remboursementCredit:
+        await t.insert('mouvements_credit', {
+          'operation_id': op.id,
+          'client_id': d['client'],
+          'montant': -(d['montant'] as int),
+          'nature': 'remboursement',
+          'mode_paiement': d['mode_paiement'],
+        });
+        // L'argent du remboursement entre dans la caisse de ce moyen de paiement.
+        await t.insert('mouvements_caisse', {
+          'operation_id': op.id,
+          'nature': op.type,
+          'mode_paiement': d['mode_paiement'],
+          'montant': d['montant'],
+          'motif': null,
         });
       case TypeOperation.fondsDeCaisse:
       case TypeOperation.depense:
@@ -466,6 +507,171 @@ class JournalLocal implements ReglagesLocaux {
         ),
     ];
   }
+
+  // ---------------------------------------------------------------------------
+  // Crédit client
+  // ---------------------------------------------------------------------------
+
+  /// Crée ([clientId] nul) ou modifie une fiche client. Renvoie son identifiant.
+  Future<String> definirClient({
+    String? clientId,
+    required String nom,
+    String telephone = '',
+    String? photo,
+    required int plafond,
+    bool actif = true,
+    required String auteurId,
+  }) async {
+    if (nom.trim().isEmpty) {
+      throw const ErreurZeroPerte('Écrivez le nom du client.');
+    }
+    if (plafond < 0) {
+      throw const ErreurZeroPerte('Le plafond ne peut pas être négatif.');
+    }
+    final id = clientId ?? nouvelIdentifiant();
+    await _db.transaction(
+      (t) => _ajouter(
+        t,
+        type: TypeOperation.clientDefini,
+        auteurId: auteurId,
+        donnees: {
+          'client': id,
+          'nom': nom.trim(),
+          'telephone': telephone.trim(),
+          'photo': photo,
+          'plafond': plafond,
+          'actif': actif,
+        },
+      ),
+    );
+    return id;
+  }
+
+  static Client _lireClient(Map<String, Object?> l, int solde) => Client(
+    id: l['client_id'] as String,
+    nom: l['nom'] as String,
+    telephone: l['telephone'] as String,
+    photo: l['photo'] as String?,
+    plafond: l['plafond'] as int,
+    actif: (l['actif'] as int) == 1,
+    solde: solde,
+  );
+
+  static const _derniereVersionClient =
+      'SELECT cv.* FROM clients_versions cv JOIN operations o ON o.id = cv.operation_id '
+      'WHERE cv.client_id = ? ORDER BY o.heure_telephone DESC, o.numero DESC LIMIT 1';
+
+  static Future<Client?> _clientActuel(DatabaseExecutor t, String id) async {
+    final r = await t.rawQuery(_derniereVersionClient, [id]);
+    return r.isEmpty ? null : _lireClient(r.first, 0);
+  }
+
+  static Future<int> _solde(DatabaseExecutor t, String clientId) async =>
+      ((await t.rawQuery(
+            'SELECT SUM(montant) AS s FROM mouvements_credit WHERE client_id = ?',
+            [clientId],
+          )).first['s']
+          as int?) ??
+      0;
+
+  /// Solde (ce que le client doit encore) ; 0 s'il ne doit rien.
+  Future<int> soldeClient(String clientId) => _solde(_db, clientId);
+
+  /// Un client avec son solde, ou nul.
+  Future<Client?> client(String clientId) async {
+    final r = await _db.rawQuery(_derniereVersionClient, [clientId]);
+    if (r.isEmpty) return null;
+    return _lireClient(r.first, await _solde(_db, clientId));
+  }
+
+  /// Tous les clients (dernière version), avec leur solde.
+  Future<List<Client>> clients() async {
+    final ids = await _db.rawQuery(
+      'SELECT DISTINCT client_id AS c FROM clients_versions',
+    );
+    final soldes = {
+      for (final l in await _db.rawQuery(
+        'SELECT client_id AS c, SUM(montant) AS s FROM mouvements_credit GROUP BY client_id',
+      ))
+        l['c'] as String: (l['s'] as int?) ?? 0,
+    };
+    final liste = <Client>[];
+    for (final l in ids) {
+      final id = l['c'] as String;
+      final r = await _db.rawQuery(_derniereVersionClient, [id]);
+      liste.add(_lireClient(r.first, soldes[id] ?? 0));
+    }
+    return liste;
+  }
+
+  /// Le client rembourse [montant] (tout ou partie de sa dette) ; l'argent
+  /// entre dans la caisse de [mode].
+  Future<Operation> enregistrerRemboursement({
+    required String clientId,
+    required int montant,
+    required ModePaiement mode,
+    required String auteurId,
+  }) {
+    if (montant <= 0) {
+      throw const ErreurZeroPerte('Le montant doit être positif.');
+    }
+    if (mode == ModePaiement.credit) {
+      throw const ErreurZeroPerte(
+        'Un remboursement se fait en espèces, Flooz ou Mixx.',
+      );
+    }
+    return _db.transaction((t) async {
+      final solde = await _solde(t, clientId);
+      if (montant > solde) {
+        throw ErreurZeroPerte(
+          solde <= 0
+              ? 'Ce client ne doit rien.'
+              : 'Le client doit seulement ${formatFrancs(solde)}.',
+        );
+      }
+      return _ajouter(
+        t,
+        type: TypeOperation.remboursementCredit,
+        auteurId: auteurId,
+        donnees: {
+          'client': clientId,
+          'montant': montant,
+          'mode_paiement': mode.code,
+          'reste': solde - montant,
+        },
+      );
+    });
+  }
+
+  /// Historique du crédit d'un client, le plus récent d'abord.
+  Future<List<MouvementCredit>> historiqueCredit(String clientId) async {
+    final r = await _db.rawQuery(
+      'SELECT m.*, o.heure_telephone AS h, o.donnees AS d FROM mouvements_credit m '
+      'JOIN operations o ON o.id = m.operation_id WHERE m.client_id = ? '
+      'ORDER BY o.heure_telephone DESC, o.numero DESC',
+      [clientId],
+    );
+    return [
+      for (final l in r)
+        MouvementCredit(
+          operationId: l['operation_id'] as String,
+          heure: l['h'] as int,
+          montant: l['montant'] as int,
+          nature: l['nature'] as String,
+          recu: (jsonDecode(l['d'] as String) as Map)['recu'] as String?,
+          mode: l['mode_paiement'] == null
+              ? null
+              : ModePaiement.depuisCode(l['mode_paiement'] as String),
+        ),
+    ];
+  }
+
+  /// Total que tous les clients doivent encore.
+  Future<int> totalCredits() async =>
+      ((await _db.rawQuery('SELECT SUM(montant) AS s FROM mouvements_credit'))
+              .first['s']
+          as int?) ??
+      0;
 
   // ---------------------------------------------------------------------------
   // Sauvegarde
@@ -897,9 +1103,13 @@ class JournalLocal implements ReglagesLocaux {
     required ModePaiement mode,
     int? montantRecu,
     String? referencePaiement,
+    String? clientId,
     required String auteurId,
   }) {
     if (lignes.isEmpty) throw const ErreurZeroPerte('La vente est vide.');
+    if (mode == ModePaiement.credit && clientId == null) {
+      throw const ErreurZeroPerte('Choisissez le client qui prend à crédit.');
+    }
     return _db.transaction((t) async {
       final details = <Map<String, Object?>>[];
       var total = 0;
@@ -959,6 +1169,22 @@ class JournalLocal implements ReglagesLocaux {
         }
       }
 
+      if (mode == ModePaiement.credit) {
+        final c = await _clientActuel(t, clientId!);
+        if (c == null || !c.actif) {
+          throw const ErreurZeroPerte('Client introuvable.');
+        }
+        final solde = await _solde(t, clientId);
+        if (solde + total > c.plafond) {
+          final reste = c.plafond - solde;
+          throw ErreurZeroPerte(
+            reste <= 0
+                ? '${c.nom} a déjà atteint son plafond de ${formatFrancs(c.plafond)}.'
+                : 'Plafond dépassé : ${c.nom} peut encore prendre ${formatFrancs(reste)} à crédit.',
+          );
+        }
+      }
+
       final dernier = await t.rawQuery(
         'SELECT MAX(numero_recu) AS n FROM ventes WHERE telephone_id = ?',
         [telephoneId],
@@ -979,6 +1205,7 @@ class JournalLocal implements ReglagesLocaux {
           'montant_recu': montantRecu,
           'monnaie_rendue': monnaie?.aRendre,
           'reference_paiement': referencePaiement,
+          if (mode == ModePaiement.credit) 'client': clientId,
         },
       );
       return VenteEnregistree(
@@ -1027,6 +1254,7 @@ class JournalLocal implements ReglagesLocaux {
           'lignes': vente['lignes'],
           'total': vente['total'],
           'mode_paiement': vente['mode_paiement'],
+          if (vente['client'] != null) 'client': vente['client'],
         },
       );
     });
@@ -1213,7 +1441,7 @@ class JournalLocal implements ReglagesLocaux {
   Future<Map<ModePaiement, MouvementsCaisse>> caisseEnCours() async {
     final apres = await _repereDerniereFermeture();
     return {
-      for (final m in ModePaiement.values)
+      for (final m in ModePaiement.caisses)
         m: await mouvementsCaisse(m, apres: apres),
     };
   }
@@ -1241,10 +1469,10 @@ class JournalLocal implements ReglagesLocaux {
         auteurId: auteurId,
         donnees: {
           'comptes': {
-            for (final m in ModePaiement.values) m.code: comptes[m] ?? 0,
+            for (final m in ModePaiement.caisses) m.code: comptes[m] ?? 0,
           },
           'attendus': {
-            for (final m in ModePaiement.values) m.code: attendus[m],
+            for (final m in ModePaiement.caisses) m.code: attendus[m],
           },
         },
       ),
@@ -1360,6 +1588,7 @@ class JournalLocal implements ReglagesLocaux {
     return MouvementsCaisse(
       fondsDeCaisse: await caisse(TypeOperation.fondsDeCaisse),
       ventes: ventes - annulations,
+      remboursementsCredits: await caisse(TypeOperation.remboursementCredit),
       depenses: await caisse(TypeOperation.depense),
       retraitsPatron: await caisse(TypeOperation.retraitPatron),
       consignesEncaissees: consignesEncaissees,
@@ -1571,5 +1800,58 @@ class FermetureCaisse {
 
   /// Somme des écarts de tous les moyens de paiement.
   int get ecartTotal =>
-      ModePaiement.values.fold(0, (s, m) => s + resultat(m).ecart);
+      ModePaiement.caisses.fold(0, (s, m) => s + resultat(m).ecart);
+}
+
+/// Fiche d'un client qui peut acheter à crédit.
+class Client {
+  const Client({
+    required this.id,
+    required this.nom,
+    required this.telephone,
+    required this.photo,
+    required this.plafond,
+    required this.actif,
+    required this.solde,
+  });
+
+  final String id;
+  final String nom;
+  final String telephone;
+
+  /// Photo JPEG en base64, ou nulle.
+  final String? photo;
+
+  /// Dette maximale autorisée (F).
+  final int plafond;
+  final bool actif;
+
+  /// Ce que le client doit encore (F).
+  final int solde;
+
+  /// Ce qu'il peut encore prendre à crédit.
+  int get disponible => plafond - solde < 0 ? 0 : plafond - solde;
+}
+
+/// Une ligne de l'historique du crédit d'un client.
+class MouvementCredit {
+  const MouvementCredit({
+    required this.operationId,
+    required this.heure,
+    required this.montant,
+    required this.nature,
+    this.recu,
+    this.mode,
+  });
+
+  final String operationId;
+  final int heure;
+
+  /// > 0 : le client doit plus ; < 0 : il doit moins.
+  final int montant;
+
+  /// « vente », « annulation » ou « remboursement ».
+  final String nature;
+  final String? recu;
+  final ModePaiement? mode;
 }

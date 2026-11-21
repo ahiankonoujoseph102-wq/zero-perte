@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../domaine/argent.dart';
 import '../domaine/boutique.dart';
 import '../domaine/catalogue.dart';
 import '../domaine/licence.dart';
@@ -394,8 +395,10 @@ class EtatApplication extends ChangeNotifier {
     required ModePaiement mode,
     int? montantRecu,
     String? reference,
+    String? clientId,
   }) async {
     final vente = await journal.enregistrerVente(
+      clientId: clientId,
       lignes: [
         for (final l in panier.lignes)
           l.auMontant
@@ -553,6 +556,7 @@ class EtatApplication extends ChangeNotifier {
       nombreVentes: ventes.nombre,
       benefice: benefice,
       depenses: depenses,
+      credits: await journal.totalCredits(),
       meilleurs: [
         for (final e in meilleurs.take(3))
           (
@@ -603,6 +607,78 @@ class EtatApplication extends ChangeNotifier {
     _stocks = await journal.stocks();
     notifyListeners();
     return n;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Crédit client
+  // ---------------------------------------------------------------------------
+
+  /// Plafond donné à un nouveau client quand ce n'est pas le patron qui le crée.
+  static const int plafondParDefaut = 5000;
+
+  /// Plafonds proposés au patron.
+  static const List<int> plafondsProposes = [2000, 5000, 10000, 20000, 50000];
+
+  /// Clients actifs : ceux qui doivent le plus d'abord, puis par nom.
+  Future<List<Client>> clients() async {
+    final l = (await journal.clients()).where((c) => c.actif).toList()
+      ..sort(
+        (a, b) => b.solde != a.solde
+            ? b.solde.compareTo(a.solde)
+            : a.nom.toLowerCase().compareTo(b.nom.toLowerCase()),
+      );
+    return l;
+  }
+
+  /// Crée ou modifie une fiche client. Seul le patron choisit le plafond.
+  Future<String> enregistrerClient({
+    Client? existant,
+    required String nom,
+    String telephone = '',
+    String? photo,
+    int? plafond,
+  }) async {
+    final p = estPatron
+        ? (plafond ?? existant?.plafond ?? plafondParDefaut)
+        : (existant?.plafond ?? plafondParDefaut);
+    final id = await journal.definirClient(
+      clientId: existant?.id,
+      nom: nom,
+      telephone: normaliserTelephone(telephone) ?? telephone.trim(),
+      photo: photo ?? existant?.photo,
+      plafond: p,
+      auteurId: auteurActuel,
+    );
+    notifyListeners();
+    return id;
+  }
+
+  /// Le client rembourse tout ou partie de sa dette.
+  Future<void> rembourser(
+    Client c,
+    int montant, {
+    required ModePaiement mode,
+  }) async {
+    await journal.enregistrerRemboursement(
+      clientId: c.id,
+      montant: montant,
+      mode: mode,
+      auteurId: auteurActuel,
+    );
+    notifyListeners();
+  }
+
+  /// Message de rappel envoyé au client sur WhatsApp.
+  String messageRappel(Client c) =>
+      'Bonjour ${c.nom}, petit rappel de ${config.nom} : il reste '
+      '${formatFrancs(c.solde)} à payer. Merci !';
+
+  /// Lien WhatsApp vers le client avec le message de rappel ; nul sans numéro.
+  Uri? lienRappel(Client c) {
+    final chiffres = c.telephone.replaceAll(RegExp(r'[^0-9]'), '');
+    if (chiffres.length < 8) return null;
+    final numero = chiffres.length == 8 ? '228$chiffres' : chiffres;
+    return Uri.https('wa.me', '/$numero', {'text': messageRappel(c)});
   }
 
   /// La personne connectée est-elle le patron ?
@@ -705,6 +781,7 @@ class TableauPatron {
     required this.nombreVentes,
     required this.benefice,
     required this.depenses,
+    this.credits = 0,
     required this.meilleurs,
     required this.stockBas,
   });
@@ -716,6 +793,9 @@ class TableauPatron {
   final int nombreVentes;
   final ResumeBenefice benefice;
   final int depenses;
+
+  /// Ce que les clients doivent encore (crédit), aujourd'hui, toutes périodes.
+  final int credits;
 
   /// Les 3 produits qui ont rapporté le plus : (nom, montant).
   final List<(String, int)> meilleurs;

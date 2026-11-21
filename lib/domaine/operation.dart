@@ -32,6 +32,8 @@ abstract final class TypeOperation {
   static const licenceActivee = 'licence.activee';
   static const boutiqueConfiguree = 'boutique.configuree';
   static const utilisateurDefini = 'utilisateur.defini';
+  static const clientDefini = 'client.defini';
+  static const remboursementCredit = 'credit.remboursement';
 }
 
 /// Une opération du journal.

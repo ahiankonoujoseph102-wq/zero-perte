@@ -18,6 +18,7 @@ import '../test/ecrans/demo_test.dart' show demo, cheminDemo;
 
 import 'package:zero_perte/app/etat_application.dart';
 
+import '../test/ecrans/credit_test.dart' show boutiqueAvecKofi, panierACredit;
 import '../test/support/outils.dart';
 
 Future<void> _chargerPolices() async {
@@ -235,6 +236,63 @@ void main() {
       await expectLater(
         find.byType(MaterialApp).first,
         matchesGoldenFile('captures/demo_accueil_${e.key}.png'),
+      );
+    });
+  }
+  for (final e in ecrans.entries) {
+    testWidgets('credit ${e.key}', (tester) async {
+      final env = await environnementDeTest(
+        tester,
+        preparer: (etat) async {
+          await boutiqueAvecKofi(etat);
+          await etat.enregistrerClient(
+            nom: 'Afi Mensah',
+            telephone: '91223344',
+            plafond: 10000,
+          );
+        },
+      );
+      await afficherApp(tester, env.etat, taille: e.value, densite: 2);
+      await toucher(tester, find.byKey(const Key('bouton-vendre')));
+      await attendre(tester, tours: 8);
+      await panierACredit(tester, 3);
+      await toucher(tester, find.byKey(const Key('bouton-choisir-client')));
+      await attendre(tester, tours: 8);
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('captures/credit_choix_${e.key}.png'),
+      );
+      await toucher(tester, find.byKey(const Key('client-Kofi')));
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('captures/credit_encaisser_${e.key}.png'),
+      );
+      await toucher(tester, find.byKey(const Key('bouton-valider-vente')));
+      await attendre(tester, tours: 10);
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('recu-credit')),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('captures/credit_recu_${e.key}.png'),
+      );
+      await tester.pageBack();
+      await attendre(tester, tours: 8);
+      await tester.pageBack();
+      await attendre(tester, tours: 8);
+      await toucher(tester, find.byKey(const Key('bouton-credit')));
+      await attendre(tester, tours: 8);
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('captures/credit_liste_${e.key}.png'),
+      );
+      await toucher(tester, find.byKey(const Key('client-Kofi')));
+      await attendre(tester, tours: 8);
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('captures/credit_fiche_${e.key}.png'),
       );
     });
   }

@@ -149,7 +149,7 @@ class _PageSaisieMontantState extends State<PageSaisieMontant> {
               spacing: 8,
               runSpacing: 8,
               children: [
-                for (final m in ModePaiement.values)
+                for (final m in ModePaiement.caisses)
                   ChoiceChip(
                     key: Key('mode-${m.code}'),
                     avatar: Icon(iconePaiement(m)),

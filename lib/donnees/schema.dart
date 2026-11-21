@@ -13,11 +13,11 @@
 /// n'utilise donc ni UPSERT, ni RETURNING, ni fonctions JSON, ni fonctions de fenêtre.
 library;
 
-const int versionSchema = 2;
+const int versionSchema = 3;
 
 /// Migrations : pour passer de la version N-1 à la version N.
 /// Uniquement des AJOUTS (ALTER TABLE … ADD COLUMN), compatibles SQLite 3.18.
-const Map<int, List<String>> migrations = {
+final Map<int, List<String>> migrations = {
   2: [
     'ALTER TABLE produits_versions ADD COLUMN emoji TEXT',
     'ALTER TABLE produits_versions ADD COLUMN catalogue_id TEXT',
@@ -25,7 +25,42 @@ const Map<int, List<String>> migrations = {
     'ALTER TABLE produits_versions ADD COLUMN photo TEXT',
     'ALTER TABLE conditionnements_versions ADD COLUMN a_verifier INTEGER NOT NULL DEFAULT 0',
   ],
+  // Crédit client (étape C1).
+  3: [
+    'ALTER TABLE ventes ADD COLUMN client_id TEXT',
+    '''
+CREATE TABLE clients_versions (
+  operation_id TEXT PRIMARY KEY NOT NULL,
+  client_id TEXT NOT NULL,
+  nom TEXT NOT NULL,
+  telephone TEXT NOT NULL DEFAULT '',
+  photo TEXT,
+  plafond INTEGER NOT NULL CHECK (plafond >= 0),
+  actif INTEGER NOT NULL DEFAULT 1
+)''',
+    'CREATE INDEX clients_versions_client ON clients_versions (client_id)',
+    // montant > 0 : le client doit plus (vente à crédit) ;
+    // montant < 0 : il doit moins (remboursement, vente à crédit annulée).
+    '''
+CREATE TABLE mouvements_credit (
+  operation_id TEXT PRIMARY KEY NOT NULL,
+  client_id TEXT NOT NULL,
+  montant INTEGER NOT NULL,
+  nature TEXT NOT NULL,
+  mode_paiement TEXT
+)''',
+    'CREATE INDEX mouvements_credit_client ON mouvements_credit (client_id)',
+    ...declencheursPour('clients_versions'),
+    ...declencheursPour('mouvements_credit'),
+  ],
 };
+
+/// Tables en « ajout seulement » ajoutées par les migrations (déclencheurs
+/// créés dans la migration elle-même).
+const List<String> tablesAjoutSeulementMigrees = [
+  'clients_versions',
+  'mouvements_credit',
+];
 
 /// Tables en « ajout seulement » (protégées par des déclencheurs).
 const List<String> tablesAjoutSeulement = [
@@ -150,16 +185,19 @@ CREATE TABLE mouvements_caisse (
 
 /// Déclencheurs qui interdisent modification et effacement.
 List<String> get creationDeclencheurs => [
-  for (final table in tablesAjoutSeulement) ...[
-    '''
+  for (final table in tablesAjoutSeulement) ...declencheursPour(table),
+];
+
+/// Les deux déclencheurs qui protègent une table « ajout seulement ».
+List<String> declencheursPour(String table) => [
+  '''
 CREATE TRIGGER ${table}_jamais_modifie BEFORE UPDATE ON $table
 BEGIN
   SELECT RAISE(ABORT, 'Zero Perte : on ne modifie jamais l''historique ($table)');
 END''',
-    '''
+  '''
 CREATE TRIGGER ${table}_jamais_efface BEFORE DELETE ON $table
 BEGIN
   SELECT RAISE(ABORT, 'Zero Perte : on n''efface jamais l''historique ($table)');
 END''',
-  ],
 ];

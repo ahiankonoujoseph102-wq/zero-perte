@@ -1,7 +1,4 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 
 import '../../app/etat_application.dart';
 import '../../domaine/argent.dart';
@@ -13,6 +10,7 @@ import '../../theme/couleurs.dart';
 import '../communs.dart';
 import '../vente/page_encaisser.dart' show nomPaiement;
 import 'apercu_recu.dart';
+import 'capture.dart';
 
 /// « 21/11/2026 10:42 »
 String dateRecu(int ms) {
@@ -79,6 +77,15 @@ class _RecuPartageableState extends State<RecuPartageable> {
     widget.etat,
     widget.donnees,
   );
+
+  /// Vente à crédit : nom du client et ce qu'il doit maintenant.
+  late final Future<String?> _credit = () async {
+    final id = widget.donnees['client'] as String?;
+    if (id == null) return null;
+    final c = await widget.etat.journal.client(id);
+    if (c == null) return null;
+    return 'Client : ${c.nom} — reste à payer : ${formatFrancs(c.solde)}';
+  }();
   bool _enCours = false;
 
   String get _recu => widget.donnees['recu'] as String;
@@ -86,16 +93,10 @@ class _RecuPartageableState extends State<RecuPartageable> {
   Future<void> _envoyer() async {
     setState(() => _enCours = true);
     try {
-      final ctx = _cadre.currentContext;
-      if (ctx == null) return;
-      await Scrollable.ensureVisible(ctx);
-      if (!ctx.mounted) return;
-      final cadre = ctx.findRenderObject()! as RenderRepaintBoundary;
-      final image = await cadre.toImage(pixelRatio: 2.5);
-      final octets = await image.toByteData(format: ui.ImageByteFormat.png);
-      image.dispose();
+      final png = await capturerPng(_cadre);
+      if (png == null) return;
       final r = await widget.etat.services.partagerImage(
-        octets!.buffer.asUint8List(),
+        png,
         (widget.etat.estDemo ? 'DÉMONSTRATION — SANS VALEUR. ' : '') +
             texteRecu(
               widget.etat.config,
@@ -116,10 +117,12 @@ class _RecuPartageableState extends State<RecuPartageable> {
     final mode = ModePaiement.depuisCode(
       widget.donnees['mode_paiement'] as String,
     );
-    return FutureBuilder<List<LigneRecu>>(
-      future: _lignes,
+    return FutureBuilder<(List<LigneRecu>, String?)>(
+      future: Future.wait([_lignes, _credit])
+          .then((r) => (r[0] as List<LigneRecu>, r[1] as String?)),
       builder: (context, s) {
         if (!s.hasData) return const SizedBox(height: 80);
+        final (lignes, credit) = s.data!;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -151,7 +154,8 @@ class _RecuPartageableState extends State<RecuPartageable> {
                     config: widget.etat.config,
                     numero: _recu,
                     date: dateRecu(widget.heure),
-                    lignes: s.data!,
+                    lignes: lignes,
+                    credit: credit,
                     paiement: nomPaiement(mode),
                     demo: widget.etat.estDemo,
                   ),

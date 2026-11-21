@@ -116,6 +116,13 @@ class _Contenu extends StatelessWidget {
           montant: t.depenses,
           couleur: CouleursZp.argentSort,
         ),
+        _Chiffre(
+          cle: 'chiffre-credits',
+          icone: Icons.menu_book_rounded,
+          titre: 'Les clients doivent (crédit)',
+          montant: t.credits,
+          couleur: const Color(0xFF8A5300),
+        ),
         const SizedBox(height: 8),
         const _Titre('Les plus vendus'),
         if (t.meilleurs.isEmpty)

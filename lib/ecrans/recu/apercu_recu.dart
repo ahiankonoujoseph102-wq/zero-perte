@@ -27,6 +27,7 @@ class ApercuRecu extends StatelessWidget {
     ],
     this.paiement = 'Espèces',
     this.demo = false,
+    this.credit,
   });
 
   final ConfigBoutique config;
@@ -38,6 +39,9 @@ class ApercuRecu extends StatelessWidget {
 
   /// Reçu de la démonstration : marqué « sans valeur ».
   final bool demo;
+
+  /// Vente à crédit : « Client : Kofi — reste à payer : 1 800 F ».
+  final String? credit;
 
   @override
   Widget build(BuildContext context) {
@@ -167,7 +171,20 @@ class ApercuRecu extends StatelessWidget {
                     ),
                   ],
                 ),
-                Text('Payé : $paiement', style: petit),
+                Text(
+                  credit == null ? 'Payé : $paiement' : 'À crédit',
+                  style: petit,
+                ),
+                if (credit != null)
+                  Text(
+                    credit!,
+                    key: const Key('recu-credit'),
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF8A5300),
+                    ),
+                  ),
                 const SizedBox(height: 10),
                 Text(
                   config.messageRecu,

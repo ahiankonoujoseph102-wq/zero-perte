@@ -10,17 +10,21 @@ import '../assistant/etapes_boutique.dart' show decorationChamp;
 import '../clavier_montant.dart';
 import '../recu/recu_vente.dart';
 import '../communs.dart';
+import '../credit/clients.dart';
 
 /// Nom affiché d'un moyen de paiement (« Mixx » = l'ancien T-Money).
 String nomPaiement(ModePaiement m) => switch (m) {
   ModePaiement.especes => 'Espèces',
   ModePaiement.flooz => 'Flooz',
   ModePaiement.mixx => 'Mixx (T-Money)',
+  ModePaiement.credit => 'Crédit',
 };
 
-IconData iconePaiement(ModePaiement m) => m == ModePaiement.especes
-    ? Icons.payments_rounded
-    : Icons.phone_android_rounded;
+IconData iconePaiement(ModePaiement m) => switch (m) {
+  ModePaiement.especes => Icons.payments_rounded,
+  ModePaiement.credit => Icons.menu_book_rounded,
+  _ => Icons.phone_android_rounded,
+};
 
 /// Encaissement : moyen de paiement, argent reçu, monnaie à rendre.
 class PageEncaisser extends StatefulWidget {
@@ -39,6 +43,9 @@ class _PageEncaisserState extends State<PageEncaisser> {
   final _reference = TextEditingController();
   bool _enCours = false;
 
+  /// Client qui prend à crédit (mode « Crédit »).
+  Client? _client;
+
   int get _total => widget.panier.total;
 
   @override
@@ -53,7 +60,21 @@ class _PageEncaisserState extends State<PageEncaisser> {
     super.dispose();
   }
 
-  bool get _peutValider => _mode != ModePaiement.especes || _recu >= _total;
+  bool get _peutValider => switch (_mode) {
+    ModePaiement.especes => _recu >= _total,
+    ModePaiement.credit =>
+      _client != null && _client!.solde + _total <= _client!.plafond,
+    _ => true,
+  };
+
+  Future<void> _choisirClient() async {
+    final c = await Navigator.of(context).push<Client>(
+      MaterialPageRoute(
+        builder: (_) => PageClients(etat: widget.etat, choisir: true),
+      ),
+    );
+    if (c != null && mounted) setState(() => _client = c);
+  }
 
   Future<void> _valider() async {
     setState(() => _enCours = true);
@@ -62,7 +83,8 @@ class _PageEncaisserState extends State<PageEncaisser> {
         widget.panier,
         mode: _mode,
         montantRecu: _mode == ModePaiement.especes ? _recu : null,
-        reference: _reference.text,
+        reference: _mode == ModePaiement.credit ? null : _reference.text,
+        clientId: _mode == ModePaiement.credit ? _client?.id : null,
       );
       final rendre = vente.monnaie?.aRendre ?? 0;
       await widget.etat.services.voix.dire(
@@ -238,7 +260,13 @@ class _PageEncaisserState extends State<PageEncaisser> {
                       onChange: (v) => setState(() => _recu = v),
                     ),
                   ),
-                ] else
+                ] else if (_mode == ModePaiement.credit)
+                  _ChoixClientCredit(
+                    client: _client,
+                    total: _total,
+                    onChoisir: _choisirClient,
+                  )
+                else
                   SizedBox(
                     child: Column(
                       children: [
@@ -296,6 +324,84 @@ class _PageEncaisserState extends State<PageEncaisser> {
   }
 }
 
+/// Vente à crédit : le client choisi, ce qu'il devra, ou le bouton pour le choisir.
+class _ChoixClientCredit extends StatelessWidget {
+  const _ChoixClientCredit({
+    required this.client,
+    required this.total,
+    required this.onChoisir,
+  });
+
+  final Client? client;
+  final int total;
+  final VoidCallback onChoisir;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = client;
+    if (c == null) {
+      return GrosBouton(
+        key: const Key('bouton-choisir-client'),
+        texte: 'Choisir le client',
+        icone: Icons.person_search_rounded,
+        couleur: CouleursZp.credit,
+        onPressed: onChoisir,
+      );
+    }
+    final apres = c.solde + total;
+    final trop = apres > c.plafond;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: CouleursZp.credit.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: trop ? CouleursZp.argentSort : CouleursZp.credit,
+          width: 2,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              AvatarClient(client: c),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  c.nom,
+                  key: const Key('client-choisi'),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              TextButton(
+                key: const Key('bouton-changer-client'),
+                onPressed: onChoisir,
+                child: const Text('Changer', style: TextStyle(fontSize: 17)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            trop
+                ? 'Plafond dépassé : il peut encore prendre ${formatFrancs(c.disponible)}.'
+                : 'Après cette vente, il devra ${formatFrancs(apres)}.',
+            key: const Key('credit-apres'),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: trop ? CouleursZp.argentSort : CouleursZp.texteSurCredit,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _BoutonMode extends StatelessWidget {
   const _BoutonMode({
     required this.mode,
@@ -334,7 +440,8 @@ class _BoutonMode extends StatelessWidget {
                     color: choisi ? Colors.white : CouleursZp.texte,
                   ),
                   Text(
-                    nomPaiement(mode),
+                    // Nom court sur le bouton (« Mixx » : la place manque).
+                    mode == ModePaiement.mixx ? 'Mixx' : nomPaiement(mode),
                     style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w700,

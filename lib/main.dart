@@ -14,6 +14,7 @@ import 'ecrans/caisse/fermeture.dart';
 import 'ecrans/caisse/saisie_montant.dart';
 import 'ecrans/communs.dart';
 import 'ecrans/connexion.dart';
+import 'ecrans/credit/clients.dart';
 import 'ecrans/depense/page_depense.dart';
 import 'ecrans/patron/espace_patron.dart';
 import 'ecrans/vente/page_vendre.dart';
@@ -238,6 +239,9 @@ class ZeroPerteApp extends StatelessWidget {
                         ouvrirDepenseArgent: (_) => pageDepenseArgent(etat),
                       ),
                     ),
+                  ),
+                  'credit': () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => PageClients(etat: etat)),
                   ),
                   'fermer': () async {
                     if (!await etat.caisseOuverte()) {

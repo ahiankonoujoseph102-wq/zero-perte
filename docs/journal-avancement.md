@@ -10,10 +10,11 @@ Il est mis à jour **à la fin de chaque étape**.
 | | |
 |---|---|
 | **Dernière étape terminée** | **B13** — Sauvegarde chiffrée → **bloc B terminé** |
-| **Version publiée** | 0.15.0 (voir les Releases GitHub) |
-| **Prochaine étape** | **C1** — Crédit client |
+| **Version publiée** | 0.16.0 (voir les Releases GitHub) |
+| **Dernière étape terminée (bis)** | **C1** — Crédit client |
+| **Prochaine étape** | Rapport de fin de bloc C1, puis bloc **D** (synchronisation) |
 | **Méthode** | Enchaîner les étapes de `docs/plan-v1.md` sans validation intermédiaire : B1→B13, puis C1, D, C2→C4, E. Rapport au chef de projet **à la fin de chaque bloc**, ou si une décision appartient au propriétaire, ou si on est bloqué. |
-| **Ordre des blocs** | A ✅ → B ✅ → **C1 (en cours)** → D → C2–C4 → E |
+| **Ordre des blocs** | A ✅ → B ✅ → C1 ✅ → **D** → C2–C4 → E |
 | **Pour tout choix non décidé** | Prendre l'option la plus simple et la lister dans le rapport de fin de bloc C1 avec une recommandation. |
 
 ### Décisions du propriétaire (validées le 21 novembre 2026, après le rapport de fin de bloc B)
@@ -263,6 +264,32 @@ Police Atkinson Hyperlegible, marque bleu nuit, écran d'accueil vendeur à 4 gr
 - Démonstration ouverte deux fois : la vente « D-000001 » faite la première fois a disparu la deuxième (riz de nouveau à **100 kg**), et la vraie base du téléphone a toujours **0** opération.
 - Activation → « Voir une démonstration » → vente → reçu « **DÉMONSTRATION — SANS VALEUR** » → « Quitter » → retour à « Coller le code ».
 - La clé publique officielle est présente et fait bien **32 octets**.
+
+### Taille de l'APK ✅ (fabrication à partir de la version 0.14.0-n27)
+**Mesure avant :** APK universel **33 253 376 octets (33,3 Mo)** ; arm64 18,2 Mo ; armv7 15,6 Mo. Il n'y avait déjà ni x86 ni x86_64. Le gros du poids : les moteurs Flutter et le code de l'application (32 et 64 bits), rangés **non compressés** dans l'APK (≈ 31 Mo à eux seuls). La hausse depuis 26–27 Mo vient du code ajouté (chiffrement, photos, catalogues, écrans).
+**Fait :**
+- `android/app/build.gradle.kts` : `jniLibs.useLegacyPackaging = true` → les bibliothèques natives sont compressées dans l'APK (Android les décompresse à l'installation ; l'espace occupé sur le téléphone une fois installé reste à peu près le même, le **téléchargement** est divisé par deux).
+- Fabrication avec `--obfuscate --split-debug-info` : le code de l'application est plus petit ; les « symboles » (pour lire un rapport de plantage) sont gardés 90 jours comme artefact GitHub, pas dans l'APK.
+**Mesure après :** APK universel **14 691 004 octets (14,7 Mo)** ; arm64 **7,9 Mo** ; armv7 **7,3 Mo**. Vérifié dans l'APK publié : `native-code: arm64-v8a armeabi-v7a`, `minSdkVersion 26` (Android 8), même lien `releases/latest/download/ZeroPerte.apk`.
+
+### C1 — Crédit client ✅ (version 0.16.0)
+**Fait :**
+- Bouton **« Crédit »** de l'accueil → liste des clients (ceux qui doivent le plus en haut, « Les clients doivent en tout », recherche au-delà de 5 clients) → **fiche client** : photo ou initiales, « Doit 1 800 F » en ambre, « Peut encore prendre … », historique (achats, achats annulés, remboursements).
+- **Nouveau client** : nom, téléphone WhatsApp (mis au format +228), photo ; **plafond** (dette maximale) : le patron le choisit (2 000 à 50 000 F) ; un vendeur ne peut pas le choisir (5 000 F par défaut).
+- **Vente à crédit** : 4e moyen de paiement « Crédit » à l'encaissement → « Choisir le client » → « Après cette vente, il devra … » ; au-delà du plafond, la vente est bloquée (« il peut encore prendre … »). Le reçu indique « À crédit » et « Client : Kofi — reste à payer : … ».
+- **Remboursement partiel** : « Il rembourse » → montant + espèces/Flooz/Mixx → l'argent entre dans la caisse de ce moyen de paiement (compté à la fermeture) → **reçu de remboursement** (« A payé », « Reste à payer ») envoyé en image sur WhatsApp.
+- **« Rappeler sur WhatsApp »** : ouvre WhatsApp sur le numéro du client avec le message « Bonjour Kofi, petit rappel de Boutique … : il reste 600 F à payer. Merci ! ».
+- Le crédit **n'est pas une caisse** : une vente à crédit ne change aucune caisse ; une vente à crédit annulée efface la dette et remet le stock. Le tableau du patron montre « Les clients doivent (crédit) ».
+- Base : schéma **version 3** (tables `clients_versions` et `mouvements_credit`, en « ajout seulement », colonne `ventes.client_id`) ; opérations `client.defini` et `credit.remboursement`.
+- Écran d'encaissement : sur les boutons, « Mixx » au lieu de « Mixx (T-Money) » (avec 4 boutons, le texte devenait illisible sur 4 pouces).
+
+**Tests (232 au total, tous réussis)**, par exemple :
+- Kofi (plafond 5 000 F) prend **3 kg de riz à crédit (1 800 F)** → il doit **1 800 F**, aucune caisse ne bouge, reçu « Client : Kofi — reste à payer : 1 800 F ».
+- Il **rembourse 1 000 F** en espèces → reste **800 F**, caisse espèces attendue **+1 000 F**, reçu envoyé avec « Kofi a remboursé 1 000 F. Reste à payer : 800 F. Merci ! ».
+- Kofi doit déjà **4 500 F** (plafond 5 000 F) → 2 kg (1 200 F) **bloqués** : « il peut encore prendre 500 F ».
+
+**Problèmes restants :** une fiche client ne peut pas encore être supprimée ou désactivée depuis l'écran (prévu : bouton patron « Ne plus faire crédit »). Les soldes sont ceux de ce téléphone jusqu'à la synchronisation (bloc D).
+
 
 
 
