@@ -731,3 +731,6 @@ reçu ; sur 4 pouces, la partie fixe du retour cachait les articles (rendue plus
 - Écran de retour sur les 6 tailles : caisse, motif et bouton visibles sans défiler, retour validé.
 Captures : `test_captures/v028_captures_test.dart` (bandeau, retour crédit payé, retour en espèces, devis
 valable) + `lot_e_captures_test.dart`, vérifiées sur 4 pouces, grand téléphone, tablette 10" et PC 1366×768.
+
+**Publiée :** v0.28.0-n44 (Android et Windows réussis) — APK universel **17,6 Mo** (arm64 9,5 Mo, armv7 9,0 Mo),
+**ZeroPerte-Windows.zip 13,3 Mo**. (Ligne ajoutée sur les branches de travail seulement.)
