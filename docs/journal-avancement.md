@@ -966,3 +966,15 @@ Fait (simple et sûr, testé) :
 À décider par le propriétaire (voir rapport) : fusionner « Tableau » et « Rapports », retirer « Tableau » du
 menu PC (l'accueil le montre déjà), rapport du soir automatique sur WhatsApp, liste d'achats aux
 fournisseurs depuis le stock bas, rappel automatique des crédits.
+
+## Décisions du propriétaire sur l'audit (22/11)
+- Améliorations de l'audit VALIDÉES : elles partent avec la 0.31.0. Priorité absolue : finir la voix, publier.
+- **0.32 (après la publication de la 0.31.0)** :
+  - Q1 (a) résumé du soir à la fermeture de la caisse (ventes, bénéfice, écart de caisse, stock bas) : arrive
+    au patron par la synchronisation (et par notification quand Firebase sera branché ; sans Firebase, il
+    s'affiche à l'ouverture de l'application du patron) ; bouton « Envoyer sur WhatsApp » pour le partager.
+    PAS d'envoi automatique sur WhatsApp (pas d'API payante).
+  - Q2 (a) stock bas → WhatsApp s'ouvre avec la liste d'achats déjà écrite ; le patron envoie.
+  - Q3 (a) rappel des crédits en retard, validé par le patron en un toucher.
+  - Q4 (a) « Tableau » et « Rapports » fusionnés en « Chiffres ».
+  - Mêmes règles : tests, captures 4 tailles, rapport avec questions (a)/(b).
