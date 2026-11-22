@@ -9,9 +9,9 @@ Il est mis à jour **à la fin de chaque étape**.
 
 | | |
 |---|---|
-| **Dernière étape terminée** | **0.30.0** : Retour dans l'installation, démonstration guidée avec Afi |
-| **Version publiée** | 0.30.0 (Android et Windows, voir les Releases GitHub) |
-| **Prochaine étape** | Essai A5 (Google Drive sur un vrai téléphone et sur PC), puis étapes B et F (Cloudflare, Firebase) |
+| **Dernière étape terminée** | **0.31.0** : Afi en médaillon, voix Sulafat (48/50), corrections de la visite, améliorations de l'audit |
+| **Version publiée** | 0.31.0 (Android et Windows, voir les Releases GitHub) |
+| **Prochaine étape** | 0.31.1 (4 phrases refaites le 23/11 après 8 h 12), puis priorités 1 et 2 (branche `claude/suite-apres-031`), 0.32, relais |
 | **Méthode** | Branche de travail, tests + captures sur 4 tailles, puis fusion dans `main` (= publication). Rien de non testé sur `main`. |
 | **Pour tout choix non décidé** | Prendre l'option la plus simple, la noter ici et la mettre dans le rapport avec une recommandation. |
 
@@ -1010,3 +1010,12 @@ branche).
   clé Gemini. Claude ne modifie aucun secret : au propriétaire de remettre la valeur. Copie de secours chiffrée
   dans le coffre privé `zero-perte-coffre`, dossier `cle-signature/`. Sans la bonne clé, AUCUNE mise à jour ne
   peut être installée sur les téléphones des clients (Android exige la même signature).
+
+### Version 0.31.0 — publiée le 22/11
+- Clé de signature remise par l'action 7 (lancée par le propriétaire) : copie de secours du coffre, empreinte
+  SHA-1 `49:27:0C:A9:FE:00:2B:55:14:08:5A:9E:AE:50:10:63:C9:CC:B1:A3` vérifiée avant l'écriture ; ZP_CLE_VOIX
+  acceptée par Google, ZP_CLE_LICENCES conforme, mot de passe de signature valide (aucun avertissement).
+- Décision du propriétaire : publier avec **48 phrases sur 50** ; 049 et 050 dites par la voix de l'appareil ;
+  020, 037, 049, 050 refaites le 23/11 → **0.31.1**.
+- Contrôles : 437 tests, visite entière à vitesse réelle sur 4 tailles (aucun bouton caché), fabrication
+  signée « officiel » sur la branche : APK universel **17,7 Mo**, ZIP Windows **13,3 Mo**.
