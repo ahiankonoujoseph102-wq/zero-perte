@@ -946,3 +946,23 @@ choisir. **Refonte d'Afi demandée** (dessin jugé non professionnel) : planche 
   (coupure dans la pause la plus proche de l'endroit attendu d'après la longueur des textes + 0,5 s par phrase ;
   sur les 16 durées réelles mesurées, écart ≤ 17 %), lot douteux redemandé en deux moitiés, chaque phrase
   gardée dès qu'elle est faite. Relance programmée à 8 h 12 maintenue.
+
+### Audit complet de l'application (22/11, demande du propriétaire) — ajouté à la 0.31.0
+Captures de toutes les pages de la boutique de démonstration (téléphone 6,5 pouces et PC), relues une à une.
+Fait (simple et sûr, testé) :
+- **Accueil du patron sur téléphone** : il n'y avait AUCUN chiffre (le PC en avait). Ajout d'un résumé du
+  jour : ventes, bénéfice estimé, crédits clients ; un toucher ouvre « Tableau ». Caché sur les très petits
+  écrans (sinon les gros boutons passent sous 72 points, règle des gros doigts).
+- **Vendre** : case « Chercher un produit » au-delà de 12 produits (début des mots, sans accents : « pate »
+  trouve « Pâtes », « ri » trouve « Riz » mais pas « Sucrerie ») ; message clair si rien ne correspond. Les 2
+  icônes du haut portent leur nom (« Devis », « Ventes »).
+- **Pages vides** (Devis, Retours, Fournisseurs, Vendeurs) : icône + à quoi sert la page, au lieu d'une
+  phrase seule au milieu du vide.
+- **Fournisseurs** : icône propre (poignée de main) ; avant, même camion qu'« Arrivages ».
+- **Gestion** : même nom partout (la page s'appelait « Espace patron ») ; sur tablette et PC, elle ne
+  répète plus les pages déjà dans le menu de gauche (il reste Caisses fermées, Argent pris, Appareils et
+  Drive, Sauvegarde).
+- 3 nouveaux tests ; tests passant par « Gestion » sur PC passent maintenant par le menu de gauche.
+À décider par le propriétaire (voir rapport) : fusionner « Tableau » et « Rapports », retirer « Tableau » du
+menu PC (l'accueil le montre déjà), rapport du soir automatique sur WhatsApp, liste d'achats aux
+fournisseurs depuis le stock bas, rappel automatique des crédits.
