@@ -241,9 +241,10 @@ def _niveaux(pcm):
 
 
 def decouper(pcm, textes):
-    """Découpe l'audio d'un lot en autant de morceaux que de phrases, aux
-    pauses les plus longues. Renvoie la liste des PCM, ou None si le
-    découpage n'est pas sûr (on demandera alors phrase par phrase)."""
+    """Découpe l'audio d'un lot en autant de morceaux que de phrases. Chaque
+    coupure est mise dans la pause la plus proche de l'endroit attendu
+    (d'après la longueur des textes). Renvoie la liste des PCM, ou None si le
+    découpage n'est pas sûr."""
     n = len(textes)
     if n == 1:
         return [pcm]
@@ -252,28 +253,43 @@ def decouper(pcm, textes):
         return None
     haut = sorted(niv)[int(len(niv) * 0.95)] or 1
     calme = [v < haut * 0.06 for v in niv]
-    # Pauses : suites de blocs calmes (début, longueur), hors début et fin.
-    pauses, i = [], 0
-    while i < len(calme):
+    actifs = [i for i, c in enumerate(calme) if not c]
+    if not actifs:
+        return None
+    debut_voix, fin_voix = actifs[0], actifs[-1] + 1
+    # Pauses d'au moins 300 ms à l'intérieur de la parole : (début, longueur).
+    pauses, i = [], debut_voix
+    while i < fin_voix:
         if calme[i]:
             j = i
-            while j < len(calme) and calme[j]:
+            while j < fin_voix and calme[j]:
                 j += 1
-            if i > 0 and j < len(calme):
+            if j - i >= 6:
                 pauses.append((i, j - i))
             i = j
         else:
             i += 1
     if len(pauses) < n - 1:
         return None
-    par_longueur = sorted(pauses, key=lambda p: -p[1])
-    choisies = sorted(par_longueur[: n - 1])
-    plus_courte = min(p[1] for p in choisies)
-    suivante = par_longueur[n - 1][1] if len(par_longueur) >= n else 0
-    # Les pauses entre phrases doivent être nettement plus longues que les
-    # pauses à l'intérieur d'une phrase.
-    if plus_courte < 12 or (suivante and plus_courte < suivante * 1.4):
-        return None
+    # Durée attendue ≈ 0,5 s + longueur du texte (une phrase très courte
+    # comme « Bonjour ! » dure plus que ses 9 lettres).
+    longueurs = [len(t) + 8 for t in textes]
+    total = sum(longueurs)
+    duree = fin_voix - debut_voix
+    choisies, cumul, reste = [], 0, list(pauses)
+    for k in range(n - 1):
+        cumul += longueurs[k]
+        attendu = debut_voix + duree * cumul / total
+        # Pause la plus proche (son milieu), après la précédente ; les
+        # longues pauses sont préférées à distance égale.
+        candidates = [p for p in reste if not choisies or p[0] > choisies[-1][0]]
+        if not candidates:
+            return None
+        meilleure = min(candidates, key=lambda p: abs(p[0] + p[1] / 2 - attendu) - p[1] * 0.5)
+        if abs(meilleure[0] + meilleure[1] / 2 - attendu) > duree * 0.18:
+            return None
+        choisies.append(meilleure)
+        reste.remove(meilleure)
     pas = TAUX * PAS_BOUCHE_MS // 1000 * 2  # octets par bloc
     marge = 3  # blocs de silence gardés de chaque côté (150 ms)
     morceaux, debut = [], 0
@@ -282,9 +298,9 @@ def decouper(pcm, textes):
         debut = d + l - marge
     morceaux.append(pcm[debut * pas :])
     # Durées cohérentes avec la longueur des textes.
-    rapports = [len(m) / max(1, len(t)) for m, t in zip(morceaux, textes)]
+    rapports = [len(_retirer_silence(m)) / l for m, l in zip(morceaux, longueurs)]
     milieu = sorted(rapports)[len(rapports) // 2]
-    if any(r < milieu * 0.55 or r > milieu * 1.8 for r in rapports):
+    if any(r < milieu * 0.6 or r > milieu * 1.6 for r in rapports):
         return None
     return morceaux
 
@@ -468,19 +484,26 @@ def main():
                 # phrase par phrase.
                 for i in range(0, len(restantes), TAILLE_LOT):
                     lot = restantes[i : i + TAILLE_LOT]
-                    morceaux = None
-                    # Lot douteux : redemandé une fois (1 demande), puis phrase
-                    # par phrase (5 demandes).
-                    for _ in range(2 if len(lot) > 1 else 0):
-                        pcm = gemini("\n\n".join(t for _, _, t in lot), k, mod, voix, STYLE_LOT)
-                        morceaux = decouper(pcm, [t for _, _, t in lot])
-                        if morceaux is not None:
-                            break
-                        print(f"  lot {lot[0][0]}–{lot[-1][0]} : découpage pas sûr")
-                    if morceaux is None:
-                        morceaux = [gemini(t, k, mod, voix) for _, _, t in lot]
-                    for (n, fichier, texte), m in zip(lot, morceaux):
-                        garder(resultat, n, fichier, texte, m)
+                    # Lot douteux : redemandé en deux moitiés, puis phrase par
+                    # phrase. Chaque phrase réussie est gardée tout de suite
+                    # (rien n'est perdu si le quota du jour tombe).
+                    def faire(sous_lot):
+                        if len(sous_lot) == 1:
+                            n, fichier, texte = sous_lot[0]
+                            garder(resultat, n, fichier, texte, gemini(texte, k, mod, voix))
+                            return
+                        pcm = gemini("\n\n".join(t for _, _, t in sous_lot), k, mod, voix, STYLE_LOT)
+                        m = decouper(pcm, [t for _, _, t in sous_lot])
+                        if m is not None:
+                            for (n, fichier, texte), morceau in zip(sous_lot, m):
+                                garder(resultat, n, fichier, texte, morceau)
+                            return
+                        print(f"  lot {sous_lot[0][0]}–{sous_lot[-1][0]} : découpage pas sûr, en deux")
+                        moitie = (len(sous_lot) + 1) // 2
+                        faire(sous_lot[:moitie])
+                        faire(sous_lot[moitie:])
+
+                    faire(lot)
                     time.sleep(2)
             else:
                 for n, fichier, texte in restantes:
