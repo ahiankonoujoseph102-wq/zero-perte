@@ -23,7 +23,7 @@ Future<void> _polices() async {
 void main() {
   setUpAll(_polices);
   testWidgets('planche Afi v2', (tester) async {
-    tester.view.physicalSize = const Size(2000, 900);
+    tester.view.physicalSize = const Size(2000, 1000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     Widget case_(String titre, EtatAfi e) => Column(
@@ -48,9 +48,9 @@ void main() {
       children: [
         ClipRect(
           child: Align(
-            alignment: const Alignment(0, -0.18),
-            heightFactor: 0.32,
-            widthFactor: 0.6,
+            alignment: const Alignment(0, -0.27),
+            heightFactor: 0.3,
+            widthFactor: 0.45,
             child: Container(
               color: const Color(0xFF132447),
               child: AfiV2(
@@ -90,11 +90,11 @@ void main() {
                     case_('Sourit', const EtatAfi(humeur: Humeur.joie)),
                     case_(
                       'Montre à gauche',
-                      const EtatAfi(brasGauche: BrasMontre(math.pi * 1.1)),
+                      const EtatAfi(brasGauche: BrasMontre(math.pi * 1.2)),
                     ),
                     case_(
                       'Montre à droite',
-                      const EtatAfi(brasDroit: BrasMontre(-math.pi * 0.1)),
+                      const EtatAfi(brasDroit: BrasMontre(-math.pi * 0.2)),
                     ),
                     case_(
                       'Salue',
@@ -130,7 +130,7 @@ void main() {
   });
 
   testWidgets('gros plan Afi v2', (tester) async {
-    tester.view.physicalSize = const Size(1600, 820);
+    tester.view.physicalSize = const Size(1600, 1040);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
@@ -145,13 +145,13 @@ void main() {
                 etat: EtatAfi(
                   forme: FormeBouche.a,
                   ouverture: 0.6,
-                  brasDroit: BrasMontre(-math.pi * 0.1),
+                  brasDroit: BrasMontre(-math.pi * 0.2),
                 ),
-                taille: 760,
+                taille: 780,
               ),
               AfiV2(
                 etat: EtatAfi(humeur: Humeur.joie, brasDroit: BrasSalue(0.6)),
-                taille: 760,
+                taille: 780,
               ),
             ],
           ),

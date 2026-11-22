@@ -887,6 +887,13 @@ choisir. **Refonte d'Afi demandée** (dessin jugé non professionnel) : planche 
   respiration, tête qui bouge, clignements. Planche : `docs/demo/afi-v2-planche.png`, gros plan :
   `docs/demo/afi-v2-gros-plan.png` (corrigés après relecture : bras au repos qui dépassaient, bras raide en
   « L », mains trop petites, cou trop long, taches au coude, doigt coupé par le cadre).
+- **Afi v2, retouche bras et mains** (réponse du propriétaire : visage, foulard, boucles, robe et bouches
+  VALIDÉS, non modifiés) : avant-bras élargi (presque la largeur de la manche, poignet un peu plus fin) ;
+  mains agrandies (≈ 3/4 de la hauteur du visage) ; main qui salue = vraie main ouverte (paume visible avec
+  lignes, 4 doigts serrés et arrondis, pouce attaché à la base de la paume) ; manche qui part du haut de
+  l'épaule avec couture visible ; au repos, les deux bras pendent le long du corps, mains visibles (dos de
+  la main, doigts serrés un peu repliés, pouce) ; quand un bras se lève, l'autre reste visible le long du
+  corps. Relu en gros plan (mains zoomées ×3) avant envoi.
 - **Voix sur PC (Q1)** : format **MP3 mono 24 kbit/s** (au lieu d'Opus/WebM) lu par Android (MediaPlayer) et par
   Windows (MCI de winmm.dll via `dart:ffi`, paquet `ffi` déjà présent : 0 octet de plus). Essai bips :
   50 fichiers = **693 Ko**. Le script calcule aussi la forme de la bouche (e/a/o/m) pour Afi v2.

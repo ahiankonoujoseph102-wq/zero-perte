@@ -81,13 +81,14 @@ const _levreHaut = Color(0xFF5E2A24);
 const _levreBas = Color(0xFF76372F);
 const _interieur = Color(0xFF3A1311);
 
-/// Peintre d'Afi sur une grille de 400 × 520.
+/// Peintre d'Afi sur une grille de 400 × 640 (plus 100 de marge de chaque
+/// côté pour les bras).
 class PeintreAfiV2 extends CustomPainter {
   const PeintreAfiV2(this.e);
   final EtatAfi e;
 
-  static const double largeur = 540;
-  static const double hauteur = 520;
+  static const double largeur = 600;
+  static const double hauteur = 640;
 
   Paint _p(Color c) => Paint()
     ..color = c
@@ -102,10 +103,10 @@ class PeintreAfiV2 extends CustomPainter {
       (size.height - hauteur * s) / 2,
     );
     canvas.scale(s);
-    // Le dessin est fait sur 400 de large ; 70 de marge de chaque côté pour
+    // Le dessin est fait sur 400 de large ; 100 de marge de chaque côté pour
     // les bras qui montrent.
-    canvas.translate(70, 0);
-    canvas.clipRect(const Rect.fromLTWH(-70, 0, largeur, hauteur));
+    canvas.translate(100, 0);
+    canvas.clipRect(const Rect.fromLTWH(-100, 0, largeur, hauteur));
 
     // Respiration : le buste monte et descend à peine.
     final souffle = math.sin(e.t * 1.7) * 1.6;
@@ -114,11 +115,13 @@ class PeintreAfiV2 extends CustomPainter {
         math.sin(e.t * 0.6) * 0.025 +
         (e.humeur == Humeur.joie ? math.sin(e.t * 2.4) * 0.02 : 0);
 
-    // Bras au repos derrière le buste ; bras levés devant.
+    // Bras au repos le long du corps (sur la robe) ; bras levés devant tout.
     final gaucheDevant = e.brasGauche is! BrasRepos;
     final droitDevant = e.brasDroit is! BrasRepos;
 
     _buste(canvas, souffle);
+    if (!gaucheDevant) _bras(canvas, true, e.brasGauche, souffle);
+    if (!droitDevant) _bras(canvas, false, e.brasDroit, souffle);
 
     canvas.save();
     // Tête un peu plus basse : cou de longueur naturelle.
@@ -145,8 +148,8 @@ class PeintreAfiV2 extends CustomPainter {
       ..moveTo(168, 298)
       ..cubicTo(140, 304, 112, 312, 96, 334) // épaule gauche
       ..cubicTo(84, 352, 78, 400, 74, 440)
-      ..lineTo(66, 540)
-      ..lineTo(334, 540)
+      ..lineTo(66, 660)
+      ..lineTo(334, 660)
       ..lineTo(326, 440)
       ..cubicTo(322, 400, 316, 352, 304, 334)
       ..cubicTo(288, 312, 260, 304, 232, 298)
@@ -157,8 +160,8 @@ class PeintreAfiV2 extends CustomPainter {
     c.drawPath(
       Path()
         ..moveTo(96, 334)
-        ..cubicTo(110, 372, 112, 420, 108, 540)
-        ..lineTo(66, 540)
+        ..cubicTo(110, 372, 112, 420, 108, 660)
+        ..lineTo(66, 660)
         ..lineTo(74, 440)
         ..cubicTo(78, 400, 84, 352, 96, 334)
         ..close(),
@@ -167,8 +170,8 @@ class PeintreAfiV2 extends CustomPainter {
     c.drawPath(
       Path()
         ..moveTo(304, 334)
-        ..cubicTo(290, 372, 288, 420, 292, 540)
-        ..lineTo(334, 540)
+        ..cubicTo(290, 372, 288, 420, 292, 660)
+        ..lineTo(334, 660)
         ..lineTo(326, 440)
         ..cubicTo(322, 400, 316, 352, 304, 334)
         ..close(),
@@ -704,67 +707,91 @@ class PeintreAfiV2 extends CustomPainter {
   // Bras : épaule → coude → poignet → main (cinématique à deux segments)
   // ---------------------------------------------------------------------------
 
-  static const _l1 = 76.0; // bras
-  static const _l2 = 64.0; // avant-bras
+  static const _l1 = 82.0; // bras (épaule → coude)
+  static const _l2 = 72.0; // avant-bras (coude → poignet)
+
+  /// Haut de l'épaule, là où part la manche (couture d'épaule).
+  static Offset _epaule(double sens, double souffle) =>
+      Offset(200 + sens * 82, 330 + souffle);
 
   void _bras(Canvas c, bool gauche, PoseBras pose, double souffle) {
     final sens = gauche ? -1.0 : 1.0;
-    final epaule = Offset(200 + sens * 88, 336 + souffle);
+    final epaule = _epaule(sens, souffle);
     late Offset coude;
     late Offset poignet;
-    bool mainOuverte = false;
+    var main = _Main.detendue;
     double angleMain;
 
     switch (pose) {
       case BrasRepos():
-        // Le long du corps, coude légèrement en arrière.
-        coude = epaule + Offset(sens * 14, _l1);
-        poignet = coude + Offset(sens * 4, _l2);
-        angleMain = math.pi / 2;
+        // Le long du corps : bras légèrement écarté, coude à peine plié.
+        coude = epaule + Offset(sens * 12, _l1);
+        poignet = coude + Offset(sens * 2, _l2);
+        angleMain = math.atan2(poignet.dy - coude.dy, poignet.dx - coude.dx);
       case BrasMontre(:final angle):
-        // Geste naturel : le bras part vers le bouton en restant un peu
-        // plié vers le bas au coude ; l'avant-bras et l'index visent le
-        // bouton.
-        final bas = math.cos(angle) >= 0 ? 0.55 : -0.55;
+        // Le bras part vers le bouton, coude un peu plié vers le bas ;
+        // l'avant-bras et l'index visent le bouton.
+        final bas = math.cos(angle) >= 0 ? 0.5 : -0.5;
         final a1 = angle + bas;
-        final a2 = angle - bas * 0.35;
+        final a2 = angle - bas * 0.3;
         coude = epaule + Offset(math.cos(a1), math.sin(a1)) * _l1;
         poignet = coude + Offset(math.cos(a2), math.sin(a2)) * _l2;
         angleMain = a2;
+        main = _Main.montre;
       case BrasSalue(:final phase):
-        // Bras levé sur le côté, avant-bras vertical, main ouverte qui
-        // balance.
-        coude = epaule + Offset(sens * 66, -36);
-        final a = -math.pi / 2 + math.sin(phase) * 0.28;
-        poignet = coude + Offset(math.cos(a), math.sin(a)) * _l2;
-        angleMain = a;
-        mainOuverte = true;
+        // Bras levé sur le côté, coude plié, avant-bras dressé, main ouverte
+        // qui se balance un peu.
+        final a1 = sens > 0 ? -0.35 : math.pi + 0.35;
+        coude = epaule + Offset(math.cos(a1), math.sin(a1)) * _l1;
+        final a2 = -math.pi / 2 + sens * 0.12 + math.sin(phase) * 0.22;
+        poignet = coude + Offset(math.cos(a2), math.sin(a2)) * _l2;
+        angleMain = a2;
+        main = _Main.ouverte;
     }
 
-    // Avant-bras (peau), puis manche qui couvre le bras jusqu'au coude.
-    _segment(c, coude, poignet, 26, 20, _peau);
-    _main(c, poignet, angleMain, sens, mainOuverte);
-    _segment(c, epaule, coude, 36, 31, _bleu);
-    // Revers de la manche (bande or et vert au coude).
+    // Avant-bras (presque aussi large que la manche, poignet un peu plus fin).
+    _segment(c, coude, poignet, 31, 24, _peau);
+    // Ombre douce le long de l'avant-bras (volume).
+    _ombreSegment(c, coude, poignet, 31, 24, sens);
+    _dessinerMain(c, poignet, angleMain, sens, main);
+    // Manche : du haut de l'épaule jusqu'au coude, un peu évasée.
+    _segment(c, epaule, coude, 40, 36, _bleu);
+    _ombreSegment(c, epaule, coude, 40, 36, sens, couleur: _bleuOmbre);
+    // Revers de la manche au coude (or et vert).
     final dir = (coude - epaule) / (coude - epaule).distance;
-    final bord = coude - dir * 6;
     final perp = Offset(-dir.dy, dir.dx);
+    final bord = coude + dir * 4;
     c.drawLine(
-      bord + perp * 15,
-      bord - perp * 15,
+      bord + perp * 17,
+      bord - perp * 17,
       _p(_or)
-        ..strokeWidth = 6
+        ..strokeWidth = 7
         ..strokeCap = StrokeCap.round,
     );
     c.drawLine(
-      bord - dir * 6 + perp * 15.5,
-      bord - dir * 6 - perp * 15.5,
+      bord - dir * 7 + perp * 17,
+      bord - dir * 7 - perp * 17,
       _p(_vert)
+        ..strokeWidth = 2.4
+        ..strokeCap = StrokeCap.round,
+    );
+    // Tête de manche arrondie sur l'épaule, et couture d'épaule.
+    c.drawCircle(epaule, 21, _p(_bleu));
+    final couture = Path()
+      ..moveTo(epaule.dx - sens * 6, epaule.dy - 20)
+      ..quadraticBezierTo(
+        epaule.dx - sens * 22,
+        epaule.dy + 4,
+        epaule.dx - sens * 12,
+        epaule.dy + 28,
+      );
+    c.drawPath(
+      couture,
+      _p(_bleuOmbre)
+        ..style = PaintingStyle.stroke
         ..strokeWidth = 2.2
         ..strokeCap = StrokeCap.round,
     );
-    // Rondeur de l'épaule (fait le lien avec le buste).
-    c.drawCircle(epaule, 20, _p(_bleu));
   }
 
   /// Segment arrondi qui s'affine (bras, avant-bras) : un trapèze et deux
@@ -784,95 +811,210 @@ class PeintreAfiV2 extends CustomPainter {
     c.drawCircle(b, wb / 2, pinceau);
   }
 
-  /// Main : paume, index tendu et pouce (montrer), ou main ouverte (saluer).
-  void _main(
+  /// Bande d'ombre sur le côté extérieur d'un segment (donne du volume).
+  void _ombreSegment(
+    Canvas c,
+    Offset a,
+    Offset b,
+    double wa,
+    double wb,
+    double sens, {
+    Color couleur = _peauOmbre,
+  }) {
+    final d = b - a;
+    var n = Offset(-d.dy, d.dx) / d.distance;
+    if (n.dx * sens < 0) n = -n; // côté extérieur
+    final p = Path()
+      ..moveTo((a + n * wa / 2).dx, (a + n * wa / 2).dy)
+      ..lineTo((b + n * wb / 2).dx, (b + n * wb / 2).dy)
+      ..lineTo((b + n * wb * 0.18).dx, (b + n * wb * 0.18).dy)
+      ..lineTo((a + n * wa * 0.18).dx, (a + n * wa * 0.18).dy)
+      ..close();
+    c.drawPath(p, _p(couleur.withValues(alpha: 0.55)));
+  }
+
+  /// Main dessinée dans un repère local : x = du poignet vers le bout des
+  /// doigts, y > 0 = côté du pouce. Longueur ≈ 3/4 de la hauteur du visage.
+  void _dessinerMain(
     Canvas c,
     Offset poignet,
     double angle,
     double sens,
-    bool ouverte,
+    _Main forme,
   ) {
     c.save();
     c.translate(poignet.dx, poignet.dy);
     c.rotate(angle);
-    c.scale(1.1);
-    // Repère local : x = vers le bout des doigts, y = côté du pouce selon le
-    // bras.
-    final m = sens < 0 ? -1.0 : 1.0;
+    // Côté du pouce à l'écran : vers le corps (repos, salut), vers le haut
+    // (montrer).
+    final yPouce = Offset(-math.sin(angle), math.cos(angle));
+    final veutX = forme == _Main.montre ? 0.0 : -sens;
+    final veutY = forme == _Main.montre ? -1.0 : 0.0;
+    final ok = forme == _Main.montre
+        ? yPouce.dy * veutY >= 0
+        : yPouce.dx * veutX >= 0;
+    if (!ok) c.scale(1, -1);
+    // Main à l'échelle du visage (≈ 3/4 de sa hauteur).
+    c.scale(1.12);
+
     final peau = _p(_peau);
-    final contour = _p(_peauOmbre)
+    final trait = _p(_peauOmbre)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.6
+      ..strokeWidth = 1.8
       ..strokeCap = StrokeCap.round;
-    if (!ouverte) {
-      // Paume (poing presque fermé).
-      final paume = RRect.fromRectAndRadius(
-        const Rect.fromLTWH(-2, -12, 30, 24),
-        const Radius.circular(11),
-      );
-      c.drawRRect(paume, peau);
-      // Doigts repliés (trois bosses sous la paume).
-      for (var i = 0; i < 3; i++) {
-        c.drawCircle(Offset(24 - i * 7.0, 8.0 * m), 5.4, peau);
-      }
-      // Index tendu (le long du bord supérieur de la main).
-      c.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromLTWH(18, m < 0 ? 2.5 : -11.5, 38, 9),
-          const Radius.circular(4.5),
-        ),
-        peau,
-      );
-      c.drawLine(
-        Offset(44, m < 0 ? 7 : -7),
-        Offset(44, m < 0 ? 10 : -10),
-        contour,
-      );
-      // Pouce replié contre la paume.
-      c.save();
-      c.translate(12, -10 * m);
-      c.rotate(-0.25 * m);
-      c.drawRRect(
-        RRect.fromRectAndRadius(
-          const Rect.fromLTWH(-2, -4.5, 14, 9),
-          const Radius.circular(4.5),
-        ),
-        peau,
-      );
-      c.restore();
-      // Petits plis des doigts.
-      c.drawLine(const Offset(22, 2), const Offset(22, 8), contour);
-    } else {
-      // Main ouverte : paume + quatre doigts + pouce écarté.
-      c.drawRRect(
-        RRect.fromRectAndRadius(
-          const Rect.fromLTWH(-2, -13, 28, 26),
-          const Radius.circular(10),
-        ),
-        peau,
-      );
-      for (var i = 0; i < 4; i++) {
-        final y = -10.5 + i * 7.0;
-        final long = [24.0, 28.0, 27.0, 22.0][i];
+
+    switch (forme) {
+      case _Main.ouverte:
+        // Paume visible : un peu plus large aux jointures.
+        final paume = Path()
+          ..moveTo(0, -15)
+          ..cubicTo(14, -19, 34, -23, 46, -22)
+          ..lineTo(48, 20)
+          ..cubicTo(34, 22, 14, 20, 0, 15)
+          ..cubicTo(-6, 8, -6, -8, 0, -15)
+          ..close();
+        c.drawPath(paume, peau);
+        // Quatre doigts serrés et arrondis (du petit doigt à l'index).
+        const doigts = [
+          (-16.5, 30.0), // auriculaire
+          (-5.5, 38.0), // annulaire
+          (5.5, 41.0), // majeur
+          (16.5, 37.0), // index
+        ];
+        for (final (y, long) in doigts) {
+          c.drawRRect(
+            RRect.fromRectAndRadius(
+              Rect.fromLTWH(40, y - 5.6, long + 6, 11.2),
+              const Radius.circular(5.6),
+            ),
+            peau,
+          );
+        }
+        for (final (y, long) in doigts.skip(1)) {
+          c.drawLine(Offset(46, y - 5.5), Offset(40 + long, y - 5.5), trait);
+        }
+        // Plis de la paume : ligne de cœur, ligne de vie (autour du pouce)
+        // et talon de la main, sans tache.
+        final pli = _p(_peauOmbre.withValues(alpha: 0.7))
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5
+          ..strokeCap = StrokeCap.round;
+        c.drawPath(
+          Path()
+            ..moveTo(36, -16)
+            ..quadraticBezierTo(30, -2, 34, 12),
+          pli,
+        );
+        c.drawPath(
+          Path()
+            ..moveTo(32, 15)
+            ..quadraticBezierTo(16, 10, 8, 2),
+          pli,
+        );
+        // Pouce attaché à la base de la paume, écarté vers le côté.
+        c.save();
+        c.translate(8, 14);
+        c.rotate(0.62);
         c.drawRRect(
           RRect.fromRectAndRadius(
-            Rect.fromLTWH(20, y - 3.3, long, 6.6),
-            const Radius.circular(3.3),
+            const Rect.fromLTWH(-4, -7, 38, 14),
+            const Radius.circular(7),
           ),
           peau,
         );
-      }
-      c.save();
-      c.translate(6, 12 * m);
-      c.rotate(0.9 * m);
-      c.drawRRect(
-        RRect.fromRectAndRadius(
-          const Rect.fromLTWH(0, -4, 20, 8),
-          const Radius.circular(4),
-        ),
-        peau,
-      );
-      c.restore();
+        c.drawLine(const Offset(18, -6), const Offset(18, -3), trait);
+        c.restore();
+      case _Main.montre:
+        // Poing : doigts repliés (jointures arrondies), index tendu, pouce
+        // posé le long des doigts.
+        final poing = RRect.fromRectAndRadius(
+          const Rect.fromLTWH(-2, -16, 46, 34),
+          const Radius.circular(14),
+        );
+        c.drawRRect(poing, peau);
+        for (var i = 0; i < 3; i++) {
+          c.drawCircle(Offset(40 - i * 1.0, -8.0 + i * 9.5), 8.2, peau);
+        }
+        c.drawPath(
+          Path()
+            ..moveTo(36, -4)
+            ..lineTo(44, -4)
+            ..moveTo(36, 5)
+            ..lineTo(44, 5),
+          trait,
+        );
+        // Index tendu (long, arrondi, avec une articulation).
+        c.drawRRect(
+          RRect.fromRectAndRadius(
+            const Rect.fromLTWH(30, 7, 50, 12.5),
+            const Radius.circular(6.25),
+          ),
+          peau,
+        );
+        c.drawLine(const Offset(60, 8.5), const Offset(60, 11), trait);
+        // Pouce le long du poing, côté index.
+        c.save();
+        c.translate(6, 18);
+        c.rotate(-0.12);
+        c.drawRRect(
+          RRect.fromRectAndRadius(
+            const Rect.fromLTWH(0, -6.5, 32, 13),
+            const Radius.circular(6.5),
+          ),
+          peau,
+        );
+        c.restore();
+      case _Main.detendue:
+        // Main qui pend le long du corps, dos de la main vers l'avant :
+        // paume, quatre doigts serrés un peu repliés, pouce côté corps.
+        final dos = Path()
+          ..moveTo(0, -14)
+          ..cubicTo(14, -17, 32, -20, 42, -19)
+          ..lineTo(44, 18)
+          ..cubicTo(30, 19, 14, 17, 0, 14)
+          ..cubicTo(-5, 7, -5, -7, 0, -14)
+          ..close();
+        c.drawPath(dos, peau);
+        const doigts = [
+          (-14.5, 22.0), // auriculaire
+          (-5.0, 28.0), // annulaire
+          (4.5, 30.0), // majeur
+          (13.8, 27.0), // index
+        ];
+        for (final (y, long) in doigts) {
+          c.drawRRect(
+            RRect.fromRectAndRadius(
+              Rect.fromLTWH(36, y - 5, long + 6, 10),
+              const Radius.circular(5),
+            ),
+            peau,
+          );
+        }
+        for (final (y, long) in doigts.skip(1)) {
+          c.drawLine(Offset(44, y - 4.8), Offset(36 + long, y - 4.8), trait);
+        }
+        // Jointures (doigts légèrement repliés).
+        final jointure = _p(_peauOmbre.withValues(alpha: 0.6))
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.4
+          ..strokeCap = StrokeCap.round;
+        for (final (y, long) in doigts) {
+          final x = 36 + long * 0.62;
+          c.drawLine(Offset(x, y - 2.5), Offset(x, y + 2.5), jointure);
+        }
+        // Pouce posé le long de l'index.
+        c.save();
+        c.translate(6, 13);
+        c.rotate(0.32);
+        c.drawRRect(
+          RRect.fromRectAndRadius(
+            const Rect.fromLTWH(-2, -6, 32, 12),
+            const Radius.circular(6),
+          ),
+          peau,
+        );
+        c.drawLine(const Offset(20, -5), const Offset(20, -2), trait);
+        c.restore();
     }
     c.restore();
   }
@@ -894,3 +1036,5 @@ class AfiV2 extends StatelessWidget {
     child: CustomPaint(painter: PeintreAfiV2(etat)),
   );
 }
+
+enum _Main { detendue, montre, ouverte }
