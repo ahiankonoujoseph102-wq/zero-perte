@@ -978,3 +978,14 @@ fournisseurs depuis le stock bas, rappel automatique des crédits.
   - Q3 (a) rappel des crédits en retard, validé par le patron en un toucher.
   - Q4 (a) « Tableau » et « Rapports » fusionnés en « Chiffres ».
   - Mêmes règles : tests, captures 4 tailles, rapport avec questions (a)/(b).
+
+## Décision du propriétaire sur la partie B (Cloudflare), 22/11
+- (a) Juste APRÈS la publication de la 0.31.0 : correction « dernière alerte » dans `relais/worker.js` (le
+  relais lit d'abord une case « dernière alerte » — lecture simple — et ne lit la liste que s'il y a du
+  nouveau) + partie B de `docs/etapes-proprietaire.md` mise à jour avec les nouveaux noms des menus
+  Cloudflare (Workers KV → Create instance ; Workers & Pages → Create application → Start with Hello World! ;
+  Edit Code ; onglet Bindings → Add binding → KV namespace). Pas de refonte.
+- **Pour plus tard** : les limites gratuites de Cloudflare valent pour TOUT le compte (toutes les boutiques
+  ensemble : 100 000 lectures, 1 000 écritures, 1 000 listes par jour). Avec une consultation par minute et
+  par patron, cela tient environ 70 boutiques. **À 50 boutiques, revoir le relais** (alertes poussées par
+  Firebase, consultations plus espacées).
