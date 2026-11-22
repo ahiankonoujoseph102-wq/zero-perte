@@ -231,10 +231,10 @@ Gratuit. Le code est prêt (téléphone et relais) ; il manque seulement le comp
 ### F3. Autoriser le relais à envoyer les notifications
 1. Firebase → ⚙️ **Paramètres du projet** → **Comptes de service** → **Générer une nouvelle clé privée** → un fichier
    `.json` se télécharge. **C'est un secret : ne l'envoyez à personne.**
-2. Cloudflare → **Workers et Pages** → `zero-perte-relais` → **Paramètres** → **Variables et secrets** →
-   **Ajouter** → type **Secret** → nom **`FCM_COMPTE`** → valeur : ouvrez le fichier `.json` (avec l'application
+2. Cloudflare → **Compute (Workers)** → **Workers & Pages** → `zero-perte-relais` → onglet **Settings** →
+   **Variables and Secrets** → **+ Add** → Type **Secret** → « Variable name » **`FCM_COMPTE`** → « Value » : ouvrez le fichier `.json` (avec l'application
    « Fichiers » du téléphone, « Ouvrir avec » un éditeur de texte), copiez **tout** son contenu et collez-le →
-   **Déployer**.
+   **Deploy**.
 3. Effacez ensuite le fichier `.json` de votre téléphone.
 4. Relancez « 2 - Fabriquer l'APK ». Sur le téléphone du **patron**, ouvrez l'application une fois connecté en
    patron : Android demande « Autoriser les notifications ? » → **Autoriser**.
@@ -242,6 +242,8 @@ Gratuit. Le code est prêt (téléphone et relais) ; il manque seulement le comp
 ### F4. Vérifier
 Application du patron **fermée** ; sur le téléphone d'un vendeur, fermez la caisse avec 2 000 F de moins :
 une notification « Zéro Perte : alerte — Caisse fermée par … : il manque 2 000 F » arrive en quelques secondes.
+Une deuxième notification, « Zéro Perte : résumé du soir », donne les ventes, le bénéfice et l'écart de la
+journée (version 0.34 et suivantes).
 
 ---
 
