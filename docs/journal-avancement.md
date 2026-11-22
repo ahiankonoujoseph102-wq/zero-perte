@@ -940,3 +940,9 @@ choisir. **Refonte d'Afi demandée** (dessin jugé non professionnel) : planche 
 - 22/11 vers 3 h 36 : 1er lot fait (001–005, gemini-3.1-flash-tts-preview, Sulafat), durées cohérentes
   avec les fabrications phrase par phrase (écarts < 15 %), volume correct ; quota épuisé pour la journée.
   Relance programmée après la remise à zéro (8 h 12, heure de Lomé) : 9 lots restants.
+- 22/11 vers 5 h 53 : nouvelle clé Gemini du propriétaire → même réponse de Google après 2 demandes
+  (`GenerateRequestsPerDayPerProjectPerModel-FreeTier = 10`) : clé sans doute du même projet. Arrêt propre,
+  5/50 phrases gardées. Les 2 demandes ont montré un lot (006–010) refusé par le contrôle : découpage refait
+  (coupure dans la pause la plus proche de l'endroit attendu d'après la longueur des textes + 0,5 s par phrase ;
+  sur les 16 durées réelles mesurées, écart ≤ 17 %), lot douteux redemandé en deux moitiés, chaque phrase
+  gardée dès qu'elle est faite. Relance programmée à 8 h 12 maintenue.
