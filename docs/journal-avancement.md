@@ -1103,3 +1103,13 @@ libellé du seuil de stock bas coupé. 458 tests.
 - **Décisions du propriétaire (22/11)** : base sur le téléphone gardée telle quelle (choix (a)) ; 14 jours pour
   un crédit en retard et commande sans quantités : **validés**. Le propriétaire commence l'essai sur 2 vrais
   téléphones (`docs/mise-en-service/essai-avant-premier-client.md`).
+
+### Relais Cloudflare branché (22/11)
+- Le propriétaire a fait la partie B : espace KV `ALERTES`, Worker `zero-perte-relais`, liaison KV, variable
+  `ZP_RELAIS_URL` = `https://zero-perte-relais.academyjoseph71.workers.dev`.
+- Vérifié sans rien écrire dans le KV (requêtes GET seulement) : `/` → 404, `/alertes` sans jeton → 401,
+  `/alertes` avec un jeton d'essai → 200 `{"alertes":[]}` (la liaison KV fonctionne), PUT → 405.
+- Fabrication relancée sur `main` → Release **`v0.34.0-n98`** (versionCode 98, donc les téléphones en 0.34.0-n97
+  voient « Nouvelle version disponible »). APK 18,6 Mo, signature vérifiée (SHA-1 49:27:0C:…:B1:A3), adresse du
+  relais présente dans l'APK (arm64 et armv7). Commit `fe4c807` (aucun changement de code).
+- Prochaine étape du propriétaire : partie F (Firebase), puis essai B5/F4 sur 2 vrais téléphones.
