@@ -25,7 +25,10 @@ Guide : partie **B**. Les menus sont ceux de novembre 2026, en anglais.
 6. **Relancer la fabrication** : https://github.com/ahiankonoujoseph102-wq/zero-perte/actions/workflows/fabriquer-apk.yml → **Run workflow** → branche `main`. Cela publie une nouvelle version avec le relais branché.
 7. **Vérifier** : un vendeur ferme la caisse avec 2 000 F de moins → dans la minute, bandeau rouge chez le patron (application ouverte).
 
-## 2. Firebase — notifications même application fermée (environ 15 minutes)
+## 2. Firebase — notifications même application fermée — ✅ FAIT (22 novembre 2026)
+
+✅ Version `v0.34.0-n101` avec Firebase et le relais. Reste seulement l'essai 5 ci-dessous sur 2 vrais téléphones.
+
 Guide : partie **F**. À faire **après** Cloudflare : le relais envoie les notifications.
 
 1. https://console.firebase.google.com → **Ajouter un projet** → choisir le projet **Zero Perte** existant → sans Google Analytics.

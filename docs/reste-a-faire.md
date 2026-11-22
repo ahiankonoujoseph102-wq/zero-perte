@@ -27,7 +27,7 @@ Relu : `docs/journal-avancement.md` et `docs/etapes-proprietaire.md`. Ordre = pr
 |---|---|---|
 | A | **Essai A5** : connecter le compte Google de la boutique sur un vrai téléphone, puis sur le PC (synchronisation Drive) | `etapes-proprietaire.md` partie A5 |
 | B | ✅ (22/11) **Cloudflare** : relais déployé et vérifié, `ZP_RELAIS_URL` en place. Reste : essai B5 sur 2 vrais téléphones | partie B |
-| C | **Firebase** (alertes même application fermée) | partie F |
+| C | ✅ (22/11) **Firebase** : branché dans `v0.34.0-n101`. Reste : essai F4 sur 2 vrais téléphones | partie F |
 | D | Microsoft Store (supprime l'avertissement Windows, gratuit) — facultatif | partie E |
 | E | Valider les guides de mise en service, former les agents, imprimer l'aide-mémoire | `docs/mise-en-service/` |
 | F | Essai sur vrais appareils de la 0.31.0 : voix d'Afi sur Android 8 et sur PC Windows, partage WhatsApp | après publication |

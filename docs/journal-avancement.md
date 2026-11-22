@@ -1113,3 +1113,17 @@ libellé du seuil de stock bas coupé. 458 tests.
   voient « Nouvelle version disponible »). APK 18,6 Mo, signature vérifiée (SHA-1 49:27:0C:…:B1:A3), adresse du
   relais présente dans l'APK (arm64 et armv7). Commit `fe4c807` (aucun changement de code).
 - Prochaine étape du propriétaire : partie F (Firebase), puis essai B5/F4 sur 2 vrais téléphones.
+
+### Firebase branché (22/11)
+- Le propriétaire a fait la partie F : Firebase sur le projet `zero-perte-515421` (Spark, sans Analytics),
+  application `tg.zeroperte.app`, 4 variables `ZP_FIREBASE_*` (clé = « Android key (auto created by
+  Firebase) »), secret Cloudflare `FCM_COMPTE`, fichier de clé effacé du téléphone.
+- Documents des 3 commits précédents fusionnés sur `main` (avance rapide, `[skip ci]`).
+- Fabrication relancée sur `main` → Release **`v0.34.0-n101`** (APK 18,6 Mo). Signature vérifiée (SHA-1
+  49:27:0C:…:B1:A3). Dans l'APK : adresse du relais, ID du projet, ID d'application `1:328…:android:…`,
+  une clé `AIza…` au bon format, ID de l'expéditeur = le numéro contenu dans l'ID d'application. Aucune valeur
+  vide. ZIP Windows publié à part par son propre travail.
+- **Non vérifiable d'ici** : que le relais obtient un jeton Google avec `FCM_COMPTE`. Le relais n'a pas de page
+  de contrôle et cache les erreurs d'envoi ; un POST d'essai écrirait dans le KV sans rien prouver. Preuve
+  prévue : l'essai F4 sur 2 vrais téléphones. Si la notification n'arrive pas, ajouter au relais une page
+  de contrôle en lecture seule (le propriétaire recolle `worker.js`).

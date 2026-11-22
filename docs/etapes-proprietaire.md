@@ -212,7 +212,15 @@ Relancez « 2 - Fabriquer l'APK ».
 
 ---
 
-## F. Firebase — alertes graves même quand l'application du patron est fermée
+## F. Firebase — alertes graves même quand l'application du patron est fermée — ✅ FAIT (22 novembre 2026)
+
+✅ **Fait par le propriétaire** : Firebase ajouté au projet Google Cloud « Zero Perte » (zero-perte-515421),
+forfait Spark, sans Google Analytics ; application Android `tg.zeroperte.app` ; 4 variables GitHub
+(`ZP_FIREBASE_PROJET`, `ZP_FIREBASE_EXPEDITEUR`, `ZP_FIREBASE_APPLI`, `ZP_FIREBASE_CLE` = clé « Android key
+(auto created by Firebase) ») ; secret Cloudflare `FCM_COMPTE` ; fichier de la clé effacé du téléphone.
+Vérifié par Claude Code : version `v0.34.0-n101` signée avec la bonne clé, les 4 valeurs Firebase et
+l'adresse du relais sont dans l'APK. **Reste : l'essai F4 sur 2 vrais téléphones** (seul moyen de prouver
+que `FCM_COMPTE` fonctionne : le relais n'a pas de page de contrôle).
 
 Gratuit. Le code est prêt (téléphone et relais) ; il manque seulement le compte.
 
