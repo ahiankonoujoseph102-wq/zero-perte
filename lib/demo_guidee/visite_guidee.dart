@@ -10,9 +10,14 @@ import '../donnees/journal_local.dart' show ModePaiement;
 import '../domaine/panier.dart';
 import '../services/voix.dart';
 import '../theme/couleurs.dart';
+import 'afi_v2.dart';
 import 'avatar.dart';
 import 'script_visite.dart';
 import 'voix_demo.dart';
+
+/// Afi en médaillon (version 2) au lieu de l'Afi actuelle. FAUX tant que le
+/// propriétaire n'a pas validé : seules les captures d'essai l'activent.
+bool afiMedaillonVisite = false;
 
 /// Commande la visite guidée depuis l'extérieur (bandeau de la démo).
 class ControleurVisite extends ChangeNotifier {
@@ -80,6 +85,7 @@ class VisiteGuidee extends StatefulWidget {
 class EtatVisite extends State<VisiteGuidee> {
   final _cleContenu = GlobalKey();
   final _clePile = GlobalKey();
+  final _clePanneau = GlobalKey(debugLabel: 'visite-panneau');
   final ValueNotifier<double> _bouche = ValueNotifier(0);
 
   late final List<ChapitreVisite> _chapitres = chapitresVisite(
@@ -105,6 +111,9 @@ class EtatVisite extends State<VisiteGuidee> {
   int etapesJouees = 0;
 
   bool get termine => _fini;
+
+  /// Bouton entouré en ce moment (pour les tests).
+  Rect? get cibleMontree => _cible;
   int get chapitre => _chapitre;
   int get etape => _etape;
   List<ChapitreVisite> get chapitres => _chapitres;
@@ -348,7 +357,9 @@ class EtatVisite extends State<VisiteGuidee> {
       return false;
     }
     try {
-      Scrollable.ensureVisible(el, alignment: 0.5);
+      // Le bouton est amené vers le haut de la zone qui défile : le
+      // panneau d'Afi a la place de se mettre en dessous.
+      Scrollable.ensureVisible(el, alignment: 0.2);
     } catch (_) {}
     final pile = _clePile.currentContext?.findRenderObject() as RenderBox?;
     final contenu = _cleContenu.currentContext?.findRenderObject();
@@ -357,11 +368,29 @@ class EtatVisite extends State<VisiteGuidee> {
     final local = pile.globalToLocal(centre);
     if (!(Offset.zero & pile.size).contains(local)) return false;
     // L'élément de la visite elle-même (bouton « Quitter ») est toujours
-    // visible ; pour la boutique, on teste le toucher sous la visite.
+    // visible ; pour la boutique, on teste le toucher sous la visite. Le
+    // centre peut tomber dans un vide (entre deux billets d'une zone sur deux
+    // lignes) : on essaie aussi d'autres points de l'élément.
     if (contenu is RenderBox && _estDescendant(ro, contenu)) {
-      final r = BoxHitTestResult();
-      contenu.hitTest(r, position: contenu.globalToLocal(centre));
-      return r.path.any((h) => h.target == ro || _estDescendant(h.target, ro));
+      for (final (fx, fy) in const [
+        (0.5, 0.5),
+        (0.25, 0.25),
+        (0.75, 0.25),
+        (0.25, 0.75),
+        (0.75, 0.75),
+        (0.12, 0.5),
+        (0.5, 0.2),
+      ]) {
+        final point = ro.localToGlobal(
+          Offset(ro.size.width * fx, ro.size.height * fy),
+        );
+        final r = BoxHitTestResult();
+        contenu.hitTest(r, position: contenu.globalToLocal(point));
+        if (r.path.any((h) => h.target == ro || _estDescendant(h.target, ro))) {
+          return true;
+        }
+      }
+      return false;
     }
     return true;
   }
@@ -485,15 +514,36 @@ class EtatVisite extends State<VisiteGuidee> {
   }
 
   Widget _panneau(BuildContext context) {
-    final taille = MediaQuery.sizeOf(context);
-    final grand = taille.width >= 700;
+    // Taille de la zone de la visite (sous les bandeaux) : c'est dans cette
+    // zone qu'est mesurée la place du bouton montré.
+    final ecran = MediaQuery.sizeOf(context);
+    final zone = _clePile.currentContext?.findRenderObject();
+    final taille = zone is RenderBox && zone.hasSize ? zone.size : ecran;
+    final grand = ecran.width >= 700;
     final cible = _cible;
-    // Le panneau se met à l'opposé du bouton montré.
-    final enHaut = cible != null && cible.center.dy > taille.height * 0.5;
+    // Le panneau se met à l'opposé du bouton montré, du côté où il y a le
+    // plus de place.
+    // Le panneau va du côté où il tient sans toucher le bouton (le plus
+    // spacieux d'abord). S'il ne tient d'aucun côté, il se met en bas : le
+    // haut du bouton (son titre, son montant) reste visible.
+    final boite = _clePanneau.currentContext?.findRenderObject();
+    final hauteurPanneau =
+        (boite is RenderBox && boite.hasSize ? boite.size.height : 170.0) + 8;
+    final placeHaut = cible?.top ?? 0;
+    final placeBas = cible == null ? 0 : taille.height - cible.bottom;
+    final tientHaut = placeHaut >= hauteurPanneau;
+    final tientBas = placeBas >= hauteurPanneau;
+    final enHaut =
+        cible != null && tientHaut && (!tientBas || placeHaut > placeBas);
     final aGauche =
         !grand || cible == null || cible.center.dx > taille.width / 2;
     final largeur = grand ? 520.0 : taille.width;
-    final tailleAvatar = grand ? 120.0 : (taille.height < 600 ? 74.0 : 92.0);
+    // Petit écran (4 pouces, sous les bandeaux) : panneau compact pour
+    // laisser la place au bouton montré.
+    final compact = !grand && taille.height < 480;
+    final tailleAvatar = grand
+        ? 120.0
+        : (compact ? 58.0 : (taille.height < 600 ? 74.0 : 92.0));
     // Direction du bras d'Afi vers le bouton.
     double? geste;
     if (cible != null) {
@@ -525,14 +575,31 @@ class EtatVisite extends State<VisiteGuidee> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AvatarAfi(
-                    key: const Key('visite-avatar'),
-                    taille: tailleAvatar,
-                    bouche: _bouche,
-                    expression: _fini ? Expression.auRevoir : _expression,
-                    geste: geste,
-                    anime: widget.anime,
-                  ),
+                  if (afiMedaillonVisite)
+                    MedaillonAfi(
+                      key: const Key('visite-avatar'),
+                      taille: tailleAvatar,
+                      bouche: _bouche,
+                      humeur: switch (_expression) {
+                        Expression.neutre => Humeur.neutre,
+                        Expression.sourire => Humeur.sourire,
+                        _ => Humeur.joie,
+                      },
+                      auRevoir: _fini || _expression == Expression.auRevoir,
+                      cible: geste == null
+                          ? null
+                          : Offset(math.cos(geste), math.sin(geste)),
+                      anime: widget.anime,
+                    )
+                  else
+                    AvatarAfi(
+                      key: const Key('visite-avatar'),
+                      taille: tailleAvatar,
+                      bouche: _bouche,
+                      expression: _fini ? Expression.auRevoir : _expression,
+                      geste: geste,
+                      anime: widget.anime,
+                    ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Column(
@@ -559,10 +626,10 @@ class EtatVisite extends State<VisiteGuidee> {
                                     ? 'Touchez « Quitter » pour essayer vous-même, ou « Rejouer ».'
                                     : _sousTitre),
                           key: const Key('visite-sous-titre'),
-                          maxLines: grand ? 5 : 4,
+                          maxLines: grand ? 5 : (compact ? 3 : 4),
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: grand ? 19 : 17,
+                            fontSize: grand ? 19 : (compact ? 15 : 17),
                             fontWeight: FontWeight.w600,
                             height: 1.25,
                           ),
@@ -588,24 +655,28 @@ class EtatVisite extends State<VisiteGuidee> {
               Row(
                 children: [
                   _bouton(
+                    compact,
                     'visite-pause',
                     _enPause ? Icons.play_arrow_rounded : Icons.pause_rounded,
                     _enPause ? 'Reprendre' : 'Pause',
                     _fini ? null : _pause,
                   ),
                   _bouton(
+                    compact,
                     'visite-rejouer',
                     Icons.replay_rounded,
                     'Rejouer',
                     _rejouer,
                   ),
                   _bouton(
+                    compact,
                     'visite-suivant',
                     Icons.skip_next_rounded,
                     'Suivant',
                     _fini ? null : _suivant,
                   ),
                   _bouton(
+                    compact,
                     'visite-quitter',
                     Icons.close_rounded,
                     'Quitter',
@@ -624,32 +695,40 @@ class EtatVisite extends State<VisiteGuidee> {
       top: enHaut ? 8 : null,
       bottom: enHaut ? null : 8,
       width: grand ? largeur : null,
-      child: SafeArea(child: panneau),
+      child: SafeArea(
+        child: KeyedSubtree(key: _clePanneau, child: panneau),
+      ),
     );
   }
 
-  Widget _bouton(String cle, IconData icone, String texte, VoidCallback? f) =>
-      Expanded(
-        child: TextButton(
-          key: Key(cle),
-          onPressed: f,
-          style: TextButton.styleFrom(
-            minimumSize: const Size(0, 52),
-            padding: const EdgeInsets.symmetric(horizontal: 2),
-            foregroundColor: CouleursZp.texte,
+  Widget _bouton(
+    bool compact,
+    String cle,
+    IconData icone,
+    String texte,
+    VoidCallback? f,
+  ) => Expanded(
+    child: TextButton(
+      key: Key(cle),
+      onPressed: f,
+      style: TextButton.styleFrom(
+        minimumSize: Size(0, compact ? 44 : 52),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        padding: const EdgeInsets.symmetric(horizontal: 2),
+        foregroundColor: CouleursZp.texte,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icone, size: compact ? 22 : 26),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(texte, style: TextStyle(fontSize: compact ? 13 : 14)),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icone, size: 26),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(texte, style: const TextStyle(fontSize: 14)),
-              ),
-            ],
-          ),
-        ),
-      );
+        ],
+      ),
+    ),
+  );
 }
 
 /// Assombrit l'écran sauf le bouton montré, l'entoure d'or et pose une

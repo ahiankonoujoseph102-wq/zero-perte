@@ -894,8 +894,30 @@ choisir. **Refonte d'Afi demandée** (dessin jugé non professionnel) : planche 
   l'épaule avec couture visible ; au repos, les deux bras pendent le long du corps, mains visibles (dos de
   la main, doigts serrés un peu repliés, pouce) ; quand un bras se lève, l'autre reste visible le long du
   corps. Relu en gros plan (mains zoomées ×3) avant envoi.
+- **DÉCISION : bras et mains abandonnés** (jugés encore non professionnels). **Afi en buste dans un
+  médaillon rond** : visage, foulard, boucles, haut de robe (avec bande de pagne) et 5 bouches inchangés ;
+  fond bleu de l'application, anneau or et liseré vert ; haut des manches jusqu'au bord du cercle (le buste
+  n'a pas l'air coupé). Animations : parole (bouche), clignements, respiration, petits mouvements de tête,
+  yeux rieurs et sourire (« content », « au revoir » avec petit signe de tête) ; Afi tourne un peu la tête
+  et le regard vers le bouton montré. Tout le code des bras et des mains est supprimé.
+  Planche : `docs/demo/afi-v2-planche.png` ; visite : `docs/demo/afi-medaillon-*.png`. Activable par
+  `afiMedaillonVisite` (FAUX par défaut : l'application garde l'Afi actuelle jusqu'à l'accord).
+- **Défauts de la visite trouvés en testant à vitesse réelle** (existent dans la 0.30.0 publiée ; les tests
+  faisaient parler Afi en accéléré) et corrigés : (1) sur tablette et PC, l'étape 016 (« combien rendre »)
+  n'entourait rien : le centre de la zone « À rendre en » sur deux lignes tombe entre deux billets → la
+  visite essaie plusieurs points de l'élément ; (2) le panneau choisissait haut/bas en comparant à la moitié
+  de l'écran entier alors que le bouton est mesuré sous les bandeaux → sur 4 pouces il cachait souvent le
+  bouton ; maintenant il va du côté où il tient sans le toucher, sinon en bas (le haut du bouton, son titre
+  ou son montant, reste visible) ; (3) panneau compact sur petit écran (médaillon 58, 3 lignes, boutons plus
+  bas) ; (4) le bouton est amené vers le haut de la zone qui défile. Nouveau test
+  `test/ecrans/afi_medaillon_test.dart` : visite entière à vitesse réelle sur les 4 tailles, chaque bouton
+  trouvé, jamais touché par le panneau quand il y a la place (sur 4 pouces, 2 grands éléments restent
+  recouverts à moitié par le bas, titre visible).
 - **Voix sur PC (Q1)** : format **MP3 mono 24 kbit/s** (au lieu d'Opus/WebM) lu par Android (MediaPlayer) et par
   Windows (MCI de winmm.dll via `dart:ffi`, paquet `ffi` déjà présent : 0 octet de plus). Essai bips :
   50 fichiers = **693 Ko**. Le script calcule aussi la forme de la bouche (e/a/o/m) pour Afi v2.
 - **Extraits (Q3)** : action 6, mode « extraits » → même phrase d'accueil (~14 s) avec Sulafat, Aoede, Achernar
   (Gemini) ou coral, nova, shimmer (OpenAI) → `docs/site/voix/` + page d'écoute publiée sur le site.
+  **Fait le 22/11** : secret ZP_CLE_VOIX créé par le propriétaire, action 6 réussie (Gemini), 3 extraits MP3
+  de 12 à 13 s (35 à 40 Ko) en ligne sur https://ahiankonoujoseph102-wq.github.io/zero-perte/voix/
+  (vérifiés : vraie voix, mono 24 kHz, volume correct).

@@ -1,39 +1,20 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 /// Afi, version 2 (refonte, EN ATTENTE DE VALIDATION : pas encore utilisée
-/// par l'application).
+/// par défaut dans l'application).
 ///
-/// Illustration plate et soignée, dessinée en formes vectorielles :
-/// anatomie juste (cou, épaules, bras en deux parties, coude qui plie, main
-/// avec pouce et index), robe en pagne à motif régulier, foulard noué,
-/// boucles d'oreilles, visage expressif et formes de bouche pour la parole.
+/// Afi en buste (tête, cou, haut des épaules) dans un médaillon rond aux
+/// couleurs de l'application, comme les assistants des grandes applications.
+/// Illustration plate dessinée en formes vectorielles : robe en pagne,
+/// foulard noué, boucles d'oreilles, visage expressif et formes de bouche
+/// pour la parole. Pas de bras : le cadre or et la flèche montrent le bouton,
+/// Afi tourne un peu la tête et le regard vers lui.
 
 /// Formes de bouche pour la parole.
 enum FormeBouche { fermee, a, o, e, m }
-
-/// Pose d'un bras.
-sealed class PoseBras {
-  const PoseBras();
-}
-
-class BrasRepos extends PoseBras {
-  const BrasRepos();
-}
-
-/// Le bras montre dans la direction [angle] (radians, repère de l'écran :
-/// 0 = droite, −π/2 = haut).
-class BrasMontre extends PoseBras {
-  const BrasMontre(this.angle);
-  final double angle;
-}
-
-/// Salut de la main ([phase] fait balancer la main).
-class BrasSalue extends PoseBras {
-  const BrasSalue(this.phase);
-  final double phase;
-}
 
 enum Humeur { neutre, sourire, joie }
 
@@ -43,8 +24,9 @@ class EtatAfi {
     this.ouverture = 0,
     this.forme = FormeBouche.fermee,
     this.humeur = Humeur.sourire,
-    this.brasGauche = const BrasRepos(),
-    this.brasDroit = const BrasRepos(),
+    this.regard = 0,
+    this.regardY = 0,
+    this.inclinaison = 0,
     this.paupieres = 1,
   });
 
@@ -56,9 +38,14 @@ class EtatAfi {
   final FormeBouche forme;
   final Humeur humeur;
 
-  /// Bras du côté gauche de l'image / du côté droit de l'image.
-  final PoseBras brasGauche;
-  final PoseBras brasDroit;
+  /// Direction du regard : −1 = vers la gauche de l'écran, 1 = vers la
+  /// droite ; [regardY] : −1 = vers le haut, 1 = vers le bas. La tête suit
+  /// un peu.
+  final double regard;
+  final double regardY;
+
+  /// Inclinaison de la tête en plus (radians, « au revoir »).
+  final double inclinaison;
 
   /// 1 = yeux ouverts, 0 = fermés (clignement).
   final double paupieres;
@@ -81,14 +68,16 @@ const _levreHaut = Color(0xFF5E2A24);
 const _levreBas = Color(0xFF76372F);
 const _interieur = Color(0xFF3A1311);
 
-/// Peintre d'Afi sur une grille de 400 × 640 (plus 100 de marge de chaque
-/// côté pour les bras).
+/// Peintre d'Afi : médaillon rond (le buste est dessiné sur une grille de
+/// 400 de large ; le médaillon en montre la tête, le cou et le haut des
+/// épaules).
 class PeintreAfiV2 extends CustomPainter {
   const PeintreAfiV2(this.e);
   final EtatAfi e;
 
-  static const double largeur = 600;
-  static const double hauteur = 640;
+  /// Centre et rayon du médaillon dans la grille du buste.
+  static const _centre = Offset(200, 230);
+  static const _rayon = 230.0;
 
   Paint _p(Color c) => Paint()
     ..color = c
@@ -96,33 +85,40 @@ class PeintreAfiV2 extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final s = math.min(size.width / largeur, size.height / hauteur);
+    // Le médaillon remplit le carré disponible.
+    final s = math.min(size.width, size.height) / (2 * _rayon);
     canvas.save();
-    canvas.translate(
-      (size.width - largeur * s) / 2,
-      (size.height - hauteur * s) / 2,
-    );
+    canvas.translate(size.width / 2, size.height / 2);
     canvas.scale(s);
-    // Le dessin est fait sur 400 de large ; 100 de marge de chaque côté pour
-    // les bras qui montrent.
-    canvas.translate(100, 0);
-    canvas.clipRect(const Rect.fromLTWH(-100, 0, largeur, hauteur));
+    canvas.translate(-_centre.dx, -_centre.dy);
+
+    // Fond du médaillon : bleu de l'application, plus clair au centre.
+    final disque = Rect.fromCircle(center: _centre, radius: _rayon);
+    canvas.drawCircle(
+      _centre,
+      _rayon,
+      Paint()
+        ..isAntiAlias = true
+        ..shader = const RadialGradient(
+          center: Alignment(0, -0.25),
+          radius: 0.85,
+          colors: [Color(0xFF24448A), Color(0xFF102250)],
+        ).createShader(disque),
+    );
+    canvas.save();
+    canvas.clipPath(Path()..addOval(disque));
 
     // Respiration : le buste monte et descend à peine.
     final souffle = math.sin(e.t * 1.7) * 1.6;
-    final teteX = math.sin(e.t * 0.8) * 2.2;
+    final regard = e.regard.clamp(-1.0, 1.0);
+    final teteX = math.sin(e.t * 0.8) * 2.2 + regard * 6;
     final teteAngle =
         math.sin(e.t * 0.6) * 0.025 +
+        regard * 0.06 +
+        e.inclinaison +
         (e.humeur == Humeur.joie ? math.sin(e.t * 2.4) * 0.02 : 0);
 
-    // Bras au repos le long du corps (sur la robe) ; bras levés devant tout.
-    final gaucheDevant = e.brasGauche is! BrasRepos;
-    final droitDevant = e.brasDroit is! BrasRepos;
-
     _buste(canvas, souffle);
-    if (!gaucheDevant) _bras(canvas, true, e.brasGauche, souffle);
-    if (!droitDevant) _bras(canvas, false, e.brasDroit, souffle);
-
     canvas.save();
     // Tête un peu plus basse : cou de longueur naturelle.
     canvas.translate(200 + teteX, 316 + souffle * 0.6);
@@ -131,9 +127,23 @@ class PeintreAfiV2 extends CustomPainter {
     _cou(canvas);
     _tete(canvas);
     canvas.restore();
+    canvas.restore();
 
-    if (gaucheDevant) _bras(canvas, true, e.brasGauche, souffle);
-    if (droitDevant) _bras(canvas, false, e.brasDroit, souffle);
+    // Anneau or, liseré vert à l'intérieur.
+    canvas.drawCircle(
+      _centre,
+      _rayon - 5,
+      _p(_or)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 10,
+    );
+    canvas.drawCircle(
+      _centre,
+      _rayon - 12.5,
+      _p(_vert)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3,
+    );
     canvas.restore();
   }
 
@@ -232,6 +242,39 @@ class PeintreAfiV2 extends CustomPainter {
       }
     }
     c.restore();
+    // Haut des manches, par-dessus les côtés de la robe : les épaules
+    // continuent jusqu'au bord du médaillon (le buste n'a pas l'air coupé).
+    for (final sens in [-1.0, 1.0]) {
+      double x(double v) => 200 + sens * (v - 200);
+      final manche = Path()
+        ..moveTo(x(128), 304)
+        ..cubicTo(x(100), 309, x(76), 322, x(62), 344)
+        ..cubicTo(x(44), 370, x(30), 420, x(22), 520)
+        ..lineTo(x(106), 520)
+        ..cubicTo(x(104), 440, x(108), 360, x(128), 304)
+        ..close();
+      c.drawPath(manche, _p(_bleu));
+      // Volume : côté extérieur un peu plus sombre.
+      c.drawPath(
+        Path()
+          ..moveTo(x(56), 354)
+          ..cubicTo(x(42), 390, x(34), 440, x(32), 520)
+          ..lineTo(x(22), 520)
+          ..cubicTo(x(30), 420, x(44), 370, x(56), 354)
+          ..close(),
+        _p(_bleuOmbre),
+      );
+      // Couture d'emmanchure.
+      c.drawPath(
+        Path()
+          ..moveTo(x(128), 304)
+          ..cubicTo(x(108), 360, x(104), 440, x(106), 520),
+        _p(_bleuOmbre)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.6
+          ..strokeCap = StrokeCap.round,
+      );
+    }
     c.restore();
   }
 
@@ -379,13 +422,14 @@ class PeintreAfiV2 extends CustomPainter {
       if (e.paupieres > 0.25) {
         c.save();
         c.clipPath(oeil);
-        c.drawCircle(
-          Offset(cx + sens * 0.5, cy),
-          7.2,
-          _p(const Color(0xFF4A2A16)),
+        // L'iris suit le regard (vers le bouton montré).
+        final iris = Offset(
+          cx + sens * 0.5 + e.regard.clamp(-1.0, 1.0) * 5,
+          cy + e.regardY.clamp(-1.0, 1.0) * 2.5,
         );
-        c.drawCircle(Offset(cx + sens * 0.5, cy), 3.8, _p(_brun));
-        c.drawCircle(Offset(cx + 2.8, cy - 2.8), 2, _p(Colors.white));
+        c.drawCircle(iris, 7.2, _p(const Color(0xFF4A2A16)));
+        c.drawCircle(iris, 3.8, _p(_brun));
+        c.drawCircle(iris + const Offset(2.3, -2.8), 2, _p(Colors.white));
         c.restore();
       }
       // Paupière supérieure et cils.
@@ -703,338 +747,144 @@ class PeintreAfiV2 extends CustomPainter {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Bras : épaule → coude → poignet → main (cinématique à deux segments)
-  // ---------------------------------------------------------------------------
-
-  static const _l1 = 82.0; // bras (épaule → coude)
-  static const _l2 = 72.0; // avant-bras (coude → poignet)
-
-  /// Haut de l'épaule, là où part la manche (couture d'épaule).
-  static Offset _epaule(double sens, double souffle) =>
-      Offset(200 + sens * 82, 330 + souffle);
-
-  void _bras(Canvas c, bool gauche, PoseBras pose, double souffle) {
-    final sens = gauche ? -1.0 : 1.0;
-    final epaule = _epaule(sens, souffle);
-    late Offset coude;
-    late Offset poignet;
-    var main = _Main.detendue;
-    double angleMain;
-
-    switch (pose) {
-      case BrasRepos():
-        // Le long du corps : bras légèrement écarté, coude à peine plié.
-        coude = epaule + Offset(sens * 12, _l1);
-        poignet = coude + Offset(sens * 2, _l2);
-        angleMain = math.atan2(poignet.dy - coude.dy, poignet.dx - coude.dx);
-      case BrasMontre(:final angle):
-        // Le bras part vers le bouton, coude un peu plié vers le bas ;
-        // l'avant-bras et l'index visent le bouton.
-        final bas = math.cos(angle) >= 0 ? 0.5 : -0.5;
-        final a1 = angle + bas;
-        final a2 = angle - bas * 0.3;
-        coude = epaule + Offset(math.cos(a1), math.sin(a1)) * _l1;
-        poignet = coude + Offset(math.cos(a2), math.sin(a2)) * _l2;
-        angleMain = a2;
-        main = _Main.montre;
-      case BrasSalue(:final phase):
-        // Bras levé sur le côté, coude plié, avant-bras dressé, main ouverte
-        // qui se balance un peu.
-        final a1 = sens > 0 ? -0.35 : math.pi + 0.35;
-        coude = epaule + Offset(math.cos(a1), math.sin(a1)) * _l1;
-        final a2 = -math.pi / 2 + sens * 0.12 + math.sin(phase) * 0.22;
-        poignet = coude + Offset(math.cos(a2), math.sin(a2)) * _l2;
-        angleMain = a2;
-        main = _Main.ouverte;
-    }
-
-    // Avant-bras (presque aussi large que la manche, poignet un peu plus fin).
-    _segment(c, coude, poignet, 31, 24, _peau);
-    // Ombre douce le long de l'avant-bras (volume).
-    _ombreSegment(c, coude, poignet, 31, 24, sens);
-    _dessinerMain(c, poignet, angleMain, sens, main);
-    // Manche : du haut de l'épaule jusqu'au coude, un peu évasée.
-    _segment(c, epaule, coude, 40, 36, _bleu);
-    _ombreSegment(c, epaule, coude, 40, 36, sens, couleur: _bleuOmbre);
-    // Revers de la manche au coude (or et vert).
-    final dir = (coude - epaule) / (coude - epaule).distance;
-    final perp = Offset(-dir.dy, dir.dx);
-    final bord = coude + dir * 4;
-    c.drawLine(
-      bord + perp * 17,
-      bord - perp * 17,
-      _p(_or)
-        ..strokeWidth = 7
-        ..strokeCap = StrokeCap.round,
-    );
-    c.drawLine(
-      bord - dir * 7 + perp * 17,
-      bord - dir * 7 - perp * 17,
-      _p(_vert)
-        ..strokeWidth = 2.4
-        ..strokeCap = StrokeCap.round,
-    );
-    // Tête de manche arrondie sur l'épaule, et couture d'épaule.
-    c.drawCircle(epaule, 21, _p(_bleu));
-    final couture = Path()
-      ..moveTo(epaule.dx - sens * 6, epaule.dy - 20)
-      ..quadraticBezierTo(
-        epaule.dx - sens * 22,
-        epaule.dy + 4,
-        epaule.dx - sens * 12,
-        epaule.dy + 28,
-      );
-    c.drawPath(
-      couture,
-      _p(_bleuOmbre)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.2
-        ..strokeCap = StrokeCap.round,
-    );
-  }
-
-  /// Segment arrondi qui s'affine (bras, avant-bras) : un trapèze et deux
-  /// disques aux extrémités (aucun creux possible).
-  void _segment(Canvas c, Offset a, Offset b, double wa, double wb, Color col) {
-    final d = b - a;
-    final n = Offset(-d.dy, d.dx) / d.distance;
-    final p = Path()
-      ..moveTo((a + n * wa / 2).dx, (a + n * wa / 2).dy)
-      ..lineTo((b + n * wb / 2).dx, (b + n * wb / 2).dy)
-      ..lineTo((b - n * wb / 2).dx, (b - n * wb / 2).dy)
-      ..lineTo((a - n * wa / 2).dx, (a - n * wa / 2).dy)
-      ..close();
-    final pinceau = _p(col);
-    c.drawPath(p, pinceau);
-    c.drawCircle(a, wa / 2, pinceau);
-    c.drawCircle(b, wb / 2, pinceau);
-  }
-
-  /// Bande d'ombre sur le côté extérieur d'un segment (donne du volume).
-  void _ombreSegment(
-    Canvas c,
-    Offset a,
-    Offset b,
-    double wa,
-    double wb,
-    double sens, {
-    Color couleur = _peauOmbre,
-  }) {
-    final d = b - a;
-    var n = Offset(-d.dy, d.dx) / d.distance;
-    if (n.dx * sens < 0) n = -n; // côté extérieur
-    final p = Path()
-      ..moveTo((a + n * wa / 2).dx, (a + n * wa / 2).dy)
-      ..lineTo((b + n * wb / 2).dx, (b + n * wb / 2).dy)
-      ..lineTo((b + n * wb * 0.18).dx, (b + n * wb * 0.18).dy)
-      ..lineTo((a + n * wa * 0.18).dx, (a + n * wa * 0.18).dy)
-      ..close();
-    c.drawPath(p, _p(couleur.withValues(alpha: 0.55)));
-  }
-
-  /// Main dessinée dans un repère local : x = du poignet vers le bout des
-  /// doigts, y > 0 = côté du pouce. Longueur ≈ 3/4 de la hauteur du visage.
-  void _dessinerMain(
-    Canvas c,
-    Offset poignet,
-    double angle,
-    double sens,
-    _Main forme,
-  ) {
-    c.save();
-    c.translate(poignet.dx, poignet.dy);
-    c.rotate(angle);
-    // Côté du pouce à l'écran : vers le corps (repos, salut), vers le haut
-    // (montrer).
-    final yPouce = Offset(-math.sin(angle), math.cos(angle));
-    final veutX = forme == _Main.montre ? 0.0 : -sens;
-    final veutY = forme == _Main.montre ? -1.0 : 0.0;
-    final ok = forme == _Main.montre
-        ? yPouce.dy * veutY >= 0
-        : yPouce.dx * veutX >= 0;
-    if (!ok) c.scale(1, -1);
-    // Main à l'échelle du visage (≈ 3/4 de sa hauteur).
-    c.scale(1.12);
-
-    final peau = _p(_peau);
-    final trait = _p(_peauOmbre)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.8
-      ..strokeCap = StrokeCap.round;
-
-    switch (forme) {
-      case _Main.ouverte:
-        // Paume visible : un peu plus large aux jointures.
-        final paume = Path()
-          ..moveTo(0, -15)
-          ..cubicTo(14, -19, 34, -23, 46, -22)
-          ..lineTo(48, 20)
-          ..cubicTo(34, 22, 14, 20, 0, 15)
-          ..cubicTo(-6, 8, -6, -8, 0, -15)
-          ..close();
-        c.drawPath(paume, peau);
-        // Quatre doigts serrés et arrondis (du petit doigt à l'index).
-        const doigts = [
-          (-16.5, 30.0), // auriculaire
-          (-5.5, 38.0), // annulaire
-          (5.5, 41.0), // majeur
-          (16.5, 37.0), // index
-        ];
-        for (final (y, long) in doigts) {
-          c.drawRRect(
-            RRect.fromRectAndRadius(
-              Rect.fromLTWH(40, y - 5.6, long + 6, 11.2),
-              const Radius.circular(5.6),
-            ),
-            peau,
-          );
-        }
-        for (final (y, long) in doigts.skip(1)) {
-          c.drawLine(Offset(46, y - 5.5), Offset(40 + long, y - 5.5), trait);
-        }
-        // Plis de la paume : ligne de cœur, ligne de vie (autour du pouce)
-        // et talon de la main, sans tache.
-        final pli = _p(_peauOmbre.withValues(alpha: 0.7))
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.5
-          ..strokeCap = StrokeCap.round;
-        c.drawPath(
-          Path()
-            ..moveTo(36, -16)
-            ..quadraticBezierTo(30, -2, 34, 12),
-          pli,
-        );
-        c.drawPath(
-          Path()
-            ..moveTo(32, 15)
-            ..quadraticBezierTo(16, 10, 8, 2),
-          pli,
-        );
-        // Pouce attaché à la base de la paume, écarté vers le côté.
-        c.save();
-        c.translate(8, 14);
-        c.rotate(0.62);
-        c.drawRRect(
-          RRect.fromRectAndRadius(
-            const Rect.fromLTWH(-4, -7, 38, 14),
-            const Radius.circular(7),
-          ),
-          peau,
-        );
-        c.drawLine(const Offset(18, -6), const Offset(18, -3), trait);
-        c.restore();
-      case _Main.montre:
-        // Poing : doigts repliés (jointures arrondies), index tendu, pouce
-        // posé le long des doigts.
-        final poing = RRect.fromRectAndRadius(
-          const Rect.fromLTWH(-2, -16, 46, 34),
-          const Radius.circular(14),
-        );
-        c.drawRRect(poing, peau);
-        for (var i = 0; i < 3; i++) {
-          c.drawCircle(Offset(40 - i * 1.0, -8.0 + i * 9.5), 8.2, peau);
-        }
-        c.drawPath(
-          Path()
-            ..moveTo(36, -4)
-            ..lineTo(44, -4)
-            ..moveTo(36, 5)
-            ..lineTo(44, 5),
-          trait,
-        );
-        // Index tendu (long, arrondi, avec une articulation).
-        c.drawRRect(
-          RRect.fromRectAndRadius(
-            const Rect.fromLTWH(30, 7, 50, 12.5),
-            const Radius.circular(6.25),
-          ),
-          peau,
-        );
-        c.drawLine(const Offset(60, 8.5), const Offset(60, 11), trait);
-        // Pouce le long du poing, côté index.
-        c.save();
-        c.translate(6, 18);
-        c.rotate(-0.12);
-        c.drawRRect(
-          RRect.fromRectAndRadius(
-            const Rect.fromLTWH(0, -6.5, 32, 13),
-            const Radius.circular(6.5),
-          ),
-          peau,
-        );
-        c.restore();
-      case _Main.detendue:
-        // Main qui pend le long du corps, dos de la main vers l'avant :
-        // paume, quatre doigts serrés un peu repliés, pouce côté corps.
-        final dos = Path()
-          ..moveTo(0, -14)
-          ..cubicTo(14, -17, 32, -20, 42, -19)
-          ..lineTo(44, 18)
-          ..cubicTo(30, 19, 14, 17, 0, 14)
-          ..cubicTo(-5, 7, -5, -7, 0, -14)
-          ..close();
-        c.drawPath(dos, peau);
-        const doigts = [
-          (-14.5, 22.0), // auriculaire
-          (-5.0, 28.0), // annulaire
-          (4.5, 30.0), // majeur
-          (13.8, 27.0), // index
-        ];
-        for (final (y, long) in doigts) {
-          c.drawRRect(
-            RRect.fromRectAndRadius(
-              Rect.fromLTWH(36, y - 5, long + 6, 10),
-              const Radius.circular(5),
-            ),
-            peau,
-          );
-        }
-        for (final (y, long) in doigts.skip(1)) {
-          c.drawLine(Offset(44, y - 4.8), Offset(36 + long, y - 4.8), trait);
-        }
-        // Jointures (doigts légèrement repliés).
-        final jointure = _p(_peauOmbre.withValues(alpha: 0.6))
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.4
-          ..strokeCap = StrokeCap.round;
-        for (final (y, long) in doigts) {
-          final x = 36 + long * 0.62;
-          c.drawLine(Offset(x, y - 2.5), Offset(x, y + 2.5), jointure);
-        }
-        // Pouce posé le long de l'index.
-        c.save();
-        c.translate(6, 13);
-        c.rotate(0.32);
-        c.drawRRect(
-          RRect.fromRectAndRadius(
-            const Rect.fromLTWH(-2, -6, 32, 12),
-            const Radius.circular(6),
-          ),
-          peau,
-        );
-        c.drawLine(const Offset(20, -5), const Offset(20, -2), trait);
-        c.restore();
-    }
-    c.restore();
-  }
-
   @override
   bool shouldRepaint(PeintreAfiV2 old) => true;
 }
 
-/// Widget simple pour afficher Afi v2 (planche, essais).
+/// Médaillon fixe (planche, essais).
 class AfiV2 extends StatelessWidget {
   const AfiV2({super.key, required this.etat, this.taille = 200});
   final EtatAfi etat;
   final double taille;
 
   @override
-  Widget build(BuildContext context) => SizedBox(
-    width: taille,
-    height: taille * PeintreAfiV2.hauteur / PeintreAfiV2.largeur,
+  Widget build(BuildContext context) => SizedBox.square(
+    dimension: taille,
     child: CustomPaint(painter: PeintreAfiV2(etat)),
   );
 }
 
-enum _Main { detendue, montre, ouverte }
+/// Médaillon animé d'Afi : respiration, petits mouvements de tête,
+/// clignements, bouche qui suit la voix ([bouche] : ouverture de 0 à 1,
+/// [forme] : forme de la bouche si la voix la donne).
+class MedaillonAfi extends StatefulWidget {
+  const MedaillonAfi({
+    super.key,
+    this.taille = 96,
+    required this.bouche,
+    this.forme,
+    this.humeur = Humeur.sourire,
+    this.auRevoir = false,
+    this.cible,
+    this.anime = true,
+  });
+
+  final double taille;
+  final ValueListenable<double> bouche;
+  final ValueListenable<FormeBouche>? forme;
+  final Humeur humeur;
+
+  /// « Au revoir » : yeux rieurs et petit signe de tête.
+  final bool auRevoir;
+
+  /// Direction du bouton montré, vue depuis Afi (dx, dy de longueur
+  /// quelconque) ; nul : Afi regarde la personne.
+  final Offset? cible;
+
+  /// Faux dans les captures d'écran (image fixe).
+  final bool anime;
+
+  @override
+  State<MedaillonAfi> createState() => _EtatMedaillon();
+}
+
+class _EtatMedaillon extends State<MedaillonAfi>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _temps = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 60),
+  );
+
+  /// Regard actuel (suit la cible en douceur).
+  double _regard = 0;
+  double _regardY = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.anime) _temps.repeat();
+  }
+
+  @override
+  void didUpdateWidget(MedaillonAfi old) {
+    super.didUpdateWidget(old);
+    if (widget.anime && !_temps.isAnimating) _temps.repeat();
+    if (!widget.anime && _temps.isAnimating) _temps.stop();
+  }
+
+  @override
+  void dispose() {
+    _temps.dispose();
+    super.dispose();
+  }
+
+  /// Les yeux se ferment brièvement toutes les ~3,7 s.
+  static double _paupieres(double t) {
+    final cycle = t % 3.7;
+    if (cycle < 0.09) return 1 - cycle / 0.09;
+    if (cycle < 0.18) return (cycle - 0.09) / 0.09;
+    return 1;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final listes = <Listenable>[_temps, widget.bouche];
+    if (widget.forme != null) listes.add(widget.forme!);
+    return RepaintBoundary(
+      child: SizedBox.square(
+        dimension: widget.taille,
+        child: AnimatedBuilder(
+          animation: Listenable.merge(listes),
+          builder: (context, _) {
+            final t = widget.anime ? _temps.value * 60 : 0.0;
+            var vise = 0.0;
+            var viseY = 0.0;
+            final c = widget.cible;
+            if (c != null && c.distance > 0) {
+              final d = c / c.distance;
+              vise = d.dx;
+              viseY = d.dy;
+            }
+            final f = widget.anime ? 0.12 : 1.0;
+            _regard += (vise - _regard) * f;
+            _regardY += (viseY - _regardY) * f;
+            final o = widget.bouche.value.clamp(0.0, 1.0);
+            final forme =
+                widget.forme?.value ??
+                (o < 0.08
+                    ? FormeBouche.fermee
+                    : (o < 0.4 ? FormeBouche.e : FormeBouche.a));
+            return CustomPaint(
+              painter: PeintreAfiV2(
+                EtatAfi(
+                  t: t,
+                  ouverture: o,
+                  forme: forme,
+                  humeur: widget.auRevoir ? Humeur.joie : widget.humeur,
+                  regard: _regard,
+                  regardY: _regardY,
+                  inclinaison: widget.auRevoir
+                      ? 0.06 + (widget.anime ? math.sin(t * 3) * 0.05 : 0)
+                      : 0,
+                  paupieres: widget.humeur == Humeur.joie || widget.auRevoir
+                      ? 1
+                      : _paupieres(t),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}

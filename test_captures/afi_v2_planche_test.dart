@@ -1,7 +1,6 @@
 // Planche de la nouvelle Afi (à valider par le propriétaire).
 // Lancement : flutter test test_captures/afi_v2_planche_test.dart --update-goldens
 import 'dart:convert';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -23,14 +22,14 @@ Future<void> _polices() async {
 void main() {
   setUpAll(_polices);
   testWidgets('planche Afi v2', (tester) async {
-    tester.view.physicalSize = const Size(2000, 1000);
+    tester.view.physicalSize = const Size(2000, 680);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     Widget case_(String titre, EtatAfi e) => Column(
       children: [
         Container(
-          color: const Color(0xFF132447),
-          child: AfiV2(etat: e, taille: 310),
+          color: const Color(0xFF0B1730),
+          child: AfiV2(etat: e, taille: 300),
         ),
         const SizedBox(height: 6),
         Text(
@@ -48,11 +47,11 @@ void main() {
       children: [
         ClipRect(
           child: Align(
-            alignment: const Alignment(0, -0.27),
-            heightFactor: 0.3,
+            alignment: const Alignment(0, -0.09),
+            heightFactor: 0.32,
             widthFactor: 0.45,
             child: Container(
-              color: const Color(0xFF132447),
+              color: const Color(0xFF0B1730),
               child: AfiV2(
                 etat: EtatAfi(forme: f, ouverture: o, humeur: Humeur.neutre),
                 taille: 420,
@@ -89,18 +88,20 @@ void main() {
                     ),
                     case_('Sourit', const EtatAfi(humeur: Humeur.joie)),
                     case_(
-                      'Montre à gauche',
-                      const EtatAfi(brasGauche: BrasMontre(math.pi * 1.2)),
+                      'Regarde à gauche',
+                      const EtatAfi(regard: -1, regardY: 0.3),
                     ),
                     case_(
-                      'Montre à droite',
-                      const EtatAfi(brasDroit: BrasMontre(-math.pi * 0.2)),
+                      'Regarde à droite',
+                      const EtatAfi(regard: 1, regardY: 0.3),
                     ),
                     case_(
-                      'Salue',
+                      'Au revoir',
                       const EtatAfi(
                         humeur: Humeur.joie,
-                        brasDroit: BrasSalue(0.6),
+                        inclinaison: 0.09,
+                        forme: FormeBouche.e,
+                        ouverture: 0.35,
                       ),
                     ),
                   ],
@@ -130,29 +131,22 @@ void main() {
   });
 
   testWidgets('gros plan Afi v2', (tester) async {
-    tester.view.physicalSize = const Size(1600, 1040);
+    tester.view.physicalSize = const Size(1600, 760);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
       const MaterialApp(
         debugShowCheckedModeBanner: false,
         home: Scaffold(
-          backgroundColor: Color(0xFF132447),
+          backgroundColor: Color(0xFF0B1730),
           body: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               AfiV2(
-                etat: EtatAfi(
-                  forme: FormeBouche.a,
-                  ouverture: 0.6,
-                  brasDroit: BrasMontre(-math.pi * 0.2),
-                ),
-                taille: 780,
+                etat: EtatAfi(forme: FormeBouche.a, ouverture: 0.6),
+                taille: 700,
               ),
-              AfiV2(
-                etat: EtatAfi(humeur: Humeur.joie, brasDroit: BrasSalue(0.6)),
-                taille: 780,
-              ),
+              AfiV2(etat: EtatAfi(regard: 1, regardY: 0.3), taille: 700),
             ],
           ),
         ),
