@@ -1,0 +1,161 @@
+name: "7 - Remettre la clé de signature depuis le coffre"
+
+# Remet le secret ZP_CLE_SIGNATURE à partir de la copie de secours chiffrée
+# rangée dans le dépôt PRIVÉ zero-perte-coffre (dossier cle-signature/), quand
+# le secret a été écrasé par erreur.
+#
+# Sécurité :
+#  1. Le jeton doit pouvoir lire le coffre et gérer les secrets de ce dépôt :
+#     vérifié AVANT tout ; sinon arrêt, rien n'est modifié.
+#  2. La copie est déchiffrée (ZP_SIGNATURE_MOT_DE_PASSE) dans un dossier
+#     temporaire et son empreinte SHA-1 doit être EXACTEMENT celle des versions
+#     publiées ; sinon arrêt, rien n'est modifié.
+#  3. Seulement ensuite, le secret ZP_CLE_SIGNATURE est remis.
+#  4. Les autres secrets sont contrôlés sans être affichés (avertissements
+#     seulement, jamais bloquant) : Google accepte ZP_CLE_VOIX,
+#     ZP_CLE_LICENCES correspond à la clé publique de l'application,
+#     ZP_SIGNATURE_MOT_DE_PASSE déchiffre la clé.
+#  5. La fabrication de la 0.31.0 est relancée sur sa branche de travail.
+# Aucune valeur secrète n'est jamais affichée.
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Tapez REMETTRE pour confirmer"
+        required: true
+        default: ""
+
+permissions:
+  contents: read
+  actions: write # relancer la fabrication
+
+concurrency:
+  group: remettre-cle-signature
+  cancel-in-progress: false
+
+env:
+  EMPREINTE_ATTENDUE: "49:27:0C:A9:FE:00:2B:55:14:08:5A:9E:AE:50:10:63:C9:CC:B1:A3"
+  BRANCHE_031: claude/wizardly-allen-m7a11x
+
+jobs:
+  remettre:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      COFFRE: ${{ github.repository_owner }}/zero-perte-coffre
+    steps:
+      - name: Confirmation
+        run: |
+          [ "${{ github.event.inputs.confirmation }}" = "REMETTRE" ] || {
+            echo "::error::Tapez REMETTRE (en majuscules) dans la case de confirmation."; exit 1; }
+
+      - name: "1. Le jeton a-t-il les bons droits ? (rien n'est modifié)"
+        env:
+          GH_TOKEN: ${{ secrets.ZP_JETON_COFFRE }}
+          JETON_PRESENT: ${{ secrets.ZP_JETON_COFFRE != '' }}
+        run: |
+          AIDE="Créez un jeton « fine-grained » (Settings > Developer settings > Fine-grained tokens) : Repository access = Only select repositories : zero-perte ET zero-perte-coffre ; Permissions > Repository : Secrets = Read and write, Contents = Read-only (Metadata = Read-only est ajouté tout seul). Rangez-le dans le secret ZP_JETON_COFFRE de zero-perte."
+          [ "$JETON_PRESENT" = "true" ] || { echo "::error::Le secret ZP_JETON_COFFRE est absent. $AIDE"; exit 1; }
+          PRIVE=$(gh api "repos/$COFFRE" --jq .private 2>/dev/null || echo "introuvable")
+          [ "$PRIVE" = "true" ] || { echo "::error::Le coffre est illisible avec ce jeton (expiré, ou sans accès à zero-perte-coffre). $AIDE"; exit 1; }
+          gh api "repos/$COFFRE/contents/cle-signature" --jq '.[].name' >/dev/null 2>&1 \
+            || { echo "::error::Le jeton ne peut pas lire le dossier cle-signature du coffre (Contents : Read-only manquant). $AIDE"; exit 1; }
+          gh api "repos/$GITHUB_REPOSITORY/actions/secrets/public-key" --jq .key_id >/dev/null 2>&1 \
+            || { echo "::error::Le jeton ne peut pas gérer les secrets de zero-perte (Secrets : Read and write manquant). $AIDE"; exit 1; }
+          gh secret list --repo "$GITHUB_REPOSITORY" --json name --jq '.[].name' >/dev/null 2>&1 \
+            || { echo "::error::Le jeton ne peut pas lister les secrets de zero-perte. $AIDE"; exit 1; }
+          echo "Jeton : lecture du coffre et gestion des secrets de zero-perte : OK."
+
+      - name: Récupérer le code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: "2. Copie de secours : déchiffrer et vérifier l'empreinte (rien n'est modifié)"
+        env:
+          GH_TOKEN: ${{ secrets.ZP_JETON_COFFRE }}
+          ZP_SIGNATURE_MOT_DE_PASSE: ${{ secrets.ZP_SIGNATURE_MOT_DE_PASSE }}
+        run: |
+          set -o pipefail
+          T="$RUNNER_TEMP/zpr"; mkdir -p "$T" && chmod 700 "$T"
+          # Copie la plus récente (le nom contient la date).
+          NOM=$(gh api "repos/$COFFRE/contents/cle-signature" --jq '.[].name' | grep '\.p12\.chiffre$' | sort | tail -n 1)
+          [ -n "$NOM" ] || { echo "::error::Aucune copie de secours dans zero-perte-coffre/cle-signature."; exit 1; }
+          echo "Copie de secours : $NOM"
+          gh api -H "Accept: application/vnd.github.raw" "repos/$COFFRE/contents/cle-signature/$NOM" > "$T/cle.chiffre"
+          [ -s "$T/cle.chiffre" ] || { echo "::error::Copie de secours vide."; exit 1; }
+          ./outils/dechiffrer-cle-signature.sh "$T/cle.chiffre" "$T/cle.p12"
+          echo "ZP_SIGNATURE_MOT_DE_PASSE : déchiffre la copie de secours : OK."
+          SHA1=$(keytool -list -v -keystore "$T/cle.p12" -storetype PKCS12 \
+                   -storepass:env ZP_SIGNATURE_MOT_DE_PASSE -alias zeroperte 2>/dev/null \
+                 | sed -nE 's/^[[:space:]]*SHA1:[[:space:]]*([0-9A-Fa-f:]+).*/\1/p' | head -n 1 | tr 'a-f' 'A-F')
+          shred -u "$T/cle.p12"
+          echo "Empreinte SHA-1 de la copie : $SHA1 (publique, pas un secret)"
+          if [ "$SHA1" != "$EMPREINTE_ATTENDUE" ]; then
+            shred -u "$T/cle.chiffre"
+            echo "::error::Empreinte différente de celle des versions publiées ($EMPREINTE_ATTENDUE). Arrêt : rien n'est modifié."
+            exit 1
+          fi
+          echo "Empreinte identique à celle des versions publiées : OK."
+          base64 -w0 "$T/cle.chiffre" > "$T/cle.b64"
+          shred -u "$T/cle.chiffre"
+
+      - name: "3. Remettre le secret ZP_CLE_SIGNATURE"
+        env:
+          GH_TOKEN: ${{ secrets.ZP_JETON_COFFRE }}
+        run: |
+          T="$RUNNER_TEMP/zpr"
+          gh secret set ZP_CLE_SIGNATURE --repo "$GITHUB_REPOSITORY" < "$T/cle.b64"
+          shred -u "$T/cle.b64"
+          echo "Secret ZP_CLE_SIGNATURE remis depuis la copie de secours."
+
+      - name: "4. Contrôle des autres secrets (sans les afficher, avertissements seulement)"
+        # Ne bloque JAMAIS : la clé de signature est déjà remise à ce stade.
+        continue-on-error: true
+        env:
+          ZP_CLE_VOIX: ${{ secrets.ZP_CLE_VOIX }}
+          ZP_CLE_LICENCES: ${{ secrets.ZP_CLE_LICENCES }}
+        run: |
+          T="$RUNNER_TEMP/zpr"
+          # ZP_CLE_VOIX : aucune forme imposée (Google a plusieurs formats de
+          # clés) ; on demande seulement la liste des modèles, ce qui ne
+          # consomme pas le quota de voix.
+          if [ -z "$ZP_CLE_VOIX" ]; then
+            echo "::warning::ZP_CLE_VOIX est vide."
+          else
+            CODE=$(curl -s -o /dev/null -w '%{http_code}' -H "x-goog-api-key: $ZP_CLE_VOIX" \
+              https://generativelanguage.googleapis.com/v1beta/models || echo "réseau")
+            if [ "$CODE" = "200" ]; then echo "ZP_CLE_VOIX : acceptée par Google : OK."
+            else echo "::warning::ZP_CLE_VOIX : Google répond $CODE (avertissement seulement)."; fi
+          fi
+          # ZP_CLE_LICENCES : sa clé publique doit être celle de l'application.
+          umask 077
+          if printf '%s' "$ZP_CLE_LICENCES" | base64 -d > "$T/lic.pem" 2>/dev/null \
+             && PUB=$(openssl pkey -in "$T/lic.pem" -pubout -outform DER 2>/dev/null | tail -c 32 | base64 -w0) \
+             && [ "$PUB" = "$(tr -d '\n' < assets/licence/cle_publique.txt)" ]; then
+            echo "ZP_CLE_LICENCES : correspond à la clé publique de l'application : OK."
+          else
+            echo "::warning::ZP_CLE_LICENCES ne correspond plus à la clé publique de l'application."
+          fi
+          shred -u "$T/lic.pem" 2>/dev/null || true
+          echo "ZP_SIGNATURE_MOT_DE_PASSE : vérifié à l'étape 2 (il déchiffre la clé) : OK."
+
+      - name: Effacer les fichiers temporaires
+        if: always()
+        run: |
+          find "$RUNNER_TEMP/zpr" -type f -exec shred -u {} + 2>/dev/null || true
+          rm -rf "$RUNNER_TEMP/zpr"
+
+      - name: "5. Relancer la fabrication de la 0.31.0 (branche de travail)"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run fabriquer-apk.yml --repo "$GITHUB_REPOSITORY" --ref "$BRANCHE_031"
+          {
+            echo "## Clé de signature remise"
+            echo ""
+            echo "- Empreinte SHA-1 vérifiée : $EMPREINTE_ATTENDUE"
+            echo "- ZP_CLE_VOIX, ZP_CLE_LICENCES, ZP_SIGNATURE_MOT_DE_PASSE : contrôlés"
+            echo "- Fabrication relancée sur $BRANCHE_031"
+          } >> "$GITHUB_STEP_SUMMARY"

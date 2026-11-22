@@ -149,11 +149,24 @@ void main() {
     // Fichier vide ou abîmé : pas de voix enregistrée (voix de synthèse).
     expect(VoixEnregistree.depuisJson('{}').phrases, isEmpty);
     expect(VoixEnregistree.depuisJson('pas du json').mentionIA, isFalse);
-    // Le fichier livré aujourd'hui est vide (la voix n'est pas encore faite).
+    // La voix livrée (Sulafat) : chaque phrase a son fichier MP3, une durée,
+    // le mouvement et la forme de la bouche, et c'est bien le texte du script.
     final livre = VoixEnregistree.depuisJson(
       File('assets/demo/voix/bouches.json').readAsStringSync(),
     );
-    expect(livre.phrases, isEmpty);
+    expect(livre.mentionIA, isTrue);
+    expect(livre.phrases.length, greaterThanOrEqualTo(48));
+    for (final MapEntry(key: n, value: p) in livre.phrases.entries) {
+      expect(
+        File('assets/demo/voix/${p.fichier}').existsSync(),
+        isTrue,
+        reason: n,
+      );
+      expect(p.dureeMs, greaterThan(500), reason: n);
+      expect(p.bouche, isNotEmpty, reason: n);
+      expect(p.forme, isNotEmpty, reason: n);
+      expect(phrasesVisite[n], isNotNull, reason: n);
+    }
   });
 
   for (final (nom, taille, densite) in [

@@ -9,9 +9,9 @@ Il est mis à jour **à la fin de chaque étape**.
 
 | | |
 |---|---|
-| **Dernière étape terminée** | **0.30.0** : Retour dans l'installation, démonstration guidée avec Afi |
-| **Version publiée** | 0.30.0 (Android et Windows, voir les Releases GitHub) |
-| **Prochaine étape** | Essai A5 (Google Drive sur un vrai téléphone et sur PC), puis étapes B et F (Cloudflare, Firebase) |
+| **Dernière étape terminée** | **0.31.0** : Afi en médaillon, voix Sulafat (48/50), corrections de la visite, améliorations de l'audit |
+| **Version publiée** | 0.31.0 (Android et Windows, voir les Releases GitHub) |
+| **Prochaine étape** | 0.31.1 (4 phrases refaites le 23/11 après 8 h 12), puis priorités 1 et 2 (branche `claude/suite-apres-031`), 0.32, relais |
 | **Méthode** | Branche de travail, tests + captures sur 4 tailles, puis fusion dans `main` (= publication). Rien de non testé sur `main`. |
 | **Pour tout choix non décidé** | Prendre l'option la plus simple, la noter ici et la mettre dans le rapport avec une recommandation. |
 
@@ -989,3 +989,33 @@ fournisseurs depuis le stock bas, rappel automatique des crédits.
   ensemble : 100 000 lectures, 1 000 écritures, 1 000 listes par jour). Avec une consultation par minute et
   par patron, cela tient environ 70 boutiques. **À 50 boutiques, revoir le relais** (alertes poussées par
   Firebase, consultations plus espacées).
+
+## Ordre décidé par le propriétaire (22/11, après le rapport « pendant l'attente »)
+1. 0.31.0 (voix) — priorité absolue.
+2. PRIORITÉ 1 : produits et prix après l'installation (Gestion, patron seul ; prix au journal avec ancien et
+   nouveau prix ; masquer sans effacer l'historique ; image, unités, prix d'achat, stock de départ, seuil).
+3. PRIORITÉ 2 : alléger les données (objectif < 1 Ko par vente stockée, < 5 Mo pour un nouvel appareil
+   sur une boutique d'un an), sans casser la chaîne du journal ni la synchronisation.
+4. 0.32 (réponses à l'audit), puis correction du relais Cloudflare.
+Travail hors 0.31.0 sur la branche `claude/suite-apres-031` (liste : `docs/reste-a-faire.md` sur cette
+branche).
+- 22/11 à 8 h 13 (quota remis à zéro) : **48/50 phrases** (gemini-3.1-flash-tts-preview, Sulafat, 206 s,
+  622 Ko). Restent 049 et 050. Vérification des 48 : même voix, volume régulier (−16 à −20 dB) ; **020** touche
+  0 dB (risque de saturation) et **037** a une pause de 1,5 s au milieu de la phrase → seront refaites. Script :
+  pauses de plus de 0,6 s dans une phrase ramenées à 0,35 s, volume plafonné, option « refaire » (action 6).
+  Relance programmée le 23/11 à 8 h 12 (020, 037, 049, 050 : un seul lot).
+- **22/11, 8 h 24 — INCIDENT, publication bloquée** : la fabrication (action 2) échoue à « Préparer la clé de
+  signature » : `base64: error: invalid input`. Le contenu du secret `ZP_CLE_SIGNATURE` n'est plus la clé
+  chiffrée (il l'était encore à 3 h 42, même workflow). Hypothèse : remplacé par erreur lors du changement de la
+  clé Gemini. Claude ne modifie aucun secret : au propriétaire de remettre la valeur. Copie de secours chiffrée
+  dans le coffre privé `zero-perte-coffre`, dossier `cle-signature/`. Sans la bonne clé, AUCUNE mise à jour ne
+  peut être installée sur les téléphones des clients (Android exige la même signature).
+
+### Version 0.31.0 — publiée le 22/11
+- Clé de signature remise par l'action 7 (lancée par le propriétaire) : copie de secours du coffre, empreinte
+  SHA-1 `49:27:0C:A9:FE:00:2B:55:14:08:5A:9E:AE:50:10:63:C9:CC:B1:A3` vérifiée avant l'écriture ; ZP_CLE_VOIX
+  acceptée par Google, ZP_CLE_LICENCES conforme, mot de passe de signature valide (aucun avertissement).
+- Décision du propriétaire : publier avec **48 phrases sur 50** ; 049 et 050 dites par la voix de l'appareil ;
+  020, 037, 049, 050 refaites le 23/11 → **0.31.1**.
+- Contrôles : 437 tests, visite entière à vitesse réelle sur 4 tailles (aucun bouton caché), fabrication
+  signée « officiel » sur la branche : APK universel **17,7 Mo**, ZIP Windows **13,3 Mo**.
