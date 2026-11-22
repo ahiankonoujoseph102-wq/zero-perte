@@ -93,8 +93,13 @@ CREATE TABLE stocks_courants (
 )''',
     // Prix d'achat saisi par le patron (bénéfice estimé avant tout arrivage).
     'ALTER TABLE produits_versions ADD COLUMN prix_achat INTEGER',
-    // « Produits déjà reçus » sans parcourir tous les mouvements.
-    'CREATE INDEX mouvements_nature ON mouvements_stock (nature, produit_id)',
+    // Index allégés : celui par produit ne sert plus (stock courant) ; seuls
+    // les arrivages et les retours (rares) ont un petit index partiel.
+    'DROP INDEX IF EXISTS mouvements_produit',
+    "CREATE INDEX mouvements_arrivages ON mouvements_stock (produit_id) "
+        "WHERE nature = 'arrivage'",
+    "CREATE INDEX mouvements_retours ON mouvements_stock (operation_id) "
+        "WHERE nature = 'retour'",
     'INSERT INTO stocks_courants (produit_id, quantite_milliemes) '
         'SELECT produit_id, SUM(quantite_milliemes) FROM mouvements_stock '
         'GROUP BY produit_id',

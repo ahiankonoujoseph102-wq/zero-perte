@@ -11,6 +11,7 @@
 library;
 
 import 'dart:convert';
+import 'dart:io' show ZLibDecoder, ZLibEncoder;
 import 'dart:typed_data';
 
 import 'package:sqflite/sqflite.dart';
@@ -339,7 +340,7 @@ class JournalLocal implements ReglagesLocaux {
       'type': op.type,
       'auteur_id': op.auteurId,
       'heure_telephone': op.heureTelephone,
-      'donnees': jsonCanonique(op.donnees),
+      'donnees': stockerDonnees(op.donnees),
       'empreinte_precedente': op.empreintePrecedente,
       'empreinte': op.empreinte,
       'signature': op.signature,
@@ -614,8 +615,7 @@ class JournalLocal implements ReglagesLocaux {
           type: l['type'] as String,
           auteurId: l['auteur_id'] as String,
           heureTelephone: l['heure_telephone'] as int,
-          donnees: (jsonDecode(l['donnees'] as String) as Map)
-              .cast<String, Object?>(),
+          donnees: lireDonnees(l['donnees']).cast<String, Object?>(),
           empreintePrecedente: l['empreinte_precedente'] as String,
           empreinte: l['empreinte'] as String,
           signature: l['signature'] as String?,
@@ -784,7 +784,7 @@ class JournalLocal implements ReglagesLocaux {
           heure: l['h'] as int,
           montant: l['montant'] as int,
           nature: l['nature'] as String,
-          recu: (jsonDecode(l['d'] as String) as Map)['recu'] as String?,
+          recu: lireDonnees(l['d'])['recu'] as String?,
           mode: l['mode_paiement'] == null
               ? null
               : ModePaiement.depuisCode(l['mode_paiement'] as String),
@@ -1011,7 +1011,7 @@ class JournalLocal implements ReglagesLocaux {
           'type': op.type,
           'auteur_id': op.auteurId,
           'heure_telephone': op.heureTelephone,
-          'donnees': jsonCanonique(op.donnees),
+          'donnees': stockerDonnees(op.donnees),
           'empreinte_precedente': op.empreintePrecedente,
           'empreinte': op.empreinte,
           'signature': op.signature,
@@ -1062,7 +1062,7 @@ class JournalLocal implements ReglagesLocaux {
           'type': op.type,
           'auteur_id': op.auteurId,
           'heure_telephone': op.heureTelephone,
-          'donnees': jsonCanonique(op.donnees),
+          'donnees': stockerDonnees(op.donnees),
           'empreinte_precedente': op.empreintePrecedente,
           'empreinte': op.empreinte,
           'signature': op.signature,
@@ -1094,8 +1094,7 @@ class JournalLocal implements ReglagesLocaux {
           type: l['type'] as String,
           auteurId: l['auteur_id'] as String,
           heureTelephone: l['heure_telephone'] as int,
-          donnees: (jsonDecode(l['donnees'] as String) as Map)
-              .cast<String, Object?>(),
+          donnees: lireDonnees(l['donnees']).cast<String, Object?>(),
           empreintePrecedente: l['empreinte_precedente'] as String,
           empreinte: l['empreinte'] as String,
           signature: l['signature'] as String?,
@@ -1116,6 +1115,7 @@ class JournalLocal implements ReglagesLocaux {
             'type': op.type,
             'auteur_id': op.auteurId,
             'heure_telephone': op.heureTelephone,
+            // Format de synchronisation inchangé : contenu en texte.
             'donnees': jsonCanonique(op.donnees),
             'empreinte_precedente': op.empreintePrecedente,
             'empreinte': op.empreinte,
@@ -1141,7 +1141,11 @@ class JournalLocal implements ReglagesLocaux {
           'format': 1,
           'telephone_id': telephoneId,
           'prefixe_recu': prefixeRecu,
-          'operations': lignes,
+          // Contenu en texte : le fichier de sauvegarde garde son format.
+          'operations': [
+            for (final l in lignes)
+              {...l, 'donnees': texteDonnees(l['donnees'])},
+          ],
         }),
       ),
     );
@@ -1180,8 +1184,7 @@ class JournalLocal implements ReglagesLocaux {
           type: l['type'] as String,
           auteurId: l['auteur_id'] as String,
           heureTelephone: l['heure_telephone'] as int,
-          donnees: (jsonDecode(l['donnees'] as String) as Map)
-              .cast<String, Object?>(),
+          donnees: lireDonnees(l['donnees']).cast<String, Object?>(),
           empreintePrecedente: l['empreinte_precedente'] as String,
           empreinte: l['empreinte'] as String,
           signature: l['signature'] as String?,
@@ -1215,7 +1218,7 @@ class JournalLocal implements ReglagesLocaux {
           'type': op.type,
           'auteur_id': op.auteurId,
           'heure_telephone': op.heureTelephone,
-          'donnees': jsonCanonique(op.donnees),
+          'donnees': stockerDonnees(op.donnees),
           'empreinte_precedente': op.empreintePrecedente,
           'empreinte': op.empreinte,
           'signature': op.signature,
@@ -1580,7 +1583,7 @@ class JournalLocal implements ReglagesLocaux {
           l['id'] as String,
           l['heure_telephone'] as int,
           l['auteur_id'] as String,
-          (jsonDecode(l['donnees'] as String) as Map).cast<String, Object?>(),
+          lireDonnees(l['donnees']).cast<String, Object?>(),
         ),
     ];
   }
@@ -1588,10 +1591,10 @@ class JournalLocal implements ReglagesLocaux {
   /// Stock actuel d'un produit, en millièmes d'unité de base.
   Future<int> stockMilliemes(String produitId) async {
     final r = await _db.rawQuery(
-      'SELECT quantite_milliemes AS q FROM mouvements_stock WHERE produit_id = ?',
+      'SELECT quantite_milliemes AS q FROM stocks_courants WHERE produit_id = ?',
       [produitId],
     );
-    return stockDepuisMouvements(r.map((l) => l['q'] as int));
+    return r.isEmpty ? 0 : (r.first['q'] as int);
   }
 
   /// Stock de tous les produits (millièmes d'unité de base), en une requête.
@@ -1815,8 +1818,7 @@ class JournalLocal implements ReglagesLocaux {
           'Cette vente a déjà eu un retour : faites « Retour » pour le reste.',
         );
       }
-      final vente =
-          jsonDecode(v.first['donnees'] as String) as Map<String, Object?>;
+      final vente = lireDonnees(v.first['donnees']);
       return _ajouter(
         t,
         type: TypeOperation.venteAnnulee,
@@ -1850,7 +1852,7 @@ class JournalLocal implements ReglagesLocaux {
     );
     final rendus = <int, int>{};
     for (final l in r) {
-      final d = jsonDecode(l['donnees'] as String) as Map;
+      final d = lireDonnees(l['donnees']);
       if (d['vente'] != venteOperationId) continue;
       for (final x in (d['lignes'] as List).cast<Map>()) {
         final i = x['ligne'] as int;
@@ -1889,8 +1891,7 @@ class JournalLocal implements ReglagesLocaux {
       if (annulee.isNotEmpty) {
         throw const ErreurZeroPerte('Cette vente est annulée.');
       }
-      final vente =
-          jsonDecode(v.first['donnees'] as String) as Map<String, Object?>;
+      final vente = lireDonnees(v.first['donnees']);
       final lignesVente = (vente['lignes'] as List).cast<Map>();
       final deja = await _dejaRendus(t, venteOperationId);
       final lignes = <Map<String, Object?>>[];
@@ -1990,8 +1991,7 @@ class JournalLocal implements ReglagesLocaux {
           id: l['id'] as String,
           heure: l['heure_telephone'] as int,
           auteurId: l['auteur_id'] as String,
-          donnees: (jsonDecode(l['donnees'] as String) as Map)
-              .cast<String, Object?>(),
+          donnees: lireDonnees(l['donnees']).cast<String, Object?>(),
         ),
     ];
   }
@@ -2072,8 +2072,7 @@ class JournalLocal implements ReglagesLocaux {
           operationId: l['id'] as String,
           heure: l['h'] as int,
           auteurId: l['a'] as String,
-          donnees: (jsonDecode(l['d'] as String) as Map)
-              .cast<String, Object?>(),
+          donnees: lireDonnees(l['d']).cast<String, Object?>(),
           motifAnnulation: l['motif'] as String?,
         ),
     ];
@@ -2539,7 +2538,7 @@ class JournalLocal implements ReglagesLocaux {
     );
     if (r.isEmpty) return null;
     return ConfigBoutique.depuisDonnees(
-      (jsonDecode(r.first['donnees'] as String) as Map).cast<String, Object?>(),
+      lireDonnees(r.first['donnees']).cast<String, Object?>(),
     );
   }
 
@@ -2568,7 +2567,7 @@ class JournalLocal implements ReglagesLocaux {
     final parId = <String, Utilisateur>{};
     for (final l in r) {
       final u = Utilisateur.depuisDonnees(
-        (jsonDecode(l['donnees'] as String) as Map).cast<String, Object?>(),
+        lireDonnees(l['donnees']).cast<String, Object?>(),
       );
       parId[u.id] = u;
     }
@@ -2610,7 +2609,7 @@ class JournalLocal implements ReglagesLocaux {
     );
     final codes = <CodeActivation>[];
     for (final l in r) {
-      final d = jsonDecode(l['donnees'] as String) as Map<String, Object?>;
+      final d = lireDonnees(l['donnees']);
       try {
         codes.add(lireCode(d['code'] as String));
       } on ErreurCode {
@@ -2835,3 +2834,60 @@ class OperationLue {
       (l as Map).cast<String, Object?>(),
   ];
 }
+
+// ---------------------------------------------------------------------------
+// Stockage compact du contenu des opérations (schéma 6)
+// ---------------------------------------------------------------------------
+//
+// Le contenu (JSON canonique) est rangé COMPRESSÉ dans la base du téléphone :
+// un octet de format, puis deflate avec un dictionnaire fixe (≈ 4 fois plus
+// petit pour une vente). Le JSON lui-même, son empreinte et le format de la
+// synchronisation ne changent PAS : on retrouve exactement le même texte.
+// Les anciennes lignes (texte) restent lisibles telles quelles.
+
+/// Format 1 : deflate brut + [_dictionnaireV1]. NE JAMAIS modifier ce
+/// dictionnaire (les lignes déjà écrites ne se liraient plus) : pour en
+/// changer, créer un format 2.
+const int _formatDonneesV1 = 1;
+
+const String _dictionnaireV1 =
+    '"type":"auteur":"client":null,"conditionnement":null,"conditionnement":"'
+    '"facteur_milliemes":"prix_vente":"actif":true,"a_verifier":false,'
+    '"emoji":"photo":null,"seuil_alerte_milliemes":0,"unite_base":"'
+    '"montant":"nature":"note":null,"mode_paiement":"especes","flooz","mixx",'
+    '"credit","motif":"vente":"operation":"quantite_milliemes":"recu":"A-0000'
+    '{"lignes":[{"au_montant":false,"conditionnement":null,"cout_total":null,'
+    '"nombre":1,"prix_total":"produit":"quantite_milliemes":1000},'
+    '{"au_montant":false,"conditionnement":null,"cout_total":null,"nombre":'
+    '],"mode_paiement":"especes","monnaie_rendue":0,"montant_recu":'
+    '"numero_recu":"recu":"A-0000","reference_paiement":null,"total":';
+
+final List<int> _octetsDictionnaireV1 = utf8.encode(_dictionnaireV1);
+
+/// Contenu d'une opération tel qu'il est rangé dans la base.
+Uint8List stockerDonnees(Map<String, Object?> donnees) {
+  final texte = utf8.encode(jsonCanonique(donnees));
+  final z = ZLibEncoder(
+    raw: true,
+    level: 9,
+    dictionary: _octetsDictionnaireV1,
+  ).convert(texte);
+  return Uint8List.fromList([_formatDonneesV1, ...z]);
+}
+
+/// Texte JSON canonique d'un contenu rangé (ancien texte ou format 1).
+String texteDonnees(Object? v) {
+  if (v is String) return v;
+  if (v is List<int> && v.isNotEmpty && v.first == _formatDonneesV1) {
+    final brut = ZLibDecoder(
+      raw: true,
+      dictionary: _octetsDictionnaireV1,
+    ).convert(v.sublist(1));
+    return utf8.decode(brut);
+  }
+  throw const ErreurZeroPerte('Contenu d\'opération illisible.');
+}
+
+/// Contenu d'une opération rangée, décodé.
+Map<String, Object?> lireDonnees(Object? v) =>
+    (jsonDecode(texteDonnees(v)) as Map).cast<String, Object?>();

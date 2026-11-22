@@ -34,6 +34,9 @@ CREATE TABLE mouvements_stock (
         'nature': 'test',
       });
     }
+    await db.execute(
+      'CREATE TABLE produits_versions (operation_id TEXT PRIMARY KEY)',
+    );
     for (final sql in migrations[6]!) {
       await db.execute(sql);
     }
