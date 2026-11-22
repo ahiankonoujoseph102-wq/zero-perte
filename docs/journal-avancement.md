@@ -1098,3 +1098,8 @@ libellé du seuil de stock bas coupé. 458 tests.
   `test_captures/partie_b2_captures_test.dart`. Guides de mise en service mis à jour (Chiffres, résumé du soir,
   Commander, crédits en retard).
 
+- **Publiée** le 22/11 : Release `v0.34.0-n97`, APK 18,6 Mo, signature vérifiée (SHA-1
+  49:27:0C:A9:FE:00:2B:55:14:08:5A:9E:AE:50:10:63:C9:CC:B1:A3).
+- **Décisions du propriétaire (22/11)** : base sur le téléphone gardée telle quelle (choix (a)) ; 14 jours pour
+  un crédit en retard et commande sans quantités : **validés**. Le propriétaire commence l'essai sur 2 vrais
+  téléphones (`docs/mise-en-service/essai-avant-premier-client.md`).
