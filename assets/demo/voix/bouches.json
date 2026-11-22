@@ -1,5 +1,47 @@
 {
-  "version": 1,
-  "note": "Rempli par l'action « 6 - Fabriquer la voix de la démonstration ». Vide : la démonstration utilise la voix de synthèse de l'appareil.",
-  "phrases": {}
+ "version": 1,
+ "service": "gemini",
+ "modele": "gemini-3.1-flash-tts-preview",
+ "voix": "Sulafat",
+ "pas_bouche_ms": 50,
+ "fabrique_le": "2026-11-22",
+ "complet": false,
+ "mention": "Voix générée par intelligence artificielle",
+ "phrases": {
+  "001": {
+   "fichier": "001.mp3",
+   "texte": "Bonjour !",
+   "duree_ms": 1050,
+   "bouche": "000066766558785210000",
+   "forme": "mmmooooooeeooooaaemmm"
+  },
+  "002": {
+   "fichier": "002.mp3",
+   "texte": "Bonsoir !",
+   "duree_ms": 1000,
+   "bouche": "00056858757777421000",
+   "forme": "mmmoaaaeeeaaaaaeemmm"
+  },
+  "003": {
+   "fichier": "003.mp3",
+   "texte": "Je m'appelle Afi. Bienvenue dans la démonstration de Zéro Perte.",
+   "duree_ms": 4850,
+   "bouche": "0003578998337786225521032100000000000000334678567666635655435689752245644565655558546213221000000",
+   "forme": "mmmaeeaoooooaaoamaaaeeeaeemmmmmmmmmmmmmmooeeaoooooooooaooaooooooeeeeaeeeeooaoaeeeoooommaeeemmemmm"
+  },
+  "004": {
+   "fichier": "004.mp3",
+   "texte": "Ensemble, nous allons visiter une boutique pour de faux. Rien n'est gardé : vous pouvez tout essayer.",
+   "duree_ms": 6700,
+   "bouche": "00057777765731000016887888885477565247898965742541100000000066778432410000000000004446777764664334100000000347525665210166255666312100",
+   "forme": "mmmaoeeeaaoomeemmmaooaeaoooooaoeeeomeoooooooooeeaameemmmmmmaeooooeeeoammmmmmmmmmmmaeaooaooaoaaaoaommmmmmmmmaaoomeoooommeeomeeeeooeammm"
+  },
+  "005": {
+   "fichier": "005.mp3",
+   "texte": "Voici l'accueil. Le gros bouton vert, Vendre, sert pour chaque client.",
+   "duree_ms": 5950,
+   "bouche": "00035787677896225431000000000000000000045863243684473245435544210000000023465575310000000005878741102224667210255343100",
+   "forme": "mmmaoooeeeeoaomeaaaeemmmmmmmmmmmmmmmmmmoooooaooooooooeoooeaaaaeemmmmmmmmeoaooooeeemmmmmmmmmeeeaoeemmeaeeeeammmeaooaommm"
+  }
+ }
 }
