@@ -230,10 +230,16 @@ class EtatVisite extends State<VisiteGuidee> {
       cible = await _chercher(e.cibles, g);
       if (g != _generation) return;
       if (cible == null) ciblesManquantes.add('${e.phrase} ${e.cibles}');
+      // Le bouton a pu défiler pour se montrer : on mesure sa place une fois
+      // l'écran redessiné.
+      if (cible != null) {
+        await _attendre(const Duration(milliseconds: 120));
+        if (g != _generation) return;
+      }
     }
     if (!mounted) return;
     setState(() {
-      _cible = cible == null ? null : _rectDe(cible);
+      _cible = cible == null || !cible.mounted ? null : _rectDe(cible);
       _expression = e.expression;
       _sousTitre = e.texte;
     });
@@ -299,7 +305,7 @@ class EtatVisite extends State<VisiteGuidee> {
   /// Cherche le bouton (plusieurs essais : la page peut être en train de
   /// s'ouvrir).
   Future<Element?> _chercher(List<String> cles, int g) async {
-    for (var essai = 0; essai < 12; essai++) {
+    for (var essai = 0; essai < 30; essai++) {
       final e = _trouver(cles);
       if (e != null) return e;
       await _attendre(const Duration(milliseconds: 150));

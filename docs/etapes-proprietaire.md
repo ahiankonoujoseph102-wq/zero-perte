@@ -261,3 +261,45 @@ Dans Google Cloud : Menu ☰ → **Google Auth Platform** → **Personnalisation
 remplissez les 3 liens, puis **Domaines autorisés** → **Ajouter un domaine** → `ahiankonoujoseph102-wq.github.io`
 → **Enregistrer**. Si Google demande de prouver que le domaine est à vous (Search Console), dites-le à Claude :
 la preuve se fait en ajoutant un petit fichier aux pages.
+
+---
+
+## H. Voix d'Afi pour la démonstration guidée (une seule fois)
+
+La démonstration marche déjà avec la voix de synthèse du téléphone. Ces étapes donnent à Afi une voix
+d'intelligence artificielle plus naturelle, fabriquée **une seule fois** par l'action
+« 6 - Fabriquer la voix de la démonstration » (texte : `docs/demo/texte-voix.md`).
+**Ne collez jamais la clé dans une conversation (ni avec Claude, ni avec le chef de projet).**
+
+### H1. Créer la clé Gemini (gratuit pour commencer)
+1. Dans Chrome, ouvrez **aistudio.google.com** avec **votre** compte Google (celui du projet « Zero Perte »).
+   Acceptez les conditions si c'est la première fois.
+2. Menu (☰) → **Get API key** (« Obtenir une clé API ») → **Créer une clé API** (« Create API key »).
+3. Choisissez le projet **Zero Perte** (`zero-perte-515421`) → **Créer**.
+4. La clé s'affiche (elle commence par `AIza`). Touchez **Copier**.
+
+### H2. La ranger dans GitHub
+1. Ouvrez **github.com/ahiankonoujoseph102-wq/zero-perte/settings/secrets/actions**
+   (menu ⋮ → **Version pour ordinateur** si la page est trop petite).
+2. **New repository secret** → nom : **`ZP_CLE_VOIX`** → valeur : collez la clé → **Add secret**.
+3. Copiez ensuite n'importe quel autre texte, pour que la clé ne reste pas dans le presse-papiers.
+
+### H3. Fabriquer la voix
+1. Dépôt **zero-perte** → **Actions** → à gauche **« 6 - Fabriquer la voix de la démonstration »** →
+   **Run workflow** → branche **main**, essai **non** → **Run workflow**. (Ou dites à Claude de la lancer.)
+2. Attendez la coche verte (quelques minutes). La voix est poussée sur la branche `voix-demonstration`.
+3. Dites à Claude **« la voix est prête »** : il l'écoute (durées, taille), la teste dans l'application, puis
+   publie la nouvelle version.
+
+**Si l'action échoue avec « HTTP 429 » (quota)** : la synthèse vocale gratuite est limitée par jour. Soit
+relancez le lendemain, soit activez la facturation : Google Cloud → projet Zero Perte → **Facturation** →
+associer un moyen de paiement (la fabrication complète coûte quelques centimes). Avec la facturation active,
+Google n'utilise pas vos textes pour améliorer ses produits.
+
+**Réglages facultatifs** (GitHub → Settings → Secrets and variables → Actions → onglet **Variables**) :
+`ZP_VOIX_NOM` (nom d'une autre voix Gemini, par défaut `Sulafat`, voix féminine chaleureuse) et
+`ZP_VOIX_MODELE` (autre modèle de synthèse vocale).
+
+**Secours OpenAI (facultatif)** : si vous avez un compte OpenAI, créez une clé sur
+**platform.openai.com/api-keys** et rangez-la comme secret **`ZP_CLE_VOIX_SECOURS`** : elle sert seulement si
+Gemini échoue.

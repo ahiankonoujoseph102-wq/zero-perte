@@ -126,7 +126,54 @@ void main() {
       );
       await afficherApp(tester, env.etat);
       await toucher(tester, find.byKey(const Key('bouton-coller-code')));
-      expect(find.textContaining('Aucun code Zéro Perte'), findsOneWidget);
+      expect(find.textContaining('Rien n\'a été copié'), findsOneWidget);
+      expect(find.textContaining('Écrire le code'), findsWidgets);
+      expect(env.voix.phrases.last, startsWith('Rien n\'a été copié'));
+    });
+
+    testWidgets('texte copié sans code : dit quoi faire', (tester) async {
+      final env = await environnementDeTest(
+        tester,
+        etape: EtapeAssistant.activation,
+      );
+      env.pressePapiers.texte = 'Bonjour, voici une photo de la boutique';
+      await afficherApp(tester, env.etat);
+      await toucher(tester, find.byKey(const Key('bouton-coller-code')));
+      expect(
+        find.textContaining('ne contient pas de code Zéro Perte'),
+        findsOneWidget,
+      );
+      expect(env.etat.licence, isNull);
+    });
+
+    testWidgets('consigne « message entier » et « Écrire le code » à la main', (
+      tester,
+    ) async {
+      final env = await environnementDeTest(
+        tester,
+        etape: EtapeAssistant.activation,
+      );
+      await afficherApp(tester, env.etat);
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('activation-message-entier')),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(
+        find.text(
+          'Copiez le message entier dans WhatsApp, inutile de choisir le code.',
+        ),
+        findsOneWidget,
+      );
+      await toucher(tester, find.byKey(const Key('bouton-ecrire-code')));
+      await tester.enterText(
+        find.byKey(const Key('champ-code-activation')),
+        'Voici votre code :\n$codeLicence\nMerci',
+      );
+      await toucher(tester, find.byKey(const Key('bouton-valider-code-ecrit')));
+      await attendre(tester, tours: 6);
+      expect(find.byKey(const Key('activation-reussie')), findsOneWidget);
+      expect(env.etat.licence, isNotNull);
     });
 
     testWidgets('extension « téléphone en plus » sans licence : refusée', (

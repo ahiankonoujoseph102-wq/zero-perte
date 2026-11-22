@@ -201,7 +201,7 @@ void main() {
       expect(caisse.attendu, 1200);
 
       // Il rend encore 1 kg : il ne doit plus rien → tout en espèces.
-      final v = (await env.etat.ventesDuJour()).single;
+      final v = (await env.journal.ventesDepuis(0)).single;
       final op = await env.etat.retournerVente(
         v,
         rendus: {0: 1},
@@ -268,7 +268,7 @@ void main() {
           montantRecu: 28000,
         );
         await e.annulerVente(
-          (await e.ventesDuJour()).single,
+          (await e.journal.ventesDepuis(0)).single,
           'Erreur en tapant la vente',
         );
         // 3. Retour fait par le vendeur.
@@ -277,7 +277,7 @@ void main() {
           mode: ModePaiement.especes,
           montantRecu: 1200,
         );
-        final v = (await e.ventesDuJour()).first;
+        final v = (await e.journal.ventesDepuis(0)).first;
         await e.retournerVente(
           v,
           rendus: {0: 1},

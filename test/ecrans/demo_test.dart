@@ -22,6 +22,13 @@ Future<EtatApplication> demo(Environnement env, String chemin) async =>
       services: env.etat.services,
     );
 
+/// Ferme la visite guidée et laisse finir ses attentes.
+Future<void> quitterVisite(WidgetTester tester) async {
+  await tester.tap(find.byKey(const Key('visite-quitter')));
+  await tester.pump(const Duration(seconds: 3));
+  await attendre(tester, tours: 4);
+}
+
 void main() {
   testWidgets(
     'la démo est neuve à chaque ouverture et ne touche pas la vraie base',
@@ -85,6 +92,8 @@ void main() {
         findsOneWidget,
       );
       expect(find.byType(AccueilVendeur), findsOneWidget);
+      // La visite guidée démarre seule : on la quitte pour essayer soi-même.
+      await quitterVisite(tester);
 
       await toucher(tester, find.byKey(const Key('bouton-vendre')));
       await ouvrirLaCaisseSiDemande(tester);
@@ -143,6 +152,11 @@ void main() {
       await attendre(tester, tours: 8);
       expect(tester.takeException(), isNull);
       expect(find.byKey(const Key('bandeau-demo')), findsOneWidget);
+      // La visite guidée démarre seule ; on la ferme : « Visite » la relance.
+      expect(find.byKey(const Key('visite-panneau')), findsOneWidget);
+      await quitterVisite(tester);
+      expect(find.byKey(const Key('bouton-relancer-visite')), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
   }
 }

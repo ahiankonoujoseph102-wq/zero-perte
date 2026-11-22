@@ -815,22 +815,56 @@ domaine `ahiankonoujoseph102-wq.github.io`), identifiant Android (SHA-1 49:27:�
 APK universel **17,7 Mo** (arm64 9,6 Mo, armv7 9,1 Mo), Windows **13,3 Mo**. Site republié avec le logo
 (les 3 pages, `logo.svg`, icônes d'onglet : réponse 200).
 
-### En cours (0.30.0, NON publié) — corrections + démonstration guidée avec Afi
-**Écrit et poussé sur la branche de travail seulement (pas sur main) :**
-- Installation : bouton « Retour » à chaque étape sauf la première (+ geste retour d'Android), l'activation
-  n'est jamais annulée ; logo dessiné par l'application (`lib/ecrans/logo_zero_perte.dart`) à la place du rond
-  « ZP » ; « 2 appareils (téléphone, tablette ou PC) » (application + action 4) ; écran « Code d'activation » :
-  phrase « Copiez le message entier… », message clair si rien n'est copié, bouton « Écrire le code ».
-- Démonstration guidée : `lib/demo_guidee/` (avatar Afi en CustomPainter, visite de 13 chapitres / 50 phrases,
-  Pause / Rejouer / Suivant / Quitter, sous-titres, flèche + cadre or), `docs/demo/texte-voix.md`, lecture
-  audio Android par MediaPlayer (canal natif, sans bibliothèque), voix de synthèse sinon ; fenêtre
-  d'encaissement ouverte dans le navigateur de l'application (`navigateurDeLApplication`).
-- Tests : `test/ecrans/visite_guidee_test.dart` (11 tests, tous réussis : visite complète sur 4 tailles).
-**Reste à faire (prochaine session) :**
-1. Corriger les anciens tests : `demo_test.dart` (la visite démarre seule et bloque les touchers → quitter la
-   visite d'abord), `assistant_test.dart` (« Aucun code Zéro Perte » → nouveau message ; en-tête de
-   l'installation déborde de 35 px sur grand téléphone avec texte ×1,5 → passer la flèche seule sous ~450 px
-   ou avec grand texte). Écrire les tests de la partie 1 (Retour, Écrire le code).
-2. Action « 6 - Fabriquer la voix » (Gemini, secours OpenAI, secret ZP_CLE_VOIX, Opus/WebM 24 kbit/s mono,
-   bouches.json calculé), LICENCES-TIERS.md, partie H de docs/etapes-proprietaire.md.
-3. Captures 4 tailles, mesure APK, version 0.30.0, publication.
+### Version 0.30.0 — corrections de l'essai + démonstration guidée avec Afi
+**Résultat de l'essai du propriétaire :** APK 0.29.0 installé sur un vrai téléphone, code de test a85de6
+accepté (« Boutique activée — TEST - ne pas utiliser — 2 téléphones autorisés »).
+
+**Partie 1 — corrections :**
+- **« Retour » à chaque étape de l'installation** (sauf la première) : en haut, mot « Retour » (ou flèche
+  seule sur écran étroit / grand texte) ; le **geste retour d'Android** fait pareil (`PopScope`). Ce qui est
+  rempli est gardé (tout est déjà enregistré) ; la vérification du téléphone, qui passe seule, est sautée ;
+  **l'activation n'est jamais annulée** (l'étape montre « Boutique activée »).
+- **Logo** : le rond « ZP » est remplacé partout par le logo, dessiné par l'application
+  (`lib/ecrans/logo_zero_perte.dart`, mêmes formes que le SVG, aucun fichier en plus).
+- **« 2 appareils (téléphone, tablette ou PC) »** dans l'application (activation, voix, Drive, messages
+  d'erreur) et dans le message fabriqué par l'action « 4 ».
+- **Écran « Code d'activation »** : encadré « Copiez le message entier dans WhatsApp, inutile de choisir le
+  code. » ; presse-papiers vide → « Rien n'a été copié. Dans WhatsApp, appuyez longtemps… Ou touchez « Écrire
+  le code ». » (affiché et dit) ; texte sans code → message clair ; bouton **« Écrire le code »** (fenêtre pour
+  taper ou coller le message ou le code). Défaut trouvé par les tests et corrigé : la zone de saisie était
+  détruite pendant la fermeture de la fenêtre.
+
+**Partie 2 — démonstration guidée (`lib/demo_guidee/`) :**
+- **Afi**, commerçante dessinée par l'application (CustomPainter, un seul ticker) : foulard bleu nuit à bandes
+  or et vert, boucles d'oreilles or, haut bleu à motif de pagne ; clignement, mouvement de tête, bouche qui suit
+  la voix (calculée d'avance, ou simulée avec la voix de synthèse), bras qui montre le bouton (du côté du
+  bouton), expressions sourire / contente / au revoir (salut de la main).
+- **Visite** : 13 chapitres, 50 phrases (`docs/demo/texte-voix.md`, copie exacte vérifiée par un test dans
+  `lib/demo_guidee/phrases.dart`) : bienvenue, vendre, monnaie et billets à rendre, reçu WhatsApp, client et
+  crédit, devis, retour, dépense, fermeture à l'aveugle, tableau du patron, inventaire, sauvegarde, au revoir.
+  « Bonjour » avant 15 h, « Bonsoir » ensuite (`heureBonsoir = 15`). Chaque bouton est **entouré d'or avec une
+  flèche** (le reste de l'écran assombri), et la visite **touche elle-même** les boutons pour avancer (vraie
+  vente de 2 kg de riz). Durée estimée : **≈ 5 min** (3 min 50 de parole + pauses et gestes).
+- Boutons toujours visibles : **Pause / Reprendre, Rejouer, Suivant, Quitter** ; sous-titres toujours affichés ;
+  « Quitter » laisse la démo libre, le bouton « Visite » du bandeau la relance. Les chapitres qui continuent le
+  précédent (monnaie, reçu, retour, fermeture) sont rejoués avec lui.
+- La visite prépare la boutique de démo (caisse ouverte avec 10 000 F, client Kofi avec une dette).
+- **Fenêtre d'encaissement (tablette, PC)** : ouverte dans le navigateur de l'application
+  (`navigateurDeLApplication`) — dans la démo elle restait au-dessus de tout et cachait Afi.
+- **Voix** : fichiers Opus/WebM lus par le lecteur d'Android (canal natif `jouerSon`, sans bibliothèque) ; si un
+  fichier manque (ou sur PC), voix de synthèse de l'appareil. Mention « Voix générée par intelligence
+  artificielle » dès que des fichiers sont présents.
+- **Action « 6 - Fabriquer la voix de la démonstration »** (`outils/voix/fabriquer_voix.py`) : Gemini (voix
+  `Sulafat`, modèle réglable), secours OpenAI (`gpt-4o-mini-tts`, voix `coral`), clé `ZP_CLE_VOIX` jamais
+  affichée, Opus mono 24 kbit/s en WebM (Android 8), bouche calculée toutes les 50 ms, résultat poussé sur la
+  branche `voix-demonstration`. Mode « essai » (bips) vérifié ici : 50 fichiers, 229 s, **880 Ko**.
+- `LICENCES-TIERS.md` (conditions Gemini et OpenAI : usage commercial permis ; OpenAI exige d'annoncer la voix
+  IA), partie **H** de `docs/etapes-proprietaire.md` (créer la clé depuis le téléphone).
+
+**Tests : 426, tous réussis**, dont `visite_guidee_test.dart` (visite complète sur 4", grand téléphone,
+tablette paysage et PC : 0 bouton introuvable, 50 étapes jouées, vente faite ; Bonjour/Bonsoir ; Pause,
+Reprendre, Suivant, Rejouer, Quitter, Visite ; voix enregistrée jouée + mention IA ; texte identique au .md ;
+durée 4 à 6 min) et `installation_retour_test.dart`. Défauts trouvés et corrigés : en-tête de l'installation
+qui débordait sur 4", bandeau de la démo trop haut avec deux boutons, visite bloquée quand une page met plus de
+1,8 s à s'ouvrir (attente portée à 4,5 s), cadre or mal placé après un défilement. Captures vérifiées sur les
+4 tailles : `test_captures/v030_captures_test.dart`, `avatar_captures_test.dart`.

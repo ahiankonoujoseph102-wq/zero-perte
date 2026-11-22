@@ -1,0 +1,90 @@
+name: "6 - Fabriquer la voix de la démonstration"
+
+# Fabrique une seule fois la voix d'Afi (démonstration guidée) avec un service
+# d'intelligence artificielle, à partir de docs/demo/texte-voix.md :
+#  - Gemini en premier choix (secret ZP_CLE_VOIX), OpenAI en secours
+#    (secret facultatif ZP_CLE_VOIX_SECOURS, ou ZP_CLE_VOIX commençant par sk-) ;
+#  - fichiers Opus mono ~24 kbit/s (WebM, lisibles par Android 8) et mouvement
+#    de la bouche calculé d'avance (assets/demo/voix/bouches.json).
+# Le résultat est poussé sur la branche « voix-demonstration » (jamais sur main
+# directement) : la fabrication de l'APK la teste, puis Claude la fusionne.
+# Les clés ne sont jamais affichées ni écrites.
+
+on:
+  workflow_dispatch:
+    inputs:
+      essai:
+        description: "oui = sons de test sans service d'IA (pour vérifier la chaîne)"
+        type: choice
+        options: ["non", "oui"]
+        default: "non"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fabriquer-voix
+  cancel-in-progress: false
+
+jobs:
+  voix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+
+      - name: Contrôler la clé (sans l'afficher)
+        env:
+          CLE_PRESENTE: ${{ secrets.ZP_CLE_VOIX != '' }}
+          SECOURS_PRESENT: ${{ secrets.ZP_CLE_VOIX_SECOURS != '' }}
+        run: |
+          if [ "${{ github.event.inputs.essai }}" = "oui" ]; then
+            echo "Essai : sons de test, aucun service d'IA."
+          elif [ "$CLE_PRESENTE" != "true" ]; then
+            echo "::error::Le secret ZP_CLE_VOIX est absent (docs/etapes-proprietaire.md, partie H)."
+            exit 1
+          else
+            echo "ZP_CLE_VOIX : présent. Secours OpenAI : $SECOURS_PRESENT."
+          fi
+
+      - name: Installer ffmpeg (Opus)
+        run: |
+          command -v ffmpeg >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg; }
+          ffmpeg -hide_banner -encoders 2>/dev/null | grep -q libopus
+
+      - name: Fabriquer la voix
+        env:
+          ZP_CLE_VOIX: ${{ secrets.ZP_CLE_VOIX }}
+          ZP_CLE_VOIX_SECOURS: ${{ secrets.ZP_CLE_VOIX_SECOURS }}
+          ZP_VOIX_MODELE: ${{ vars.ZP_VOIX_MODELE }}
+          ZP_VOIX_NOM: ${{ vars.ZP_VOIX_NOM }}
+        run: |
+          if [ "${{ github.event.inputs.essai }}" = "oui" ]; then
+            python3 outils/voix/fabriquer_voix.py --essai | tee "$RUNNER_TEMP/voix.txt"
+          else
+            python3 outils/voix/fabriquer_voix.py | tee "$RUNNER_TEMP/voix.txt"
+          fi
+          du -sh assets/demo/voix
+
+      - name: Pousser sur la branche voix-demonstration
+        run: |
+          git config user.name "zero-perte-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B voix-demonstration
+          git add assets/demo/voix
+          git commit -m "Voix de la démonstration guidée (action 6)" || { echo "Rien de nouveau."; exit 0; }
+          git push --force-with-lease origin voix-demonstration
+
+      - name: Résumé
+        run: |
+          {
+            echo "## Voix de la démonstration"
+            echo ""
+            tail -n 1 "$RUNNER_TEMP/voix.txt"
+            echo ""
+            echo "Fichiers poussés sur la branche **voix-demonstration**. Dites à Claude « la voix est prête » :"
+            echo "il vérifie, fabrique la nouvelle version et la publie."
+          } >> "$GITHUB_STEP_SUMMARY"

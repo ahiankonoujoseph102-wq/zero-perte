@@ -89,42 +89,10 @@ class _AssistantInstallationState extends State<AssistantInstallation> {
   /// « Écrire le code » : le patron tape ou colle le code (ou le message)
   /// à la main.
   Future<void> _ecrireCode() async {
-    final champ = TextEditingController();
     final texte = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Écrire le code'),
-        content: SizedBox(
-          width: 520,
-          child: TextField(
-            key: const Key('champ-code-activation'),
-            controller: champ,
-            autofocus: true,
-            minLines: 3,
-            maxLines: 6,
-            style: const TextStyle(fontSize: 17),
-            decoration: const InputDecoration(
-              hintText:
-                  'Collez ou écrivez ici le message ou le code '
-                  '(il commence par ZP1.)',
-              border: OutlineInputBorder(),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Annuler', style: TextStyle(fontSize: 18)),
-          ),
-          FilledButton(
-            key: const Key('bouton-valider-code-ecrit'),
-            onPressed: () => Navigator.of(context).pop(champ.text),
-            child: const Text('Valider', style: TextStyle(fontSize: 18)),
-          ),
-        ],
-      ),
+      builder: (_) => const _DialogueCode(),
     );
-    champ.dispose();
     if (texte == null || !mounted) return;
     await _activerTexte(texte);
   }
@@ -223,7 +191,7 @@ class _AssistantInstallationState extends State<AssistantInstallation> {
                             if (e != EtapeAssistant.bienvenue) ...[
                               // Petit écran : flèche seule (le mot « Retour »
                               // reste lu par la voix d'Android).
-                              if (MediaQuery.sizeOf(context).width < 400)
+                              if (MediaQuery.sizeOf(context).width < 480)
                                 IconButton.filledTonal(
                                   key: const Key('bouton-etape-precedente'),
                                   tooltip: 'Retour',
@@ -944,6 +912,60 @@ class _EtapeImagee extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Fenêtre « Écrire le code » (elle garde sa zone de saisie jusqu'à sa
+/// fermeture complète).
+class _DialogueCode extends StatefulWidget {
+  const _DialogueCode();
+
+  @override
+  State<_DialogueCode> createState() => _DialogueCodeState();
+}
+
+class _DialogueCodeState extends State<_DialogueCode> {
+  final _champ = TextEditingController();
+
+  @override
+  void dispose() {
+    _champ.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Écrire le code'),
+      content: SizedBox(
+        width: 520,
+        child: TextField(
+          key: const Key('champ-code-activation'),
+          controller: _champ,
+          autofocus: true,
+          minLines: 3,
+          maxLines: 6,
+          style: const TextStyle(fontSize: 17),
+          decoration: const InputDecoration(
+            hintText:
+                'Collez ou écrivez ici le message ou le code '
+                '(il commence par ZP1.)',
+            border: OutlineInputBorder(),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Annuler', style: TextStyle(fontSize: 18)),
+        ),
+        FilledButton(
+          key: const Key('bouton-valider-code-ecrit'),
+          onPressed: () => Navigator.of(context).pop(_champ.text),
+          child: const Text('Valider', style: TextStyle(fontSize: 18)),
+        ),
+      ],
     );
   }
 }
