@@ -270,6 +270,7 @@ def decouper(pcm, textes):
         else:
             i += 1
     if len(pauses) < n - 1:
+        print(f"    (refus : {len(pauses)} pauses de 300 ms pour {n - 1} coupures)")
         return None
     # Durée attendue ≈ 0,5 s + longueur du texte (une phrase très courte
     # comme « Bonjour ! » dure plus que ses 9 lettres).
@@ -284,9 +285,12 @@ def decouper(pcm, textes):
         # longues pauses sont préférées à distance égale.
         candidates = [p for p in reste if not choisies or p[0] > choisies[-1][0]]
         if not candidates:
+            print("    (refus : plus de pause disponible)")
             return None
         meilleure = min(candidates, key=lambda p: abs(p[0] + p[1] / 2 - attendu) - p[1] * 0.5)
-        if abs(meilleure[0] + meilleure[1] / 2 - attendu) > duree * 0.18:
+        ecart = abs(meilleure[0] + meilleure[1] / 2 - attendu) / duree
+        if ecart > 0.18:
+            print(f"    (refus : coupure {k + 1} à {ecart:.0%} de l'endroit attendu)")
             return None
         choisies.append(meilleure)
         reste.remove(meilleure)
@@ -301,6 +305,7 @@ def decouper(pcm, textes):
     rapports = [len(_retirer_silence(m)) / l for m, l in zip(morceaux, longueurs)]
     milieu = sorted(rapports)[len(rapports) // 2]
     if any(r < milieu * 0.6 or r > milieu * 1.6 for r in rapports):
+        print(f"    (refus : durées {[round(r / milieu, 2) for r in rapports]})")
         return None
     return morceaux
 
