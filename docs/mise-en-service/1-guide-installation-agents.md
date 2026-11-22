@@ -36,16 +36,19 @@ L'application avance d'elle-même, étape par étape (bouton **Écouter** pour e
    revient dans Zéro Perte → **Coller le code**. « Code accepté » → suite.
 4. **Type de boutique** (alimentation, boissons…) → **Nom** → **Contact** (WhatsApp, ville, quartier) →
    **Couleur**.
-5. **Produits** : cocher **tous** les produits que la boutique vend. ⚠ Tant que la prochaine version
-   n'est pas sortie, on ne peut **ni ajouter un produit ni changer un prix après l'installation** :
-   tout doit être juste ici.
-6. **Prix** : saisir le prix de chaque produit (et des cartons / sacs). **Relire tous les prix avec le
-   patron** (voir l'avertissement ci-dessus).
+5. **Produits** : cocher les produits que la boutique vend le plus. Les autres s'ajoutent ensuite par
+   **Gestion → Produits et prix → Ajouter un produit** (le patron peut le faire seul).
+6. **Prix** : saisir le prix de chaque produit (et des cartons / sacs). Relire 3 prix avec le patron ;
+   un prix faux se corrige ensuite dans **Gestion → Produits et prix**.
 7. **Reçu** : nom et téléphone qui s'affichent sur le reçu.
 8. **Code du patron** : le patron choisit **seul** 6 chiffres, les tape deux fois. L'agent regarde ailleurs.
 9. **Fin**.
 
-## 3. Ajouter les vendeurs
+## 3. Montrer « Produits et prix » au patron
+Gestion → **Produits et prix** : ajouter un produit qui manque (nom, prix de vente, prix d'achat, stock de
+départ), puis changer un prix. Le patron le fait lui-même une fois devant vous.
+
+## 3 bis. Ajouter les vendeurs
 Gestion (ou menu de gauche) → **Vendeurs** → **Ajouter un vendeur** → prénom → l'application **tire un code
 au hasard** → le montrer au vendeur seul, qui le note. Recommencer pour chaque vendeur.
 

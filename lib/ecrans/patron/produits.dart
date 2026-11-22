@@ -494,7 +494,8 @@ class _PageFicheProduitState extends State<PageFicheProduit> {
           _champNombre(
             'champ-seuil',
             _seuil,
-            'Prévenir quand il en reste moins de (facultatif)',
+            'Alerte stock bas (facultatif)',
+            aide: 'Vous êtes prévenu quand il en reste moins que ce nombre.',
             virgule: true,
           ),
           if (p == null) ...[

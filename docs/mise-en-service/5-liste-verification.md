@@ -7,6 +7,7 @@
 - [ ] Code d'activation accepté ; le nom de la boutique est juste.
 - [ ] Les **produits vendus tous les jours** sont présents, avec le **bon prix** (3 prix vérifiés à voix
       haute avec le patron).
+- [ ] Le patron sait **ajouter un produit** et **changer un prix** (Gestion → Produits et prix).
 - [ ] Le patron a choisi **seul** son code de 6 chiffres et sait l'entrer.
 - [ ] **Chaque vendeur** a son code et s'est connecté une fois.
 - [ ] Caisse **ouverte** avec le vrai fond de caisse.

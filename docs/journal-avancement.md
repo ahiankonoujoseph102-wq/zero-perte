@@ -9,8 +9,8 @@ Il est mis à jour **à la fin de chaque étape**.
 
 | | |
 |---|---|
-| **Dernière étape terminée** | **0.31.0** : Afi en médaillon, voix Sulafat (48/50), corrections de la visite, améliorations de l'audit |
-| **Version publiée** | 0.31.0 (Android et Windows, voir les Releases GitHub) |
+| **Dernière étape terminée** | **0.32.0** : version de mise en service (Produits et prix, accélération, stockage compressé, message de mise à jour) |
+| **Version publiée** | 0.32.0 (Android et Windows, voir les Releases GitHub) |
 | **Prochaine étape** | 0.31.1 (4 phrases refaites le 23/11 après 8 h 12), puis priorités 1 et 2 (branche `claude/suite-apres-031`), 0.32, relais |
 | **Méthode** | Branche de travail, tests + captures sur 4 tailles, puis fusion dans `main` (= publication). Rien de non testé sur `main`. |
 | **Pour tout choix non décidé** | Prendre l'option la plus simple, la noter ici et la mettre dans le rapport avec une recommandation. |
@@ -1019,3 +1019,20 @@ branche).
   020, 037, 049, 050 refaites le 23/11 → **0.31.1**.
 - Contrôles : 437 tests, visite entière à vitesse réelle sur 4 tailles (aucun bouton caché), fabrication
   signée « officiel » sur la branche : APK universel **17,7 Mo**, ZIP Windows **13,3 Mo**.
+
+### Version 0.32.0 — mise en service (22/11)
+Contenu : Produits et prix (Gestion, patron seul : ajouter, modifier, changer un prix avec l'ancien prix au
+journal, masquer ; prix d'achat, stock de départ, seuil de stock bas, emballages) ; message « Nouvelle version
+disponible » ; schéma 6 (stock courant tenu par la base, index, requêtes par période, contenu des opérations
+rangé compressé) ; guides de mise en service (`docs/mise-en-service/`, dont `essai-avant-premier-client.md` et
+`ce-qu-il-faut-dire-au-client.md`).
+Vérifications A3 : (1) mise à jour sans perte depuis 0.29.0, 0.30.0 et 0.31.0 — bases fabriquées par le VRAI
+code de chaque version (`test/fixtures/mise_a_jour`), mêmes stocks, crédits, ventes, reçus, chaîne intacte ;
+(2) code réel de l'action 4 (`c-20261122-43536d`, « TEST mise en service 0.32 - ne pas utiliser ») : « Code
+accepté par l'application : licence, 2 appareil(s) », jeton ZP_JETON_CODES, registre mis à jour ; (3) journée
+complète (`test/ecrans/journee_complete_test.dart`) ; (4) droits du vendeur (test dédié, téléphone et PC) ;
+(5) sauvegarde et restauration après mise à jour ; (6) synchronisation vers un autre appareil (même format
+pour le PC) ; (7) visite d'Afi à vitesse réelle sur 4 tailles ; (8) relais et Firebase non branchés : rien
+n'est affiché (relais activé seulement avec son adresse, notifications sans configuration = « non » silencieux).
+Corrigés pendant les vérifications : fermetures de caisse lues avec l'ancien format (stockage compressé),
+libellé du seuil de stock bas coupé. 458 tests.

@@ -11,7 +11,8 @@ Un produit introuvable ? Tapez son nom dans **Chercher un produit**.
 **Dépense / argent pris** — Ma caisse → **Dépense** (achat payé avec la caisse) ou **Argent pris**.
 
 **Marchandise reçue** — **Arrivages** → le produit → la quantité : le stock monte tout seul.
-*(Ajouter un produit ou changer un prix : arrive dans la prochaine version.)*
+**Produits et prix** — Gestion → **Produits et prix** : ajouter un produit, changer un prix (l'ancien prix
+est gardé dans l'historique), masquer un produit qui ne se vend plus.
 
 **Chaque soir** — Ma caisse → **Fermer la caisse** : on compte l'argent **sans voir** le montant attendu.
 Vous voyez tout de suite **l'écart** (manque ou surplus).

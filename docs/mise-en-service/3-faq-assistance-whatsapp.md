@@ -10,8 +10,10 @@ Demander une **capture d'écran** quand la question n'est pas claire.
 | « J'ai oublié mon code de patron » | Pour votre sécurité, personne ne peut le voir. Si la boutique est sauvegardée sur Google Drive : réinstallez et choisissez « J'ai déjà une boutique : la retrouver ». Sinon, contactez-nous en appel. |
 | « Un vendeur a oublié son code » | Patron : Gestion → Vendeurs → le vendeur → **Changer le code** : un nouveau code est tiré au hasard. |
 | « Écran bloqué 5 minutes » | 5 codes faux de suite. Attendez 5 minutes. Le patron a reçu une alerte. |
-| « Le produit n'est pas dans la liste » | D'abord, dans Vendre, tapez son nom dans « Chercher un produit ». **⚠ Ajouter un produit après l'installation n'est pas encore possible (prévu dans la prochaine version)** : notez-le et prévenez le responsable. |
-| « Le prix est faux » | **⚠ Changer un prix après l'installation n'est pas encore possible (prévu dans la prochaine version).** En attendant, à la vente, « Donne pour … F » (vente au montant) si le produit le permet ; prévenir le responsable. |
+| « Le produit n'est pas dans la liste » | D'abord, dans Vendre, tapez son nom dans « Chercher un produit ». S'il n'existe pas : patron → **Gestion → Produits et prix → Ajouter un produit** (nom, prix de vente, prix d'achat, stock de départ). |
+| « Le prix est faux » | Patron → **Gestion → Produits et prix** → le produit → nouveau prix → **Enregistrer**. Les ventes déjà faites gardent leur ancien prix ; l'historique des prix est dans la fiche. |
+| « Un produit ne se vend plus » | Patron → Gestion → Produits et prix → le produit → **Masquer ce produit**. Il disparaît de Vendre ; ses ventes passées restent. |
+| « Le vendeur voit-il mes bénéfices ? » | Non. Un vendeur ne voit jamais le prix d'achat ni le bénéfice (ni dans Vendre, ni sur les reçus, ni dans Ma caisse). |
 | « Un client rapporte un produit » | Vendre → **Ventes** (en haut) → la vente → **Retour** : l'argent rendu et le stock sont corrigés. |
 | « Je me suis trompé dans une vente » | Ventes du jour → la vente → **Annuler** (motif obligatoire). Le patron est prévenu au-delà de 5 000 F. |
 | « Il manque de l'argent à la fermeture » | L'écart est enregistré. Le patron le voit dans Ma caisse → Sessions de caisse. Vérifiez les dépenses et l'argent pris du jour. |

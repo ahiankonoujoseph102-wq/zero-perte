@@ -2373,7 +2373,7 @@ class JournalLocal implements ReglagesLocaux {
           l['id'] as String,
           l['heure_telephone'] as int,
           l['auteur_id'] as String,
-          json.decode(l['donnees'] as String) as Map<String, dynamic>,
+          lireDonnees(l['donnees']),
         ),
     ];
   }
