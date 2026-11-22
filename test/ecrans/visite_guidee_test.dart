@@ -71,7 +71,7 @@ Future<void> attendreQue(
 Future<void> arreterVisite(WidgetTester tester) async {
   final q = find.byKey(const Key('visite-quitter'));
   if (q.evaluate().isNotEmpty) await tester.tap(q);
-  await tester.pump(const Duration(seconds: 3));
+  await tester.pump(const Duration(seconds: 15));
   await attendre(tester, tours: 2);
 }
 
@@ -304,7 +304,7 @@ void main() {
       expect(env.voix.phrases, contains(phrasesVisite['004']));
       expect(find.byKey(const Key('visite-mention-ia')), findsOneWidget);
       ctrl.quitter();
-      await tester.pump(const Duration(seconds: 3));
+      await tester.pump(const Duration(seconds: 15));
       await attendre(tester);
     },
   );

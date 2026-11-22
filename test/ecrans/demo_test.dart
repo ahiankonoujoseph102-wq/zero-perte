@@ -25,7 +25,7 @@ Future<EtatApplication> demo(Environnement env, String chemin) async =>
 /// Ferme la visite guidée et laisse finir ses attentes.
 Future<void> quitterVisite(WidgetTester tester) async {
   await tester.tap(find.byKey(const Key('visite-quitter')));
-  await tester.pump(const Duration(seconds: 3));
+  await tester.pump(const Duration(seconds: 15));
   await attendre(tester, tours: 4);
 }
 

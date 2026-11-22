@@ -305,7 +305,7 @@ class EtatVisite extends State<VisiteGuidee> {
   /// Cherche le bouton (plusieurs essais : la page peut être en train de
   /// s'ouvrir).
   Future<Element?> _chercher(List<String> cles, int g) async {
-    for (var essai = 0; essai < 30; essai++) {
+    for (var essai = 0; essai < 60; essai++) {
       final e = _trouver(cles);
       if (e != null) return e;
       await _attendre(const Duration(milliseconds: 150));
