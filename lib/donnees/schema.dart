@@ -91,6 +91,8 @@ CREATE TABLE stocks_courants (
   produit_id TEXT PRIMARY KEY NOT NULL,
   quantite_milliemes INTEGER NOT NULL
 )''',
+    // « Produits déjà reçus » sans parcourir tous les mouvements.
+    'CREATE INDEX mouvements_nature ON mouvements_stock (nature, produit_id)',
     'INSERT INTO stocks_courants (produit_id, quantite_milliemes) '
         'SELECT produit_id, SUM(quantite_milliemes) FROM mouvements_stock '
         'GROUP BY produit_id',

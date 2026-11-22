@@ -2044,7 +2044,9 @@ class JournalLocal implements ReglagesLocaux {
   }) async {
     final r = await _db.rawQuery(
       'SELECT m.produit_id AS p, -SUM(m.quantite_milliemes) AS q, SUM(m.prix_total) AS t '
-      'FROM mouvements_stock m JOIN operations o ON o.id = m.operation_id '
+      // On part des opérations de la période (index sur l'heure), pas des
+      // 180 000 mouvements d'une année : CROSS JOIN impose cet ordre.
+      'FROM operations o CROSS JOIN mouvements_stock m ON m.operation_id = o.id '
       "WHERE m.nature IN ('vente', 'annulation', 'retour') "
       'AND o.heure_telephone >= ? AND o.heure_telephone < ? '
       'GROUP BY m.produit_id',
@@ -2154,7 +2156,7 @@ class JournalLocal implements ReglagesLocaux {
       'COALESCE(SUM(CASE WHEN m.cout_total IS NULL THEN 0 ELSE m.prix_total END), 0) AS ventes_avec_cout, '
       'COALESCE(SUM(m.cout_total), 0) AS couts, '
       'SUM(CASE WHEN m.cout_total IS NULL THEN 1 ELSE 0 END) AS sans_cout '
-      'FROM mouvements_stock m JOIN operations o ON o.id = m.operation_id '
+      'FROM operations o CROSS JOIN mouvements_stock m ON m.operation_id = o.id '
       "WHERE m.nature IN ('vente', 'annulation', 'retour') AND o.heure_telephone >= ? AND o.heure_telephone <= ?",
       [depuis ?? 0, jusqua ?? 9007199254740991],
     );
