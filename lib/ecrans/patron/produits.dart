@@ -207,41 +207,6 @@ class _LigneProduit extends StatelessWidget {
   }
 }
 
-/// Image d'un produit : photo du patron, sinon pictogramme, sinon 📦.
-class ImageProduit extends StatelessWidget {
-  const ImageProduit({super.key, required this.produit, this.taille = 48});
-
-  final Produit produit;
-  final double taille;
-
-  @override
-  Widget build(BuildContext context) {
-    final photo = produit.photo;
-    if (photo != null && photo.isNotEmpty) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(10),
-        child: Image.memory(
-          base64.decode(photo),
-          width: taille,
-          height: taille,
-          fit: BoxFit.cover,
-          gaplessPlayback: true,
-        ),
-      );
-    }
-    return SizedBox(
-      width: taille,
-      height: taille,
-      child: Center(
-        child: Text(
-          produit.emoji ?? '📦',
-          style: TextStyle(fontSize: taille * 0.6),
-        ),
-      ),
-    );
-  }
-}
-
 /// Fiche d'un produit : nouveau (produit nul) ou modification.
 class PageFicheProduit extends StatefulWidget {
   const PageFicheProduit({super.key, required this.etat, this.produit});
