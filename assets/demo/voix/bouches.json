@@ -1,5 +1,348 @@
 {
-  "version": 1,
-  "note": "Rempli par l'action « 6 - Fabriquer la voix de la démonstration ». Vide : la démonstration utilise la voix de synthèse de l'appareil.",
-  "phrases": {}
+ "version": 1,
+ "service": "gemini",
+ "modele": "gemini-3.1-flash-tts-preview",
+ "voix": "Sulafat",
+ "pas_bouche_ms": 50,
+ "fabrique_le": "2026-11-22",
+ "complet": false,
+ "mention": "Voix générée par intelligence artificielle",
+ "phrases": {
+  "001": {
+   "fichier": "001.mp3",
+   "texte": "Bonjour !",
+   "duree_ms": 1050,
+   "bouche": "000066766558785210000",
+   "forme": "mmmooooooeeooooaaemmm"
+  },
+  "002": {
+   "fichier": "002.mp3",
+   "texte": "Bonsoir !",
+   "duree_ms": 1000,
+   "bouche": "00056858757777421000",
+   "forme": "mmmoaaaeeeaaaaaeemmm"
+  },
+  "003": {
+   "fichier": "003.mp3",
+   "texte": "Je m'appelle Afi. Bienvenue dans la démonstration de Zéro Perte.",
+   "duree_ms": 4850,
+   "bouche": "0003578998337786225521032100000000000000334678567666635655435689752245644565655558546213221000000",
+   "forme": "mmmaeeaoooooaaoamaaaeeeaeemmmmmmmmmmmmmmooeeaoooooooooaooaooooooeeeeaeeeeooaoaeeeoooommaeeemmemmm"
+  },
+  "004": {
+   "fichier": "004.mp3",
+   "texte": "Ensemble, nous allons visiter une boutique pour de faux. Rien n'est gardé : vous pouvez tout essayer.",
+   "duree_ms": 6700,
+   "bouche": "00057777765731000016887888885477565247898965742541100000000066778432410000000000004446777764664334100000000347525665210166255666312100",
+   "forme": "mmmaoeeeaaoomeemmmaooaeaoooooaoeeeomeoooooooooeeaameemmmmmmaeooooeeeoammmmmmmmmmmmaeaooaooaoaaaoaommmmmmmmmaaoomeoooommeeomeeeeooeammm"
+  },
+  "005": {
+   "fichier": "005.mp3",
+   "texte": "Voici l'accueil. Le gros bouton vert, Vendre, sert pour chaque client.",
+   "duree_ms": 5950,
+   "bouche": "00035787677896225431000000000000000000045863243684473245435544210000000023465575310000000005878741102224667210255343100",
+   "forme": "mmmaoooeeeeoaomeaaaeemmmmmmmmmmmmmmmmmmoooooaooooooooeoooeaaaaeemmmmmmmmeoaooooeeemmmmmmmmmeeeaoeemmeaeeeeammmeaooaommm"
+  },
+  "006": {
+   "fichier": "006.mp3",
+   "texte": "Ma caisse montre l'argent de la journée.",
+   "duree_ms": 2600,
+   "bouche": "0004786521465322100058886223677644567687764645653100",
+   "forme": "mmmaooaomeeaoeeeemmmooooomeeooaaaeeoooooaaeaeaooommm"
+  },
+  "007": {
+   "fichier": "007.mp3",
+   "texte": "Clients garde le crédit de chaque client.",
+   "duree_ms": 2950,
+   "bouche": "00012576577762100000033775578973337458647456652101266762100",
+   "forme": "mmmeeooooooooammmmmmaoaoaeoooooeeeooeooaoeeeeamemeeooooommm"
+  },
+  "008": {
+   "fichier": "008.mp3",
+   "texte": "Et Gestion est réservé au patron : produits, vendeurs, sauvegarde.",
+   "duree_ms": 6100,
+   "bouche": "00037885558443113774100000686785776578973562225210000000000000012354223445678962100002347652666667631000000236643653211000",
+   "forme": "mmmaoooeeeaeeemeeooommmmmmaoaaoeeaeoeooomaomeeoammmmmmmmmmmmmmmeaaooaeooooooooommmmmmaaaoooaoooooooaemmmmmmeeeoaaaaeaoammm"
+  },
+  "009": {
+   "fichier": "009.mp3",
+   "texte": "Commençons une vente. Je touche Vendre.",
+   "duree_ms": 3650,
+   "bouche": "0002678985676788763454310231000000000000034631167445431000013357543221000",
+   "forme": "mmmeoooaoeeeeoooooeaaaommeeemmmmmmmmmmmmaeeoomeooeeeeemmmmmaaeaaoooeaemmm"
+  },
+  "010": {
+   "fichier": "010.mp3",
+   "texte": "Chaque case est un produit, avec son prix. Je choisis le riz.",
+   "duree_ms": 4650,
+   "bouche": "000256872104788558526743475443100000026475456533321000000000000000000035766478766889986652100",
+   "forme": "mmmeeeeammmeaaaeeooeaoaeaooeaommmmmmmaooooeeaoaeeammmmmmmmmmmmmmmmmmmmeeaeeeoaaeeoooooaaoemmm"
+  },
+  "011": {
+   "fichier": "011.mp3",
+   "texte": "Je prends un kilo.",
+   "duree_ms": 1500,
+   "bouche": "000457721147621005531165652100",
+   "forme": "mmmeeaomaeeaammmmaaaeeooooammm"
+  },
+  "012": {
+   "fichier": "012.mp3",
+   "texte": "Le client en veut deux. Je touche plus.",
+   "duree_ms": 2700,
+   "bouche": "000668622222678664377347421000000000044572264310232100",
+   "forme": "mmmoooomeeoaooaoooeoooeoommmmmmmmmmmmeeeomeaeeemaoammm"
+  },
+  "013": {
+   "fichier": "013.mp3",
+   "texte": "Le total se calcule tout seul. Pas besoin de calculatrice.",
+   "duree_ms": 4100,
+   "bouche": "0003778622310367867772666226632777565321000000000005896887687725641166623333662100",
+   "forme": "mmmeoooameoomaaaoeeeoaeoameoooeoeeeaooaammmmmmmmmmmaaoooeeoooooeoemeooameeaeeeemmm"
+  },
+  "014": {
+   "fichier": "014.mp3",
+   "texte": "Maintenant, je touche Encaisser.",
+   "duree_ms": 2350,
+   "bouche": "00056641024688310024585227543310006522566754100",
+   "forme": "mmmooaommoooaaammmaeeaameoaeeeammmaameeaeeeoemm"
+  },
+  "015": {
+   "fichier": "015.mp3",
+   "texte": "Le client donne un billet de cinq mille francs. Je touche cinq mille.",
+   "duree_ms": 4500,
+   "bouche": "000368722232246758777543333764765665411377632233100000000000044772276453100057752145531000",
+   "forme": "mmmaooomeeoaaoooooooooooooaoooaeeeeeameooooeeeeoommmmmmmmmmmmaeaomeoaeeemmmmeeeaeeoooooamm"
+  },
+  "016": {
+   "fichier": "016.mp3",
+   "texte": "L'application dit combien rendre, et avec quels billets et quelles pièces.",
+   "duree_ms": 4750,
+   "bouche": "00016886227356443266664531001688676532566432100000466434210015686686567641000452565223434332100",
+   "forme": "mmmaooaomeooeoeeeeooooaoommmeooooaaaeeaaooaeammmmmaoaaaaammmeoooooooooaaammmmeaaeoameeoaeeeemmm"
+  },
+  "017": {
+   "fichier": "017.mp3",
+   "texte": "Plus d'erreur de monnaie. Je valide la vente.",
+   "duree_ms": 3200,
+   "bouche": "0001268947866765467766641000000000000044576436787635774442102100",
+   "forme": "mmmeeoooooaoooooooooaoaammmmmmmmmmmmmmaeeooaooaoooooaaaoaameemmm"
+  },
+  "018": {
+   "fichier": "018.mp3",
+   "texte": "La vente est enregistrée. Le stock de riz a baissé tout seul.",
+   "duree_ms": 4300,
+   "bouche": "00047876336662372266277575412241000000000034754316654685246841245376445621354467775210",
+   "forme": "mmmeoaaoaeooomeoaeaoeoeeaeemeeommmmmmmmmmmaooeeemeoooaoaeaooameaoooaeeeommeaeeeaooommm"
+  },
+  "019": {
+   "fichier": "019.mp3",
+   "texte": "Ce bouton envoie le reçu au client sur WhatsApp, avec le nom de votre boutique.",
+   "duree_ms": 5850,
+   "bouche": "000145575445212686210000478536776664156565278731025446642344644652344411000000000452531035568999988562145453222100000",
+   "forme": "mmmeeeeoooooameooommmmmmaaooooaoooooeaoeeeeooommeeoooooameeeooooaaeeeammmmmmmmmmmaaooameoooooooooooooaeeoooaeeemmemmm"
+  },
+  "020": {
+   "fichier": "020.mp3",
+   "texte": "Je passe au client suivant.",
+   "duree_ms": 1650,
+   "bouche": "000376621654445210667766254442100",
+   "forme": "mmmeeeommaaeeeoaeeooooeeeoooaammm"
+  },
+  "021": {
+   "fichier": "021.mp3",
+   "texte": "Voyons maintenant le crédit. Je touche Clients.",
+   "duree_ms": 3600,
+   "bouche": "000335875668974137667872226643210000000000002354103543443100001377664100",
+   "forme": "mmmoooooeoooooamaooooooeeeaoeaammmmmmmmmmmmmeeaomaeooeeeemmmmmeeooooommm"
+  },
+  "022": {
+   "fichier": "022.mp3",
+   "texte": "Chaque client a sa fiche. Voici Kofi.",
+   "duree_ms": 2000,
+   "bouche": "0003776621012776888410037656411224553100",
+   "forme": "mmmeeeeoammeeooooooommmaaeeaeeeeeeeeemmm"
+  },
+  "023": {
+   "fichier": "023.mp3",
+   "texte": "On voit ce qu'il doit. Il ne peut pas dépasser le plafond choisi par le patron.",
+   "duree_ms": 6450,
+   "bouche": "000247655353104422221000000000000036633676454311221345652100000000006899831521255264154555687212553105533156544310444623521021000",
+   "forme": "mmmaooeeeeoameaaeeeammmmmmmmmmmmmmoooaooaaeeeoeeoooooaaammmmmmmmmmmaooooooaoomaaaaooaaeeeeoooomaoaeeeoaeeeooeeoommaaoooeaaeeoommm"
+  },
+  "024": {
+   "fichier": "024.mp3",
+   "texte": "Quand il paie une partie, touchez Il rembourse. Sa dette baisse.",
+   "duree_ms": 5050,
+   "bouche": "00046555772168998625421124521000000015545466411000036655347865310266521000002557743762222253134442100",
+   "forme": "mmmaaoeeooomoaoooomaaemeeooammmmmmmmeaaeeeooommmmmmaooooeaaooooeeeeeemmmmmmmeeeaaooaomeeoooeeeeeeemmm"
+  },
+  "025": {
+   "fichier": "025.mp3",
+   "texte": "Ce bouton lui envoie un rappel poli sur WhatsApp.",
+   "duree_ms": 3350,
+   "bouche": "0001676854531374477765543477665346226652126656521365725853542100000",
+   "forme": "mmmeeeeooooameoooooooaaoaoaaaaaeaomoooommaooooommeeeoeoaaeeeammommm"
+  },
+  "026": {
+   "fichier": "026.mp3",
+   "texte": "Un client demande un prix avant d'acheter ? Faites-lui un devis.",
+   "duree_ms": 3650,
+   "bouche": "0004762235688868788766522235565565655424310000000000000421135887635321000",
+   "forme": "mmmeaomeeoooooooooaooaomeeeooaaaooaaeeeoommmmmmmmmmmeeeooeeaoooooeoaeemmm"
+  },
+  "027": {
+   "fichier": "027.mp3",
+   "texte": "Remplissez le panier, puis touchez ce bouton. Le devis part sur WhatsApp.",
+   "duree_ms": 5400,
+   "bouche": "000255773378655889525565555531000000125764102767686657666224421000000000467855763358310684345667742545210000",
+   "forme": "mmmaoaaoaeooeeeoooomaaooooooammmmmmmeeeooommeoeeeaeeeoooomeaoommmmmmmmmmaooooaooeeoommmaaeeeeoooooeeeaomammm"
+  },
+  "028": {
+   "fichier": "028.mp3",
+   "texte": "Le devis ne touche ni le stock ni la caisse. S'il revient dans les sept jours, un geste le transforme en vente, au même prix.",
+   "duree_ms": 8250,
+   "bouche": "000356755763689973124446523578997764413641100000368998852343334310000000002436665643556555543336434455552100000144455544144642244424556553244421210000555678733221100",
+   "forme": "mmmaooooaooaaooooomeoaeeemooooooooaeemaaameeemmmooooooaameaeeeeemmmmmmmmmeeeeooooooaaoooooooeeeaoeeeooooemmmmmmaooeeaoeemeoooeeaeeeeaoooooeoooeeemmmmmoooooooaeeaemmm"
+  },
+  "029": {
+   "fichier": "029.mp3",
+   "texte": "Un client rapporte un article ? Ouvrez les ventes du jour.",
+   "duree_ms": 4400,
+   "bouche": "0002775222666887532562463226665310431100000000000000016864536667874246522223444432111000",
+   "forme": "mmmeaoomeeoooooaaaeaomoaeeeaooaeaeeemeeemmmmmmmmmmmmmooooeaeaoooooaeaaoeeoeeeeeoooaeammm"
+  },
+  "030": {
+   "fichier": "030.mp3",
+   "texte": "Je choisis la vente.",
+   "duree_ms": 1500,
+   "bouche": "000344755416865668733432101000",
+   "forme": "mmmeeeaeeeeoaeeooooaaooommemmm"
+  },
+  "031": {
+   "fichier": "031.mp3",
+   "texte": "Retour sert à rendre une partie seulement. Le stock et la caisse se corrigent tout seuls.",
+   "duree_ms": 6400,
+   "bouche": "00036587224766412100034588657637876431068721643113554676653100000000000001586541377521003767411454332103462364544531655544321000",
+   "forme": "mmmaoaoomeaooooeemmmmeeeoaaeaaaoaooeamaooommaeeaeeeeeeooooommmmmmmmmmmmmmeooeeemeaoomeemeooaomeaoeeeeaeeeomaoaooeeemeeeeeaooammm"
+  },
+  "032": {
+   "fichier": "032.mp3",
+   "texte": "Au-delà de cinq mille francs, le patron doit donner son code. Et il est prévenu.",
+   "duree_ms": 5350,
+   "bouche": "00058865787776423255676214785321234521000000046731532225655665347788555541244210000000000045543422244353100",
+   "forme": "mmmaoooaooooaaoooeeeeoameaoooeeeeoaoommmmmmmaooooaaeeeooooooaoooooooeeeoomaaooaammmmmmmmmmaooaoooaeaoeoommm"
+  },
+  "033": {
+   "fichier": "033.mp3",
+   "texte": "Passons à la caisse. Je touche Ma caisse.",
+   "duree_ms": 3550,
+   "bouche": "00068686688863243476410000000000267893244367621000000577641124655775210",
+   "forme": "mmmaaeeeoaooaoaaeeeeeemmmmmmmmmmaaeeooeeoeeeemmmmmmmmoooaameeaaaeeeemmm"
+  },
+  "034": {
+   "fichier": "034.mp3",
+   "texte": "Transport, électricité, repas : touchez Dépense, puis choisissez l'image.",
+   "duree_ms": 6200,
+   "bouche": "0001246664146667732110000000000067862234555411255553100000000045575215664210000000000000001687888985210003437831566857885210",
+   "forme": "mmmeeeoeeemaooaaaeeammmmmmmmmmmaaooameeeeeeommeooooommmmmmmmmmoaaaomaaaaommmmmmmmmmmmmmmmmeeoeeeeaaammmmmooaaomoooooeeeeemmm"
+  },
+  "035": {
+   "fichier": "035.mp3",
+   "texte": "Le patron note aussi l'argent qu'il prend. Ainsi, la caisse reste juste.",
+   "duree_ms": 5950,
+   "bouche": "00002333546866864778876543331000000000000000000000000003785574325789742214777658777544664243101310000000000025444343100",
+   "forme": "mmmaeaoeeeaoeeoeeeooooaaaaeemmmmmmmmmmmmmmmmmmmmmmmmmmmaoooaaoeeaoooooeamooeeeeaooaaoeaoaeeomeeoommmmmmmmmmmeoeeeeoommm"
+  },
+  "036": {
+   "fichier": "036.mp3",
+   "texte": "Le soir, on ferme la caisse avec ce bouton.",
+   "duree_ms": 3700,
+   "bouche": "00068842565645662476554531210000000000000000000000000000000046878555674110",
+   "forme": "mmmooaaeeaeeeeaeeeoeeoeeememmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmaooeeeaaaaaeem"
+  },
+  "037": {
+   "fichier": "037.mp3",
+   "texte": "Le vendeur compte l'argent sans voir combien il devrait y avoir.",
+   "duree_ms": 7500,
+   "bouche": "000464214758888621564355553446444123100000000000000000000000000000000000000158757878841115732476545652100256678745895310377768898666556234553344210000",
+   "forme": "mmmooaeeeaaooooameeoeeeoooeeeoooomeommmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmaoooaoooooeamaaoeeeoaoeeooommmeeeeeaoaooaeemaeoooooooooooaaomeeooaoaaaeemmm"
+  },
+  "038": {
+   "fichier": "038.mp3",
+   "texte": "Seul le patron voit l'écart. S'il manque mille francs ou plus, il reçoit une alerte.",
+   "duree_ms": 5650,
+   "bouche": "00014547789625421356577652121100000000000000002345677531025899832214410045211465553100000058847544567753221001000",
+   "forme": "mmmeeeeaoooomaaeeaooaoooomeaaeeemmmmmmmmmmmmmmeeeooooooeeaoooooeeeeaaommaomeaooeeeemmmmmmmaooeoeeaooooaoaeeamemmm"
+  },
+  "039": {
+   "fichier": "039.mp3",
+   "texte": "Voici le tableau du patron.",
+   "duree_ms": 2000,
+   "bouche": "0003334653336888731155467875724521232100",
+   "forme": "mmmaeeoaaeeeeoooommeaoooooooomoameeoammm"
+  },
+  "040": {
+   "fichier": "040.mp3",
+   "texte": "Les ventes, le bénéfice et les dépenses : aujourd'hui, cette semaine ou ce mois.",
+   "duree_ms": 6350,
+   "bouche": "0001565422233457852111000000046864544321013678854332100005789665222102322100000000000004432210012684210000002345233454324785210",
+   "forme": "mmmeooooeeeooaaooomeemmmmmmmmoooooooooaeeeeooooeeeeemmmmmaoooooomaooeeeeemmmmmmmmmmmmmmooeaooeaooooommmmmmmmeeeameeeoooooooammm"
+  },
+  "041": {
+   "fichier": "041.mp3",
+   "texte": "Il montre aussi les produits qui vont bientôt manquer.",
+   "duree_ms": 4450,
+   "bouche": "00057545664210000000000000000000000588997314433476752224655687411153455323665247876210000",
+   "forme": "mmmaoeeeoooaammmmmmmmmmmmmmmmeemmmaooooooeeoeeeeoooomoeeooeoooemmeaaaoooaeeoomeooooaeeemm"
+  },
+  "042": {
+   "fichier": "042.mp3",
+   "texte": "Pour l'inventaire, on compte la marchandise.",
+   "duree_ms": 2750,
+   "bouche": "0002455775421134576210000000686216852267884445533221100",
+   "forme": "mmmeaooooaoomeaaaaoeemmmmmmmooomaaoaeeaooaeeeooeooeemmm"
+  },
+  "043": {
+   "fichier": "043.mp3",
+   "texte": "Là aussi, on compte sans voir le chiffre attendu. L'application montre ce qui manque, en francs.",
+   "duree_ms": 6300,
+   "bouche": "000578997543553100006831268422102444764377457564532413442100000000000000003774113232345768977413343211222452100000000642123100",
+   "forme": "mmmoooooaeeeeoammmmmooamaooomemmeeeeaoaaoaeooeeeoeeomeooeemmmmmmmmmmmmmmmmaoaooeoeaeeeaooooooeeaeeeaeeooooomaemmmmmmmaeeeeoomm"
+  },
+  "044": {
+   "fichier": "044.mp3",
+   "texte": "Chaque jour, elle propose aussi de compter trois produits seulement. C'est rapide.",
+   "duree_ms": 5250,
+   "bouche": "000344785657899932100047732352576884447786235521465210001216872215545563336677642100000000011323414423100",
+   "forme": "mmmeeeaooaeeooooeeammmaoooaeomaoeaoeeeooooaaoomeeooammmmeeeeaomaeaooaooeeeeooooommmmmmmmmmmeeaeaomeooammm"
+  },
+  "045": {
+   "fichier": "045.mp3",
+   "texte": "Enfin, la sauvegarde. Elle se trouve dans Gestion.",
+   "duree_ms": 4050,
+   "bouche": "000375215652100003564347754654222100000000004545563216634468721000034685321232100",
+   "forme": "mmmaoeeeeaommmmmmaoaeeeeoaoaaaaoaammmmmmmmmmeoeeeoeeeooaooaaaommmmmaeeoeeemeaommm"
+  },
+  "046": {
+   "fichier": "046.mp3",
+   "texte": "Tout est gardé dans le Google Drive de votre boutique. Un téléphone perdu ne fait rien perdre.",
+   "duree_ms": 5600,
+   "bouche": "0002762586786546774467877547668753546777547556324444122101000000000045256852565245423652147853343337634542110000",
+   "forme": "mmmeaameooaaooooooooaoooooooooooooaeaaooooaoooeeaooomeammemmmmmmmmmmaomeooeeaoomaaooeoommaooeeeaeaooooaaaeaaemmm"
+  },
+  "047": {
+   "fichier": "047.mp3",
+   "texte": "Vous pouvez aussi créer une sauvegarde, protégée par le code du patron.",
+   "duree_ms": 4200,
+   "bouche": "000268835768885334122357899965454335645541000000125833775653165565225654423411022100",
+   "forme": "mmmaoooaeoooooeeeameeeeoooooaeeaoaoaaaooammmmmmmaeaooeoaeaoomaaooomaaoooamoaoeeaommm"
+  },
+  "048": {
+   "fichier": "048.mp3",
+   "texte": "La visite est finie. Merci de votre attention !",
+   "duree_ms": 2700,
+   "bouche": "000477576662743688841100000000578633365563352664463100",
+   "forme": "mmmaooooeeoeaeeeoooommmmmmmmmmoooaeeeooooeeaeaeeeoammm"
+  }
+ }
 }
