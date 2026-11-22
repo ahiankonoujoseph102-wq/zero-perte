@@ -469,11 +469,14 @@ def main():
                 for i in range(0, len(restantes), TAILLE_LOT):
                     lot = restantes[i : i + TAILLE_LOT]
                     morceaux = None
-                    if len(lot) > 1:
+                    # Lot douteux : redemandé une fois (1 demande), puis phrase
+                    # par phrase (5 demandes).
+                    for _ in range(2 if len(lot) > 1 else 0):
                         pcm = gemini("\n\n".join(t for _, _, t in lot), k, mod, voix, STYLE_LOT)
                         morceaux = decouper(pcm, [t for _, _, t in lot])
-                        if morceaux is None:
-                            print(f"  lot {lot[0][0]}–{lot[-1][0]} : découpage pas sûr, phrase par phrase")
+                        if morceaux is not None:
+                            break
+                        print(f"  lot {lot[0][0]}–{lot[-1][0]} : découpage pas sûr")
                     if morceaux is None:
                         morceaux = [gemini(t, k, mod, voix) for _, _, t in lot]
                     for (n, fichier, texte), m in zip(lot, morceaux):

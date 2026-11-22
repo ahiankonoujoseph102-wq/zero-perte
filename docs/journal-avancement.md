@@ -921,3 +921,22 @@ choisir. **Refonte d'Afi demandée** (dessin jugé non professionnel) : planche 
   **Fait le 22/11** : secret ZP_CLE_VOIX créé par le propriétaire, action 6 réussie (Gemini), 3 extraits MP3
   de 12 à 13 s (35 à 40 Ko) en ligne sur https://ahiankonoujoseph102-wq.github.io/zero-perte/voix/
   (vérifiés : vraie voix, mono 24 kHz, volume correct).
+
+## Décisions du propriétaire (22/11) : Afi en médaillon VALIDÉE, voix **Sulafat**
+
+### Version 0.31.0 (en préparation sur la branche de travail)
+- Afi en médaillon dans la visite (l'ancienne Afi et son code sont supprimés), bouche synchronisée avec le
+  volume ET la forme (a, é, o, m) calculés par l'action 6 ; 3 corrections de la visite (voir plus haut).
+- **Repli vers la voix de l'appareil** : fichier refusé, son arrêté avant la moitié de sa durée (lecteur
+  muet), ou lecteur qui ne répond plus (durée + 4 s) → la phrase est dite par la voix de l'appareil, la
+  visite continue ; après 2 échecs, plus d'essai du lecteur (et plus de mention « IA »). 3 tests.
+- **Action 6, quota Gemini gratuit = 10 demandes par jour et par modèle** (message exact de Google :
+  `GenerateRequestsPerDayPerProjectPerModel-FreeTier = 10`). 1er essai (une demande par phrase) arrêté à
+  16 phrases sans rien garder. Script refait : **lots de 5 phrases par demande** (10 demandes pour 50),
+  découpés aux pauses longues, contrôlés (pauses nettement plus longues qu'à l'intérieur des phrases,
+  durées cohérentes avec les textes), lot douteux redemandé une fois puis phrase par phrase ; **reprise**
+  (phrases faites gardées sur la branche `voix-demonstration`, même modèle et même voix) ; arrêt propre au
+  quota du jour. Testé sur sons fabriqués (découpage juste, 2 cas douteux refusés) et simulation de quota.
+- 22/11 vers 3 h 36 : 1er lot fait (001–005, gemini-3.1-flash-tts-preview, Sulafat), durées cohérentes
+  avec les fabrications phrase par phrase (écarts < 15 %), volume correct ; quota épuisé pour la journée.
+  Relance programmée après la remise à zéro (8 h 12, heure de Lomé) : 9 lots restants.
