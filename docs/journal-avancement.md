@@ -9,8 +9,8 @@ Il est mis à jour **à la fin de chaque étape**.
 
 | | |
 |---|---|
-| **Dernière étape terminée** | **0.29.0** : logo, Google Cloud branché (A1–A4, A6) |
-| **Version publiée** | 0.29.0 (Android et Windows, voir les Releases GitHub) |
+| **Dernière étape terminée** | **0.30.0** : Retour dans l'installation, démonstration guidée avec Afi |
+| **Version publiée** | 0.30.0 (Android et Windows, voir les Releases GitHub) |
 | **Prochaine étape** | Essai A5 (Google Drive sur un vrai téléphone et sur PC), puis étapes B et F (Cloudflare, Firebase) |
 | **Méthode** | Branche de travail, tests + captures sur 4 tailles, puis fusion dans `main` (= publication). Rien de non testé sur `main`. |
 | **Pour tout choix non décidé** | Prendre l'option la plus simple, la noter ici et la mettre dans le rapport avec une recommandation. |
@@ -868,3 +868,8 @@ durée 4 à 6 min) et `installation_retour_test.dart`. Défauts trouvés et corr
 qui débordait sur 4", bandeau de la démo trop haut avec deux boutons, visite bloquée quand une page met plus de
 1,8 s à s'ouvrir (attente portée à 4,5 s), cadre or mal placé après un défilement. Captures vérifiées sur les
 4 tailles : `test_captures/v030_captures_test.dart`, `avatar_captures_test.dart`.
+**Publiée :** v0.30.0-n57 (tests, Android et Windows réussis sur GitHub) — APK universel **17,8 Mo**
+(17,7 avant ; arm64 9,7 Mo, armv7 9,2 Mo), Windows **13,3 Mo**. Avec la voix IA (≈ 0,9 Mo d'audio) : ≈ 18,7 Mo.
+Images : `docs/demo/afi-expressions.png`, `docs/demo/visite-telephone.png`, `docs/demo/visite-pc.png`.
+**Reste** : la clé `ZP_CLE_VOIX` (partie H), puis action 6 → branche `voix-demonstration` → vérification et
+publication par Claude.
