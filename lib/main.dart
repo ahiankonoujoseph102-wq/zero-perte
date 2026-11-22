@@ -14,6 +14,7 @@ import 'demo_guidee/voix_demo.dart';
 import 'app/etat_application.dart';
 import 'domaine/licence.dart';
 import 'donnees/journal_local.dart';
+import 'ecrans/patron/resume_soir.dart';
 import 'ecrans/accueil_vendeur.dart';
 import 'ecrans/assistant/assistant_installation.dart';
 import 'ecrans/code_patron.dart';
@@ -307,12 +308,15 @@ class ZeroPerteApp extends StatelessWidget {
             ? PageNouveauCodePatron(etat: etat)
             : (etat.utilisateurActuel == null && etat.utilisateurs.isNotEmpty)
             ? PageConnexion(etat: etat)
-            : AccueilVendeur(
+            : GuetteurResumeSoir(
                 etat: etat,
-                maintenant: maintenant,
-                pied: PiedDePage(
-                  infosPaquet: infosPaquet ?? PackageInfo.fromPlatform(),
-                  baseOuverte: true,
+                child: AccueilVendeur(
+                  etat: etat,
+                  maintenant: maintenant,
+                  pied: PiedDePage(
+                    infosPaquet: infosPaquet ?? PackageInfo.fromPlatform(),
+                    baseOuverte: true,
+                  ),
                 ),
               ),
       ),

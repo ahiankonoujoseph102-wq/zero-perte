@@ -161,7 +161,7 @@ List<ChapitreVisite> chapitresVisite({String salutation = '001'}) => [
   const ChapitreVisite('Le tableau du patron', [
     EtapeVisite(
       '039',
-      cibles: ['accueil-tableau', 'menu-tableau'],
+      cibles: ['accueil-chiffres', 'menu-chiffres'],
       toucher: true,
       revenirAccueil: true,
     ),

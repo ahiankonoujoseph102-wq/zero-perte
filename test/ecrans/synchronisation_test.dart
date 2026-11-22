@@ -143,9 +143,13 @@ void main() {
           await Future<void>.delayed(const Duration(milliseconds: 200));
         },
       );
-      expect(relais.recues, hasLength(1));
+      // L'alerte grave, puis le résumé du soir (notification seulement).
+      expect(relais.recues.map((r) => r.$2.type).toList(), [
+        'ecart',
+        'resume_soir',
+      ]);
       expect(
-        relais.recues.single.$2.message,
+        relais.recues.first.$2.message,
         'Caisse fermée par Kossi : il manque 2 000 F (especes).',
       );
       // Appareil du patron (même boutique, même Drive, même jeton de relais).
@@ -158,6 +162,10 @@ void main() {
         expect(await patron.etat.releverAlertes(), 1);
       });
       await afficherApp(tester, patron.etat);
+      // (La fermeture n'est pas encore synchronisée : pas de résumé du soir,
+      // seulement le bandeau de l'alerte grave.)
+      await attendre(tester, tours: 8);
+      expect(find.byKey(const Key('resume-soir')), findsNothing);
       expect(find.byKey(const Key('bandeau-alerte')), findsOneWidget);
       expect(patron.voix.phrases.last, startsWith('Alerte. Caisse fermée'));
       await toucher(tester, find.byKey(const Key('bouton-alerte-vue')));
@@ -214,4 +222,36 @@ void main() {
       },
     );
   }
+
+  testWidgets('résumé du soir par la synchronisation : le vendeur ferme sur SON appareil, '
+      'le patron le voit sur le sien', (tester) async {
+    final drive = StockageMemoire();
+    final vendeur = await environnementDeTest(
+      tester,
+      drive: drive,
+      preparer: (etat) async {
+        await boutiqueAvecStock(etat);
+        await etat.connecterSynchro();
+        await etat.synchroniser();
+        await etat.ajouterVendeur(nom: 'Kossi', pin: '5913');
+        await etat.verifierPin(etat.vendeurs.first, '5913');
+        await etat.ouvrirCaisse(5000);
+        await etat.fermerCaisse({ModePaiement.especes: 5000});
+        await etat.synchroniser();
+      },
+    );
+    expect(vendeur.etat.estPatron, isFalse);
+    final patron = await environnementDeTest(tester, drive: drive);
+    await tester.runAsync(() async {
+      await patron.etat.connecterSynchro();
+      await patron.etat.retrouverBoutiqueDepuisDrive();
+      await patron.etat.verifierPin(patron.etat.patron!, '482713');
+    });
+    await afficherApp(tester, patron.etat);
+    await attendre(tester, tours: 10);
+    expect(find.byKey(const Key('resume-soir')), findsOneWidget);
+    expect(find.text('caisse juste'), findsOneWidget);
+    await toucher(tester, find.byKey(const Key('bouton-resume-vu')));
+    expect(find.byKey(const Key('resume-soir')), findsNothing);
+  });
 }

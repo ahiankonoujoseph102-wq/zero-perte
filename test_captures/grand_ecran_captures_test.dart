@@ -61,7 +61,7 @@ void main() {
         find.byType(MaterialApp),
         matchesGoldenFile('captures/ge_patron_${e.key}.png'),
       );
-      await toucher(tester, find.byKey(const Key('patron-tableau')));
+      await toucher(tester, find.byKey(const Key('patron-chiffres')));
       await attendre(tester, tours: 10);
       await toucher(tester, find.byKey(Key('periode-${Periode.mois.name}')));
       await attendre(tester, tours: 10);

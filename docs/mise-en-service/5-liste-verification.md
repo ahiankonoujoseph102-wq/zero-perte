@@ -13,7 +13,9 @@
 - [ ] Caisse **ouverte** avec le vrai fond de caisse.
 - [ ] Une vraie vente faite, la monnaie rendue juste, le **reçu envoyé** sur WhatsApp.
 - [ ] Le patron sait **fermer la caisse** et lire l'écart.
-- [ ] Le patron voit sa carte **« Aujourd'hui »** et sait ouvrir **Tableau**.
+- [ ] Le patron voit sa carte **« Aujourd'hui »** et sait ouvrir **Chiffres** (Résumé, À envoyer).
+- [ ] Le patron sait **commander** au fournisseur (Chiffres → Stock bas → **Commander sur WhatsApp**) et
+      **rappeler un crédit en retard** (Clients → bandeau « crédits en retard » → **Rappeler**).
 - [ ] Si plusieurs appareils : **compte Google de la boutique** connecté sur chacun (Gestion → Appareils et
       Drive) ; une vente faite sur l'un apparaît sur l'autre.
 - [ ] Le patron a l'**aide-mémoire** et les numéros d'assistance (bouton **Aide**).

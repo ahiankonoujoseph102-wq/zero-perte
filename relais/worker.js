@@ -74,7 +74,10 @@ async function notifier(env, boutique, alerte) {
     body: JSON.stringify({
       message: {
         topic: `zp-${boutique.slice(0, 32)}`,
-        notification: { title: 'Zéro Perte : alerte', body: alerte.message },
+        notification: {
+          title: alerte.type === 'resume_soir' ? 'Zéro Perte : résumé du soir' : 'Zéro Perte : alerte',
+          body: alerte.message,
+        },
         android: { priority: 'high' },
       },
     }),

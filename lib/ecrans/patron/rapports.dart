@@ -74,9 +74,12 @@ String rapportCsv(Rapport r, String boutique) {
 /// Rapports du patron : ventes, bénéfice, dépenses, crédits, inventaires, par
 /// jour, semaine ou mois ; envoi en image ou en fichier (Excel).
 class PageRapports extends StatefulWidget {
-  const PageRapports({super.key, required this.etat});
+  const PageRapports({super.key, required this.etat, this.integree = false});
 
   final EtatApplication etat;
+
+  /// Vrai : seulement le contenu, dans la page « Chiffres ».
+  final bool integree;
 
   @override
   State<PageRapports> createState() => _PageRapportsState();
@@ -110,7 +113,7 @@ class _PageRapportsState extends State<PageRapports> {
 
   @override
   Widget build(BuildContext context) {
-    return PageZp(
+    final page = PageZp(
       titre: 'Rapports',
       icone: Icons.summarize_rounded,
       corps: FutureBuilder<Rapport>(
@@ -204,6 +207,7 @@ class _PageRapportsState extends State<PageRapports> {
         },
       ),
     );
+    return widget.integree ? page.corps : page;
   }
 }
 

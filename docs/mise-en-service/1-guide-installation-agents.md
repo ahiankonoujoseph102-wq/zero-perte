@@ -59,7 +59,7 @@ Avec un vendeur, sur le vrai téléphone :
    **Valider** → **Envoyer le reçu** (WhatsApp).
 3. Une **vente à crédit** à un client (Clients → Nouveau client).
 4. **Ma caisse → Fermer la caisse** : compter l'argent → l'écart s'affiche au patron.
-5. Montrer au patron sa carte **« Aujourd'hui »** (ventes, bénéfice, crédits) et **Tableau**.
+5. Montrer au patron sa carte **« Aujourd'hui »** (ventes, bénéfice, crédits) et **Chiffres**.
 6. Bouton **Visite** de la démonstration si le patron veut revoir (rien n'est gardé).
 
 ## 5. À distance (appel WhatsApp)

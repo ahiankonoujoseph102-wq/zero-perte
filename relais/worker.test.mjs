@@ -107,5 +107,6 @@ assert.equal((await relais.fetch(req('POST', J1, { type: 't', message: 'x' }), e
   const attendu = 'zp-' + createHash('sha256').update(J2).digest('hex').slice(0, 32);
   assert.equal(fcm.message.topic, attendu);
   assert.equal(fcm.message.notification.body, 'Il manque 1 500 F');
+  assert.equal(fcm.message.notification.title, 'Zéro Perte : alerte');
 }
 console.log('relais : tous les tests réussis');

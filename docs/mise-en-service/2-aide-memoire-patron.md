@@ -17,8 +17,19 @@ est gardé dans l'historique), masquer un produit qui ne se vend plus.
 **Chaque soir** — Ma caisse → **Fermer la caisse** : on compte l'argent **sans voir** le montant attendu.
 Vous voyez tout de suite **l'écart** (manque ou surplus).
 
-**Vos chiffres** — Accueil : carte **Aujourd'hui** (ventes, bénéfice, crédits). **Tableau** : semaine,
-mois, produits qui rapportent, **stock bas**. **Rapports** : envoyez le rapport en image ou en Excel.
+**Vos chiffres** — Accueil : carte **Aujourd'hui** (ventes, bénéfice, crédits). **Chiffres** →
+**Résumé** : semaine, mois, produits qui rapportent, **stock bas** ; **À envoyer** : le rapport en image ou
+en Excel.
+
+**Résumé du soir** — Quand un vendeur ferme la caisse, vous voyez le résumé de la journée (ventes, bénéfice,
+écart de caisse, stock bas) à l'ouverture de votre application. Bouton **Envoyer sur WhatsApp** pour le
+garder ou le partager : rien n'est envoyé sans vous.
+
+**Commander** — Chiffres → Stock bas → **Commander sur WhatsApp** → choisissez le fournisseur : WhatsApp
+s'ouvre avec la liste déjà écrite. Ajoutez les quantités, puis envoyez.
+
+**Crédits en retard** — Clients → bandeau **« crédits en retard »** (rien payé depuis 14 jours) →
+**Rappeler** : WhatsApp s'ouvre avec le message poli déjà écrit. Vous envoyez.
 
 **Inventaire** — **Inventaire → Compter les produits du jour** (quelques produits chaque jour) : les écarts
 montrent ce qui disparaît.

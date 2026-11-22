@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
+import 'retards.dart';
 import '../../app/etat_application.dart';
 import '../../domaine/argent.dart';
 import '../../donnees/journal_local.dart';
@@ -74,12 +75,19 @@ class PageClients extends StatefulWidget {
 
 class _PageClientsState extends State<PageClients> {
   late Future<List<Client>> _clients = widget.etat.clients();
+  late Future<List<(Client, int)>> _retards = _chargerRetards();
   final _recherche = TextEditingController();
+
+  Future<List<(Client, int)>> _chargerRetards() =>
+      widget.choisir || !widget.etat.voitTout
+      ? Future.value(const [])
+      : widget.etat.creditsEnRetard();
 
   void _recharger() {
     if (!mounted) return;
     setState(() {
       _clients = widget.etat.clients();
+      _retards = _chargerRetards();
     });
   }
 
@@ -177,6 +185,54 @@ class _PageClientsState extends State<PageClients> {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              if (!widget.choisir && widget.etat.voitTout)
+                FutureBuilder<List<(Client, int)>>(
+                  future: _retards,
+                  builder: (context, r) {
+                    final n = r.data?.length ?? 0;
+                    if (n == 0) return const SizedBox.shrink();
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Material(
+                        color: CouleursZp.argentSort.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(18),
+                        child: InkWell(
+                          key: const Key('bandeau-retards'),
+                          borderRadius: BorderRadius.circular(18),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  PageCreditsEnRetard(etat: widget.etat),
+                            ),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(14),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.schedule_rounded,
+                                  color: CouleursZp.argentSort,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    '$n crédit${n > 1 ? 's' : ''} en retard : '
+                                    'rappeler en un toucher',
+                                    style: const TextStyle(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                const Icon(Icons.chevron_right_rounded),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
               if (!widget.choisir)
                 Container(
                   padding: const EdgeInsets.all(14),

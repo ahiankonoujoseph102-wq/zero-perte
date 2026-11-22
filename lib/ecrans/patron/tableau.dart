@@ -6,6 +6,7 @@ import '../../domaine/quantites.dart';
 import '../../domaine/tableau.dart';
 import '../../theme/couleurs.dart';
 import '../communs.dart';
+import 'commande.dart';
 import 'graphiques.dart';
 
 String texteRaison(RaisonStockBas r) => switch (r) {
@@ -17,9 +18,12 @@ String texteRaison(RaisonStockBas r) => switch (r) {
 /// Tableau du patron : ventes, bénéfice estimé, dépenses, meilleurs produits,
 /// stock bas ; pour aujourd'hui, cette semaine ou ce mois.
 class PageTableau extends StatefulWidget {
-  const PageTableau({super.key, required this.etat});
+  const PageTableau({super.key, required this.etat, this.integree = false});
 
   final EtatApplication etat;
+
+  /// Vrai : seulement le contenu, dans la page « Chiffres ».
+  final bool integree;
 
   @override
   State<PageTableau> createState() => _PageTableauState();
@@ -38,7 +42,7 @@ class _PageTableauState extends State<PageTableau> {
 
   @override
   Widget build(BuildContext context) {
-    return PageZp(
+    final page = PageZp(
       titre: 'Tableau',
       pleineLargeur: true,
       icone: Icons.insights_rounded,
@@ -74,6 +78,7 @@ class _PageTableauState extends State<PageTableau> {
         ],
       ),
     );
+    return widget.integree ? page.corps : page;
   }
 }
 
@@ -145,6 +150,22 @@ class _Contenu extends StatelessWidget {
           ),
       const SizedBox(height: 16),
       _Titre('Stock bas (${t.stockBas.length})'),
+      if (t.stockBas.isNotEmpty && etat.voitTout)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: OutlinedButton.icon(
+            key: const Key('bouton-commander'),
+            style: OutlinedButton.styleFrom(minimumSize: const Size(0, 54)),
+            onPressed: () => commanderStockBas(context, etat, [
+              for (final (p, _, _) in t.stockBas) p,
+            ]),
+            icon: const Icon(Icons.shopping_cart_checkout_rounded),
+            label: const Text(
+              'Commander sur WhatsApp',
+              style: TextStyle(fontSize: 17),
+            ),
+          ),
+        ),
       if (t.stockBas.isEmpty)
         const Text(
           'Rien à racheter pour l\'instant.',

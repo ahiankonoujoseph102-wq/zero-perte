@@ -43,7 +43,7 @@ void main() {
                   'bouton-vendre',
                   'bouton-ma-caisse',
                   'bouton-credit',
-                  'menu-tableau',
+                  'menu-chiffres',
                   'menu-arrivages',
                   'menu-inventaire',
                   'menu-fournisseurs',
@@ -54,7 +54,7 @@ void main() {
                   'bouton-vendre',
                   'bouton-ma-caisse',
                   'bouton-credit',
-                  'accueil-tableau',
+                  'accueil-chiffres',
                   'accueil-arrivages',
                   'accueil-inventaire',
                   'bouton-espace-patron',
@@ -118,8 +118,8 @@ void main() {
         expect(find.byKey(const Key('bouton-credit')), findsOneWidget);
         for (final cle in [
           'bouton-espace-patron',
-          'accueil-tableau',
-          'menu-tableau',
+          'accueil-chiffres',
+          'menu-chiffres',
           'menu-accueil',
           'menu-vendeurs',
         ]) {

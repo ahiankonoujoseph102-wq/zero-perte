@@ -1,6 +1,10 @@
 import 'dart:async';
 
+import '../domaine/dates.dart';
+
 import 'package:flutter/material.dart';
+
+export '../domaine/dates.dart' show dateCourte, dateEnFrancais;
 
 import '../app/etat_application.dart';
 import '../domaine/argent.dart';
@@ -17,10 +21,9 @@ import 'patron/arrivages.dart';
 import 'patron/espace_patron.dart';
 import 'patron/fournisseurs.dart';
 import 'patron/inventaire.dart';
-import 'patron/tableau.dart';
+import 'patron/chiffres.dart';
 import 'patron/tableau_de_bord.dart';
 import 'patron/vendeurs.dart';
-import 'patron/rapports.dart';
 import 'logo_zero_perte.dart';
 import 'vente/devis.dart';
 import 'vente/page_vendre.dart';
@@ -116,11 +119,11 @@ List<EntreeMenu> menuPrincipal(EtatApplication etat) => [
   ),
   if (etat.voitTout) ...[
     EntreeMenu(
-      cle: 'tableau',
+      cle: 'chiffres',
       icone: Icons.insights_rounded,
-      titre: 'Tableau',
+      titre: 'Chiffres',
       couleur: CouleursZp.argentEntreClair,
-      ouvrir: (c) => _ouvrir(c, PageTableau(etat: etat)),
+      ouvrir: (c) => _ouvrir(c, PageChiffres(etat: etat)),
     ),
     EntreeMenu(
       cle: 'arrivages',
@@ -135,14 +138,6 @@ List<EntreeMenu> menuPrincipal(EtatApplication etat) => [
       titre: 'Inventaire',
       couleur: const Color(0xFFB38CF0),
       ouvrir: (c) => _ouvrir(c, PageInventaires(etat: etat)),
-    ),
-    EntreeMenu(
-      cle: 'rapports',
-      icone: Icons.summarize_rounded,
-      titre: 'Rapports',
-      couleur: CouleursZp.argentEntreClair,
-      surTelephone: false,
-      ouvrir: (c) => _ouvrir(c, PageRapports(etat: etat)),
     ),
     EntreeMenu(
       cle: 'devis',
@@ -254,7 +249,7 @@ class AccueilVendeur extends StatelessWidget {
                       maxScaleFactor: 1.2,
                       child: ResumeDuJour(
                         etat: etat,
-                        onTap: () => _ouvrir(context, PageTableau(etat: etat)),
+                        onTap: () => _ouvrir(context, PageChiffres(etat: etat)),
                       ),
                     ),
                     SizedBox(height: bas ? 8 : 12),
@@ -966,37 +961,3 @@ class LogoZp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => LogoZeroPerte(taille: taille);
 }
-
-const _jours = [
-  'lundi',
-  'mardi',
-  'mercredi',
-  'jeudi',
-  'vendredi',
-  'samedi',
-  'dimanche',
-];
-const _mois = [
-  'janvier',
-  'février',
-  'mars',
-  'avril',
-  'mai',
-  'juin',
-  'juillet',
-  'août',
-  'septembre',
-  'octobre',
-  'novembre',
-  'décembre',
-];
-
-/// « 21 nov. » : date courte pour l'en-tête.
-String dateCourte(DateTime d) {
-  final mois = _mois[d.month - 1];
-  return '${d.day} ${mois.length <= 4 ? mois : '${mois.substring(0, mois.startsWith('juil') ? 4 : 3)}.'}';
-}
-
-/// « samedi 21 novembre » (sans bibliothèque externe).
-String dateEnFrancais(DateTime d) =>
-    '${_jours[d.weekday - 1]} ${d.day} ${_mois[d.month - 1]}';

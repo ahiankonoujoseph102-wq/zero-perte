@@ -9,8 +9,8 @@ Il est mis à jour **à la fin de chaque étape**.
 
 | | |
 |---|---|
-| **Dernière étape terminée** | **0.33.0** : synchronisation compressée, point de départ pour un nouvel appareil, relais « dernière alerte » |
-| **Version publiée** | 0.33.0 (Android et Windows, voir les Releases GitHub) |
+| **Dernière étape terminée** | **0.34.0** : résumé du soir, « Commander » sur WhatsApp, crédits en retard, page « Chiffres » |
+| **Version publiée** | 0.34.0 (Android et Windows, voir les Releases GitHub) |
 | **Prochaine étape** | 0.31.1 (4 phrases refaites le 23/11 après 8 h 12), puis priorités 1 et 2 (branche `claude/suite-apres-031`), 0.32, relais |
 | **Méthode** | Branche de travail, tests + captures sur 4 tailles, puis fusion dans `main` (= publication). Rien de non testé sur `main`. |
 | **Pour tout choix non décidé** | Prendre l'option la plus simple, la noter ici et la mettre dans le rapport avec une recommandation. |
@@ -1069,4 +1069,32 @@ libellé du seuil de stock bas coupé. 458 tests.
   Code ; Bindings → Add binding → KV namespace) + rappel : limites gratuites pour tout le compte, **revoir le
   relais à 50 boutiques**. Le relais n'est pas encore déployé (Cloudflare : à faire par le propriétaire).
 - Tests : 463 (dont 6 nouveaux sur la synchronisation et le point de départ, et 2 sur le relais).
+- **Publiée** le 22/11 : Release `v0.33.0-n96`, APK universel 17,7 Mo, signature vérifiée. Rapport court envoyé
+  (question (a)/(b) : base sous 1 Ko par vente — recommandation (a), garder ainsi).
+
+### Version 0.34.0 — partie B2 (réponses à l'audit)
+- **Chiffres** : « Tableau » et « Rapports » réunis dans une page « Chiffres », 2 onglets : **Résumé** (l'ancien
+  Tableau) et **À envoyer** (l'ancien Rapports : jour par jour, image, Excel). Menu, accueil (carte
+  « Aujourd'hui ») et visite d'Afi pointent vers « Chiffres » (la phrase 039 « Voici le tableau du patron »
+  reste juste).
+- **Résumé du soir** : quand un VENDEUR ferme la caisse, le patron voit à l'ouverture de son application (ou
+  après une synchronisation) une fenêtre : ventes et bénéfice de ce jour-là, dépenses, écart de caisse de la
+  journée, stock bas ; une seule fois (réglage local `resume_soir.vu`), seulement si la fermeture a moins de
+  36 h. Bouton **Envoyer sur WhatsApp** (WhatsApp choisit le destinataire ; RIEN n'est envoyé seul). Si le
+  relais est branché, le résumé part aussi en notification (type `resume_soir`, titre « Zéro Perte : résumé du
+  soir » dans le relais) sans bandeau rouge ni voix. Le patron qui ferme lui-même ne reçoit pas de résumé.
+- **Commander** : Chiffres → Stock bas → **Commander sur WhatsApp** → choisir un fournisseur enregistré (avec
+  numéro) ou « Choisir dans WhatsApp » ; le message liste les produits en stock bas (« - Sucre : »), le patron
+  ajoute les quantités. *Décision prise (la plus simple)* : pas de quantité proposée ni de lien produit →
+  fournisseur ; à revoir si le propriétaire le souhaite.
+- **Crédits en retard** : client qui doit encore et n'a rien remboursé depuis **14 jours** (ou, s'il n'a jamais
+  remboursé, depuis son premier crédit). Bandeau rouge dans Clients (patron seul) → page « Crédits en retard » →
+  **Rappeler** (un toucher) ouvre WhatsApp avec le rappel déjà écrit ; coche verte ensuite. *Décision prise (la
+  plus simple)* : 14 jours, sans date d'échéance par client.
+- Code : `lib/ecrans/patron/chiffres.dart`, `resume_soir.dart`, `commande.dart`, `lib/ecrans/credit/retards.dart`,
+  `lib/domaine/messages_whatsapp.dart`, `lib/domaine/dates.dart` (dates en français, utilisées aussi par l'état).
+- Tests : `test/ecrans/partie_b2_test.dart` (crédits en retard, Commander, résumé du soir et Chiffres sur
+  6 tailles), synchronisation : résumé du soir d'un appareil à l'autre. Captures 4 tailles :
+  `test_captures/partie_b2_captures_test.dart`. Guides de mise en service mis à jour (Chiffres, résumé du soir,
+  Commander, crédits en retard).
 

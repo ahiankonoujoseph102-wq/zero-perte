@@ -9,12 +9,11 @@ import '../vente/devis.dart';
 import '../vente/retour.dart';
 import 'arrivages.dart';
 import 'produits.dart';
-import 'rapports.dart';
+import 'chiffres.dart';
 import 'fournisseurs.dart';
 import 'inventaire.dart';
 import 'sauvegarde.dart';
 import 'synchronisation.dart';
-import 'tableau.dart';
 import 'vendeurs.dart';
 
 /// Une entrée du menu du patron.
@@ -45,13 +44,6 @@ final List<EntreePatron> entreesPatron = [
     (etat) => PageProduits(etat: etat),
   ),
   EntreePatron(
-    'rapports',
-    Icons.summarize_rounded,
-    'Rapports',
-    CouleursZp.argentEntre,
-    (etat) => PageRapports(etat: etat),
-  ),
-  EntreePatron(
     'devis',
     Icons.request_quote_rounded,
     'Devis',
@@ -66,11 +58,11 @@ final List<EntreePatron> entreesPatron = [
     (etat) => PageRetours(etat: etat),
   ),
   EntreePatron(
-    'tableau',
+    'chiffres',
     Icons.insights_rounded,
-    'Tableau',
+    'Chiffres',
     CouleursZp.argentEntre,
-    (etat) => PageTableau(etat: etat),
+    (etat) => PageChiffres(etat: etat),
   ),
   EntreePatron(
     'arrivages',
@@ -143,10 +135,9 @@ class EspacePatron extends StatelessWidget {
     // répétées ici (une seule façon d'y aller, moins de confusion).
     final menuAGauche = MediaQuery.sizeOf(context).width >= 840;
     const dansLeMenu = {
-      'rapports',
+      'chiffres',
       'devis',
       'retours',
-      'tableau',
       'arrivages',
       'vendeurs',
       'inventaire',

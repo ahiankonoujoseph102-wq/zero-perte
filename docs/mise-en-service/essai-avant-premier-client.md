@@ -17,8 +17,8 @@ d'activation de test (action 4, nom « TEST … »).
 | 9 | Sur A : Gestion → **Appareils et Drive** → Connecter le compte Google de la boutique | L'adresse du compte et « Dernière fois : … » s'affichent | Message « 10 » ou « DEVELOPER_ERROR » : voir partie A4 de `etapes-proprietaire.md` |
 | 10 | Sur B : installer, « J'ai déjà une boutique : la retrouver », même compte Google | B récupère la boutique (produits, savon à 450 F) | Vérifier que le compte Google est le même sur A et B |
 | 11 | Sur B : entrer avec le code du vendeur « Test », vendre 2 savons | Vente faite, reçu n° B-000001 | Le vendeur ne doit voir ni bénéfice ni prix d'achat |
-| 12 | Sur A : attendre 1 à 2 minutes (ou rouvrir l'application) | La vente de B apparaît dans Tableau / « Aujourd'hui » | Les 2 appareils ont-ils Internet ? Synchronisation : Gestion → Appareils et Drive |
-| 13 | Sur B : Ma caisse → **Fermer la caisse**, compter 0 F de moins que prévu | B ne voit aucun chiffre attendu (comptage à l'aveugle) ; A voit l'écart dans « Caisses fermées » | — |
+| 12 | Sur A : attendre 1 à 2 minutes (ou rouvrir l'application) | La vente de B apparaît dans Chiffres / « Aujourd'hui » | Les 2 appareils ont-ils Internet ? Synchronisation : Gestion → Appareils et Drive |
+| 13 | Sur B : Ma caisse → **Fermer la caisse**, compter 0 F de moins que prévu | B ne voit aucun chiffre attendu (comptage à l'aveugle) ; A voit l'écart dans « Caisses fermées » et, à l'ouverture, la fenêtre **Résumé du soir** | — |
 | 14 | Sur A : Gestion → **Sauvegarde** → créer une sauvegarde | Fichier proposé au partage (Drive, WhatsApp…) | Code patron demandé : c'est normal |
 | 15 | Fin | Désinstaller les 2 applications d'essai | — |
 

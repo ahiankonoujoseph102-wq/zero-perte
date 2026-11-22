@@ -7,8 +7,10 @@ import 'package:flutter/foundation.dart';
 import '../domaine/argent.dart';
 import '../domaine/boutique.dart';
 import '../domaine/catalogue.dart';
+import '../domaine/dates.dart';
 import '../domaine/inventaire.dart';
 import '../domaine/licence.dart';
+import '../domaine/messages_whatsapp.dart';
 import '../domaine/operation.dart';
 import '../domaine/panier.dart';
 import '../domaine/quantites.dart';
@@ -744,7 +746,33 @@ class EtatApplication extends ChangeNotifier {
         );
       }
     }
+    // Résumé du soir : part en notification au patron (relais et Firebase
+    // branchés) ; sinon il le verra à l'ouverture de son application.
+    if (!estPatron && !estDemo && transportAlertes != null) {
+      unawaited(_envoyerResumeSoir(f));
+    }
     return f;
+  }
+
+  Future<void> _envoyerResumeSoir(FermetureCaisse f) async {
+    try {
+      final r = await rapport(Periode.jour);
+      final t = await tableau(Periode.jour);
+      final resume = ResumeSoir(
+        fermetureId: f.id,
+        heure: f.heure,
+        boutique: config.nom,
+        date: '',
+        ventes: r.ventes,
+        nombreVentes: r.nombreVentes,
+        benefice: r.benefice,
+        depenses: r.depenses,
+        ecart: f.ecartTotal,
+        fermePar: nomDe(f.auteurId),
+        stockBas: [for (final (p, _, _) in t.stockBas) p.nom],
+      );
+      await alerter(typeResumeSoir, 'Résumé du soir : ${resume.texteCourt()}');
+    } catch (_) {}
   }
 
   // ---------------------------------------------------------------------------
@@ -1031,6 +1059,54 @@ class EtatApplication extends ChangeNotifier {
     );
   }
 
+  static const _cleResumeVu = 'resume_soir.vu';
+
+  /// Résumé du soir pour le patron : la dernière fermeture de caisse faite par
+  /// un autre que lui, pas encore vue, de moins de 36 heures. Nul sinon.
+  Future<ResumeSoir?> resumeDuSoir() async {
+    if (!estPatron || estDemo) return null;
+    final fermetures = await journal.fermetures(limite: 20);
+    final f = fermetures.firstOrNull;
+    if (f == null || f.auteurId == patron?.id) return null;
+    final vu =
+        int.tryParse(await journal.lireParametre(_cleResumeVu) ?? '') ?? 0;
+    if (f.heure <= vu) return null;
+    final m = maintenant();
+    if (m.millisecondsSinceEpoch - f.heure > 36 * 3600 * 1000) return null;
+    final jour = DateTime.fromMillisecondsSinceEpoch(f.heure);
+    final debutJour = DateTime(jour.year, jour.month, jour.day);
+    final decalage = debutJour
+        .difference(DateTime(m.year, m.month, m.day))
+        .inDays;
+    final r = await rapport(Periode.jour, decalage: decalage);
+    final ecart = fermetures
+        .where((x) {
+          final d = DateTime.fromMillisecondsSinceEpoch(x.heure);
+          return d.year == jour.year &&
+              d.month == jour.month &&
+              d.day == jour.day;
+        })
+        .fold<int>(0, (s, x) => s + x.ecartTotal);
+    final t = await tableau(Periode.jour);
+    return ResumeSoir(
+      fermetureId: f.id,
+      heure: f.heure,
+      boutique: config.nom,
+      date: dateEnFrancais(debutJour),
+      ventes: r.ventes,
+      nombreVentes: r.nombreVentes,
+      benefice: r.benefice,
+      depenses: r.depenses,
+      ecart: ecart,
+      fermePar: nomDe(f.auteurId),
+      stockBas: [for (final (p, _, _) in t.stockBas) p.nom],
+    );
+  }
+
+  /// Le patron a vu ce résumé : il ne s'affiche plus.
+  Future<void> marquerResumeVu(ResumeSoir r) =>
+      journal.ecrireParametre(_cleResumeVu, '${r.heure}');
+
   /// Vrai pour la boutique de démonstration (voir `app/demo.dart`).
   bool estDemo = false;
 
@@ -1297,6 +1373,22 @@ class EtatApplication extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Crédits en retard (voir [joursRetardCredit]) : le client et le nombre de
+  /// jours sans rien payer, le plus ancien d'abord.
+  Future<List<(Client, int)>> creditsEnRetard() async {
+    final refs = await journal.referencesCredits();
+    final m = maintenant().millisecondsSinceEpoch;
+    final l = <(Client, int)>[];
+    for (final c in await clients()) {
+      final r = refs[c.id];
+      if (r == null || c.solde <= 0) continue;
+      final jours = (m - r) ~/ Duration.millisecondsPerDay;
+      if (jours >= joursRetardCredit) l.add((c, jours));
+    }
+    l.sort((a, b) => b.$2.compareTo(a.$2));
+    return l;
+  }
+
   /// Message de rappel envoyé au client sur WhatsApp.
   String messageRappel(Client c) =>
       'Bonjour ${c.nom}, petit rappel de ${config.nom} : il reste '
@@ -1532,13 +1624,20 @@ class EtatApplication extends ChangeNotifier {
     try {
       final depuis =
           int.tryParse(await journal.lireParametre('relais.depuis') ?? '') ?? 0;
-      final nouvelles = await t.relever(jeton, depuis);
-      if (nouvelles.isEmpty) return 0;
-      _alertes.addAll(nouvelles);
+      final recues = await t.relever(jeton, depuis);
+      if (recues.isEmpty) return 0;
       await journal.ecrireParametre(
         'relais.depuis',
-        '${nouvelles.map((a) => a.heure).reduce((a, b) => a > b ? a : b)}',
+        '${recues.map((a) => a.heure).reduce((a, b) => a > b ? a : b)}',
       );
+      // Le résumé du soir n'est pas une alerte grave : il s'affiche à part
+      // (après la synchronisation), sans bandeau rouge ni voix.
+      final nouvelles = [
+        for (final a in recues)
+          if (a.type != typeResumeSoir) a,
+      ];
+      if (nouvelles.isEmpty) return 0;
+      _alertes.addAll(nouvelles);
       await services.voix.dire('Alerte. ${nouvelles.last.message}');
       notifyListeners();
       return nouvelles.length;

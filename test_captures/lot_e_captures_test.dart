@@ -109,7 +109,8 @@ void main() {
       // Rapports (mois) et liste des retours.
       await revenirAccueil(tester);
       await ouvrirEspacePatron(tester);
-      await toucher(tester, find.byKey(const Key('patron-rapports')));
+      await ouvrirPagePatron(tester, 'chiffres');
+      await toucher(tester, find.byKey(const Key('onglet-rapport')));
       await toucher(tester, find.byKey(const Key('rapport-semaine')));
       await attendre(tester, tours: 12);
       await capture('14_rapport_semaine_${e.key}');

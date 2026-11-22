@@ -410,7 +410,8 @@ void main() {
     );
     await afficherApp(tester, env.etat);
     await ouvrirEspacePatron(tester);
-    await ouvrirPagePatron(tester, 'rapports');
+    await ouvrirPagePatron(tester, 'chiffres');
+    await toucher(tester, find.byKey(const Key('onglet-rapport')));
     await attendre(tester, tours: 10);
     String montant(String cle) =>
         tester.widget<Text>(find.byKey(Key(cle))).data!;
@@ -481,7 +482,8 @@ void main() {
 
       await revenirAccueil(tester);
       await ouvrirEspacePatron(tester);
-      await ouvrirPagePatron(tester, 'rapports');
+      await ouvrirPagePatron(tester, 'chiffres');
+      await toucher(tester, find.byKey(const Key('onglet-rapport')));
       await attendre(tester, tours: 10);
       expect(tester.takeException(), isNull);
       await toucher(tester, find.byKey(const Key('rapport-mois')));

@@ -184,7 +184,7 @@ void main() {
         find.byType(MaterialApp),
         matchesGoldenFile('captures/patron_${e.key}.png'),
       );
-      await toucher(tester, find.byKey(const Key('patron-tableau')));
+      await toucher(tester, find.byKey(const Key('patron-chiffres')));
       await attendre(tester, tours: 10);
       await expectLater(
         find.byType(MaterialApp),

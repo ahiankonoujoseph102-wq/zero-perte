@@ -172,9 +172,9 @@ void main() {
 
       await revenirAccueil(tester);
       if (grand) {
-        await toucher(tester, find.byKey(const Key('menu-tableau')));
+        await toucher(tester, find.byKey(const Key('menu-chiffres')));
       } else {
-        await toucher(tester, find.byKey(const Key('accueil-tableau')));
+        await toucher(tester, find.byKey(const Key('accueil-chiffres')));
       }
       await attendre(tester, tours: 10);
       await capture('05_tableau_${e.key}');

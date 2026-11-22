@@ -793,6 +793,20 @@ class JournalLocal implements ReglagesLocaux {
   }
 
   /// Total que tous les clients doivent encore.
+  /// Date de référence de chaque client qui doit de l'argent : son dernier
+  /// remboursement, ou, s'il n'a jamais remboursé, son premier achat à crédit.
+  /// Sert à repérer les crédits en retard.
+  Future<Map<String, int>> referencesCredits() async => {
+    for (final l in await _db.rawQuery(
+      'SELECT m.client_id AS c, '
+      "MAX(CASE WHEN m.nature = 'remboursement' THEN o.heure_telephone END) AS r, "
+      'MIN(o.heure_telephone) AS p '
+      'FROM mouvements_credit m CROSS JOIN operations o ON o.id = m.operation_id '
+      'GROUP BY m.client_id HAVING SUM(m.montant) > 0',
+    ))
+      l['c'] as String: (l['r'] as int?) ?? (l['p'] as int),
+  };
+
   Future<int> totalCredits() async =>
       ((await _db.rawQuery('SELECT SUM(montant) AS s FROM mouvements_credit'))
               .first['s']

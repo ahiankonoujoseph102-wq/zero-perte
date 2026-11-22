@@ -85,6 +85,7 @@ void main() {
       verifier('accueil');
       // Aucune page du patron.
       for (final cle in [
+        'chiffres',
         'tableau',
         'rapports',
         'arrivages',

@@ -289,7 +289,8 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 100));
 
         expect(relais.recues, isEmpty);
-        expect(await e.nombreAlertesEnAttente(), 4);
+        // + le résumé du soir (fermeture par un vendeur) : 5 messages.
+        expect(await e.nombreAlertesEnAttente(), 5);
 
         // L'application est fermée puis rouverte : rien n'est perdu.
         final rouvert = await EtatApplication.charger(
@@ -299,30 +300,32 @@ void main() {
         rouvert.transportAlertes = relais;
         heure = heure.add(const Duration(minutes: 30));
         rouvert.maintenant = () => heure;
-        expect(await rouvert.nombreAlertesEnAttente(), 4);
+        expect(await rouvert.nombreAlertesEnAttente(), 5);
         // Toujours pas de réseau : rien ne part, rien ne se perd.
         expect(await rouvert.envoyerAlertesEnAttente(), 0);
-        expect(await rouvert.nombreAlertesEnAttente(), 4);
+        expect(await rouvert.nombreAlertesEnAttente(), 5);
 
         // Le réseau revient.
         relais.enPanne = false;
-        expect(await rouvert.envoyerAlertesEnAttente(), 4);
+        expect(await rouvert.envoyerAlertesEnAttente(), 5);
         expect(await rouvert.nombreAlertesEnAttente(), 0);
         expect(relais.recues.map((r) => r.$2.type).toList(), [
           'code',
           'annulation',
           'retour',
           'ecart',
+          'resume_soir',
         ]);
         expect(relais.recues.first.$2.message, contains('5 codes faux'));
         expect(
           relais.recues.first.$2.message,
           contains('envoyée au retour du réseau'),
         );
-        expect(relais.recues.last.$2.message, contains('il manque'));
+        expect(relais.recues[3].$2.message, contains('il manque'));
+        expect(relais.recues.last.$2.message, startsWith('Résumé du soir'));
         // Pas envoyées deux fois.
         expect(await rouvert.envoyerAlertesEnAttente(), 0);
-        expect(relais.recues, hasLength(4));
+        expect(relais.recues, hasLength(5));
       });
 
       // Le patron les reçoit (bandeau + voix).
@@ -335,6 +338,7 @@ void main() {
           await etat.releverAlertes();
         },
       );
+      // Le résumé du soir n'est pas une alerte grave : pas de bandeau.
       expect(patron.etat.alertes, hasLength(4));
     },
   );

@@ -343,7 +343,11 @@ Future<void> boutiqueInstallee(EtatApplication etat) async {
 }
 
 /// Écran d'entrée : taper son code puis « OK ».
-Future<void> taperCode(WidgetTester tester, String code) async {
+Future<void> taperCode(
+  WidgetTester tester,
+  String code, {
+  bool fermerResumeSoir = true,
+}) async {
   for (final c in code.split('')) {
     await tester.tap(find.byKey(Key('code-$c')));
     await tester.pump();
@@ -355,6 +359,15 @@ Future<void> taperCode(WidgetTester tester, String code) async {
       () => Future<void>.delayed(const Duration(milliseconds: 150)),
     );
     await attendre(tester);
+  }
+  // Le patron qui entre voit le résumé du soir (vérifié dans
+  // partie_b2_test.dart) ; les autres tests le referment.
+  if (fermerResumeSoir) {
+    await attendre(tester, tours: 4);
+    if (find.byKey(const Key('bouton-resume-vu')).evaluate().isNotEmpty) {
+      await tester.tap(find.byKey(const Key('bouton-resume-vu')));
+      await attendre(tester);
+    }
   }
 }
 

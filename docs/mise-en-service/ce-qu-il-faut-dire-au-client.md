@@ -5,8 +5,11 @@
   dit les billets et pièces à rendre.
 - **Savoir où va l'argent** : la caisse est ouverte le matin et fermée le soir ; le vendeur compte **sans
   voir** le montant attendu ; le patron voit l'**écart** (manque ou surplus) tout de suite.
-- **Ses chiffres du jour** sur l'accueil du patron : ventes, bénéfice estimé, crédits clients ; le Tableau
-  pour la semaine et le mois, les produits qui rapportent, le **stock bas**.
+- **Ses chiffres du jour** sur l'accueil du patron : ventes, bénéfice estimé, crédits clients ; la page
+  **Chiffres** pour la semaine et le mois, les produits qui rapportent, le **stock bas**, et le **résumé du
+  soir** quand un vendeur ferme la caisse.
+- **WhatsApp, sans rien envoyer à sa place** : commander au fournisseur avec la liste déjà écrite, rappeler
+  un client en retard de paiement en un toucher, envoyer le résumé du soir. Le patron relit et envoie.
 - **Le crédit sous contrôle** : chaque client a sa fiche, un plafond, l'historique ; reçu de remboursement.
 - **Ses produits et ses prix** : il ajoute un produit, change un prix (l'ancien est gardé), masque un produit
   qui ne se vend plus — seul le patron peut le faire.
