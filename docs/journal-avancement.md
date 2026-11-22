@@ -989,3 +989,13 @@ fournisseurs depuis le stock bas, rappel automatique des crédits.
   ensemble : 100 000 lectures, 1 000 écritures, 1 000 listes par jour). Avec une consultation par minute et
   par patron, cela tient environ 70 boutiques. **À 50 boutiques, revoir le relais** (alertes poussées par
   Firebase, consultations plus espacées).
+
+## Ordre décidé par le propriétaire (22/11, après le rapport « pendant l'attente »)
+1. 0.31.0 (voix) — priorité absolue.
+2. PRIORITÉ 1 : produits et prix après l'installation (Gestion, patron seul ; prix au journal avec ancien et
+   nouveau prix ; masquer sans effacer l'historique ; image, unités, prix d'achat, stock de départ, seuil).
+3. PRIORITÉ 2 : alléger les données (objectif < 1 Ko par vente stockée, < 5 Mo pour un nouvel appareil
+   sur une boutique d'un an), sans casser la chaîne du journal ni la synchronisation.
+4. 0.32 (réponses à l'audit), puis correction du relais Cloudflare.
+Travail hors 0.31.0 sur la branche `claude/suite-apres-031` (liste : `docs/reste-a-faire.md` sur cette
+branche).
