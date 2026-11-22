@@ -9,8 +9,8 @@ Il est mis à jour **à la fin de chaque étape**.
 
 | | |
 |---|---|
-| **Dernière étape terminée** | **0.32.0** : version de mise en service (Produits et prix, accélération, stockage compressé, message de mise à jour) |
-| **Version publiée** | 0.32.0 (Android et Windows, voir les Releases GitHub) |
+| **Dernière étape terminée** | **0.33.0** : synchronisation compressée, point de départ pour un nouvel appareil, relais « dernière alerte » |
+| **Version publiée** | 0.33.0 (Android et Windows, voir les Releases GitHub) |
 | **Prochaine étape** | 0.31.1 (4 phrases refaites le 23/11 après 8 h 12), puis priorités 1 et 2 (branche `claude/suite-apres-031`), 0.32, relais |
 | **Méthode** | Branche de travail, tests + captures sur 4 tailles, puis fusion dans `main` (= publication). Rien de non testé sur `main`. |
 | **Pour tout choix non décidé** | Prendre l'option la plus simple, la noter ici et la mettre dans le rapport avec une recommandation. |
@@ -1036,3 +1036,37 @@ pour le PC) ; (7) visite d'Afi à vitesse réelle sur 4 tailles ; (8) relais et 
 n'est affiché (relais activé seulement avec son adresse, notifications sans configuration = « non » silencieux).
 Corrigés pendant les vérifications : fermetures de caisse lues avec l'ancien format (stockage compressé),
 libellé du seuil de stock bas coupé. 458 tests.
+- **Publiée** le 22/11 : Release `v0.32.0-n94`, APK universel 17,7 Mo, signature SHA-1 vérifiée sur le fichier
+  publié (49:27:0C:…:B1:A3). Rapport A6 envoyé.
+
+### Version 0.33.0 — partie B1 (alléger les données) et B3 (relais)
+- **Synchronisation compressée** : fichiers `ops-….json.gz` seulement quand TOUS les appareils inscrits
+  annoncent `format_sync` 2 (nouveau champ du fichier `appareil-….json`, écrit par la 0.33). Tant qu'un appareil
+  plus ancien est inscrit : fichiers en clair, et chaque appareil récent remet en clair ses propres `.gz`.
+  Fichier abîmé (compressé ou non) : refusé avec un message, rien n'est écrit.
+- **Vérification de la chaîne** à l'arrivée seulement depuis la dernière opération connue (avant : tout
+  l'historique à chaque synchronisation).
+- **Point de départ** (`point-de-depart.json.gz`, refait au plus une fois par semaine, seulement quand tous les
+  appareils le comprennent) : TOUT l'historique, sans résumé ni perte ; les numéros, empreintes et identifiants
+  répétés ne sont pas écrits mais recalculés, puis la chaîne recalculée doit retomber sur la dernière empreinte
+  de chaque téléphone (sinon refus). Un nouvel appareil lit ce fichier puis seulement les fichiers plus récents.
+- **Mesures, boutique d'un an (73 936 opérations)** : première synchronisation d'un nouvel appareil
+  **73,6 Mo → 3,1 Mo** (objectif : moins de 5 Mo) ; fichiers de synchronisation 73,6 Mo → 10,4 Mo, soit
+  **147 octets par vente** envoyés (objectif : moins de 1 Ko) ; fabriquer le point de départ 3 s, le relire et
+  tout vérifier 4,7 s (machine de test).
+- **Base sur l'appareil** : 1 317 octets par vente (0.31 : environ 1,7 Ko). Essai sur une copie : reconstruire
+  `mouvements_stock` et `ventes` « sans rowid » donnerait 79,1 Mo, soit 1,08 Ko par vente (1,6 s). Passer sous
+  1 Ko demanderait de changer la façon dont l'historique est rangé. **Décision prise (la plus simple) : pas de
+  reconstruction des tables chez les clients dans cette version** ; question posée au propriétaire dans le
+  rapport, avec ma recommandation.
+- **Cas noté** : un appareil installé avec une ANCIENNE version (0.32 ou avant) après le passage aux fichiers
+  compressés ne lit pas les `.gz` ; dès qu'il s'inscrit, les appareils récents remettent leurs fichiers en clair
+  à leur synchronisation suivante, puis il reçoit tout. Conseil : toujours installer la dernière version.
+- **B3, relais** (`relais/worker.js`) : case « dernière alerte » écrite à chaque alerte ; une consultation sans
+  nouveauté = 1 lecture et aucune liste ; au-delà de 100 alertes, les pages suivantes sont lues (la plus
+  récente n'est jamais perdue). Partie B de `docs/etapes-proprietaire.md` refaite avec les menus de novembre
+  2026 (Workers KV → Create instance ; Workers & Pages → Create application → Start with Hello World! ; Edit
+  Code ; Bindings → Add binding → KV namespace) + rappel : limites gratuites pour tout le compte, **revoir le
+  relais à 50 boutiques**. Le relais n'est pas encore déployé (Cloudflare : à faire par le propriétaire).
+- Tests : 463 (dont 6 nouveaux sur la synchronisation et le point de départ, et 2 sur le relais).
+
