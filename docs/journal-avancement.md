@@ -1004,3 +1004,9 @@ branche).
   0 dB (risque de saturation) et **037** a une pause de 1,5 s au milieu de la phrase → seront refaites. Script :
   pauses de plus de 0,6 s dans une phrase ramenées à 0,35 s, volume plafonné, option « refaire » (action 6).
   Relance programmée le 23/11 à 8 h 12 (020, 037, 049, 050 : un seul lot).
+- **22/11, 8 h 24 — INCIDENT, publication bloquée** : la fabrication (action 2) échoue à « Préparer la clé de
+  signature » : `base64: error: invalid input`. Le contenu du secret `ZP_CLE_SIGNATURE` n'est plus la clé
+  chiffrée (il l'était encore à 3 h 42, même workflow). Hypothèse : remplacé par erreur lors du changement de la
+  clé Gemini. Claude ne modifie aucun secret : au propriétaire de remettre la valeur. Copie de secours chiffrée
+  dans le coffre privé `zero-perte-coffre`, dossier `cle-signature/`. Sans la bonne clé, AUCUNE mise à jour ne
+  peut être installée sur les téléphones des clients (Android exige la même signature).
