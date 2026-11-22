@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zero_perte/services/mise_a_jour.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:zero_perte/services/google.dart' show ConnexionStockage;
@@ -172,6 +173,9 @@ Future<Environnement> environnementDeTest(
   StockageMemoire? drive,
   int Function()? horloge,
 }) async {
+  // Pas d'Internet dans les tests : aucune recherche de mise à jour.
+  verifierMisesAJour = false;
+  VerificateurMiseAJour.instance.fixer(null);
   final leDrive = drive ?? StockageMemoire();
   final fichiers = <Uint8List>[];
   final voix = FausseVoix(francais: voixFrancaise);

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:path/path.dart' as chemins;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
@@ -17,6 +18,7 @@ import 'ecrans/accueil_vendeur.dart';
 import 'ecrans/assistant/assistant_installation.dart';
 import 'ecrans/code_patron.dart';
 import 'ecrans/connexion.dart';
+import 'services/mise_a_jour.dart';
 import 'services/aide.dart';
 import 'services/google.dart';
 import 'services/google_pc.dart' show connexionPcConfiguree;
@@ -355,13 +357,57 @@ class PiedDePage extends StatelessWidget {
             final texte = infos == null
                 ? 'Zéro Perte'
                 : 'Zéro Perte · version ${infos.version} (${infos.buildNumber})';
+            final version = Text(
+              texte,
+              key: const Key('texte-version'),
+              style: style,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            );
+            if (infos == null) return Flexible(child: version);
+            // Une version plus récente est publiée : on le dit, avec le lien.
+            // Rien ne s'installe tout seul ; sans Internet, rien ne change.
             return Flexible(
-              child: Text(
-                texte,
-                key: const Key('texte-version'),
-                style: style,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              child: FutureBuilder<InfosMiseAJour?>(
+                future: VerificateurMiseAJour.instance.verifier(
+                  int.tryParse(infos.buildNumber) ?? 0,
+                ),
+                builder: (context, s) {
+                  final m = s.data;
+                  if (m == null) return version;
+                  return InkWell(
+                    key: const Key('bouton-mise-a-jour'),
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: () =>
+                        launchUrl(m.lien, mode: LaunchMode.externalApplication),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.system_update_rounded,
+                          size: 18,
+                          color: CouleursZp.marque,
+                        ),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            'Nouvelle version disponible (${m.version}) : '
+                            'la mettre à jour',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: CouleursZp.marque,
+                              decoration: TextDecoration.underline,
+                              decorationColor: CouleursZp.marque,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             );
           },
