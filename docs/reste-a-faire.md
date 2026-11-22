@@ -26,12 +26,12 @@ Relu : `docs/journal-avancement.md` et `docs/etapes-proprietaire.md`. Ordre = pr
 | # | Quoi | Où |
 |---|---|---|
 | A | **Essai A5** : connecter le compte Google de la boutique sur un vrai téléphone, puis sur le PC (synchronisation Drive) | `etapes-proprietaire.md` partie A5 |
-| B | **Cloudflare** (alertes graves et résumé du soir en notification) : relais corrigé, prêt à déployer | partie B |
+| B | ✅ (22/11) **Cloudflare** : relais déployé et vérifié, `ZP_RELAIS_URL` en place. Reste : essai B5 sur 2 vrais téléphones | partie B |
 | C | **Firebase** (alertes même application fermée) | partie F |
 | D | Microsoft Store (supprime l'avertissement Windows, gratuit) — facultatif | partie E |
 | E | Valider les guides de mise en service, former les agents, imprimer l'aide-mémoire | `docs/mise-en-service/` |
 | F | Essai sur vrais appareils de la 0.31.0 : voix d'Afi sur Android 8 et sur PC Windows, partage WhatsApp | après publication |
-| G | Répondre aux questions (a)/(b) du rapport | rapport |
+| G | ✅ (22/11) Questions (a)/(b) : (a), base gardée telle quelle | rapport |
 | H | Plus tard : certificat de signature Windows (payant) si le Store n'est pas choisi | journal, partie Windows |
 
 Déjà fait et retiré de la liste : jeton des codes (C), pages publiques (G), Google Cloud A1–A4 et A6, clé

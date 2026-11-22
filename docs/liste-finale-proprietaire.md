@@ -6,7 +6,10 @@ Le guide détaillé, avec chaque bouton, est `docs/etapes-proprietaire.md` (sur 
 
 Rien de ceci n'est un secret, **sauf** le fichier `.json` de Firebase (étape 2c). Ne l'envoyez à personne, même pas à moi.
 
-## 1. Cloudflare — alertes graves en moins d'une minute (environ 15 minutes, sur téléphone)
+## 1. Cloudflare — alertes graves en moins d'une minute — ✅ FAIT (22 novembre 2026)
+
+✅ Relais `https://zero-perte-relais.academyjoseph71.workers.dev` en service, vérifié. Reste seulement l'essai 7 ci-dessous sur 2 vrais téléphones.
+
 Guide : partie **B**. Les menus sont ceux de novembre 2026, en anglais.
 
 1. **Créer le compte** : https://dash.cloudflare.com/sign-up → compte gratuit → confirmer l'adresse e-mail.

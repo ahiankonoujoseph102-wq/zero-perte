@@ -75,7 +75,13 @@ Le code est prêt : la connexion se fait par le navigateur du PC.
 
 ---
 
-## B. Cloudflare — relais gratuit pour les alertes graves
+## B. Cloudflare — relais gratuit pour les alertes graves — ✅ FAIT (22 novembre 2026)
+
+✅ **Fait par le propriétaire** : espace KV `ALERTES`, Worker `zero-perte-relais` (contenu de
+`relais/worker.js`), liaison KV `ALERTES`, variable GitHub `ZP_RELAIS_URL` =
+`https://zero-perte-relais.academyjoseph71.workers.dev`. Vérifié par Claude Code le 22/11 sans rien écrire
+(adresse inconnue → 404, sans jeton → 401, lecture avec un jeton d'essai → 200 et liste vide, donc la
+liaison KV marche). Les étapes ci-dessous restent pour mémoire et pour une **mise à jour du relais**.
 
 Ce qu'on crée : un petit programme gratuit (« Worker ») qui transmet au patron, en moins d'une minute, les
 alertes graves : caisse fermée avec 1 000 F ou plus de manque, vente de 5 000 F ou plus annulée, 5 codes faux.
