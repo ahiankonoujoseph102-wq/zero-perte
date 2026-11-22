@@ -42,6 +42,97 @@
    "duree_ms": 5950,
    "bouche": "00035787677896225431000000000000000000045863243684473245435544210000000023465575310000000005878741102224667210255343100",
    "forme": "mmmaoooeeeeoaomeaaaeemmmmmmmmmmmmmmmmmmoooooaooooooooeoooeaaaaeemmmmmmmmeoaooooeeemmmmmmmmmeeeaoeemmeaeeeeammmeaooaommm"
+  },
+  "006": {
+   "fichier": "006.mp3",
+   "texte": "Ma caisse montre l'argent de la journée.",
+   "duree_ms": 2600,
+   "bouche": "0004786521465322100058886223677644567687764645653100",
+   "forme": "mmmaooaomeeaoeeeemmmooooomeeooaaaeeoooooaaeaeaooommm"
+  },
+  "007": {
+   "fichier": "007.mp3",
+   "texte": "Clients garde le crédit de chaque client.",
+   "duree_ms": 2950,
+   "bouche": "00012576577762100000033775578973337458647456652101266762100",
+   "forme": "mmmeeooooooooammmmmmaoaoaeoooooeeeooeooaoeeeeamemeeooooommm"
+  },
+  "008": {
+   "fichier": "008.mp3",
+   "texte": "Et Gestion est réservé au patron : produits, vendeurs, sauvegarde.",
+   "duree_ms": 6100,
+   "bouche": "00037885558443113774100000686785776578973562225210000000000000012354223445678962100002347652666667631000000236643653211000",
+   "forme": "mmmaoooeeeaeeemeeooommmmmmaoaaoeeaeoeooomaomeeoammmmmmmmmmmmmmmeaaooaeooooooooommmmmmaaaoooaoooooooaemmmmmmeeeoaaaaeaoammm"
+  },
+  "009": {
+   "fichier": "009.mp3",
+   "texte": "Commençons une vente. Je touche Vendre.",
+   "duree_ms": 3650,
+   "bouche": "0002678985676788763454310231000000000000034631167445431000013357543221000",
+   "forme": "mmmeoooaoeeeeoooooeaaaommeeemmmmmmmmmmmmaeeoomeooeeeeemmmmmaaeaaoooeaemmm"
+  },
+  "010": {
+   "fichier": "010.mp3",
+   "texte": "Chaque case est un produit, avec son prix. Je choisis le riz.",
+   "duree_ms": 4650,
+   "bouche": "000256872104788558526743475443100000026475456533321000000000000000000035766478766889986652100",
+   "forme": "mmmeeeeammmeaaaeeooeaoaeaooeaommmmmmmaooooeeaoaeeammmmmmmmmmmmmmmmmmmmeeaeeeoaaeeoooooaaoemmm"
+  },
+  "011": {
+   "fichier": "011.mp3",
+   "texte": "Je prends un kilo.",
+   "duree_ms": 1500,
+   "bouche": "000457721147621005531165652100",
+   "forme": "mmmeeaomaeeaammmmaaaeeooooammm"
+  },
+  "012": {
+   "fichier": "012.mp3",
+   "texte": "Le client en veut deux. Je touche plus.",
+   "duree_ms": 2700,
+   "bouche": "000668622222678664377347421000000000044572264310232100",
+   "forme": "mmmoooomeeoaooaoooeoooeoommmmmmmmmmmmeeeomeaeeemaoammm"
+  },
+  "013": {
+   "fichier": "013.mp3",
+   "texte": "Le total se calcule tout seul. Pas besoin de calculatrice.",
+   "duree_ms": 4100,
+   "bouche": "0003778622310367867772666226632777565321000000000005896887687725641166623333662100",
+   "forme": "mmmeoooameoomaaaoeeeoaeoameoooeoeeeaooaammmmmmmmmmmaaoooeeoooooeoemeooameeaeeeemmm"
+  },
+  "014": {
+   "fichier": "014.mp3",
+   "texte": "Maintenant, je touche Encaisser.",
+   "duree_ms": 2350,
+   "bouche": "00056641024688310024585227543310006522566754100",
+   "forme": "mmmooaommoooaaammmaeeaameoaeeeammmaameeaeeeoemm"
+  },
+  "015": {
+   "fichier": "015.mp3",
+   "texte": "Le client donne un billet de cinq mille francs. Je touche cinq mille.",
+   "duree_ms": 4500,
+   "bouche": "000368722232246758777543333764765665411377632233100000000000044772276453100057752145531000",
+   "forme": "mmmaooomeeoaaoooooooooooooaoooaeeeeeameooooeeeeoommmmmmmmmmmmaeaomeoaeeemmmmeeeaeeoooooamm"
+  },
+  "016": {
+   "fichier": "016.mp3",
+   "texte": "L'application dit combien rendre, et avec quels billets et quelles pièces.",
+   "duree_ms": 4750,
+   "bouche": "00016886227356443266664531001688676532566432100000466434210015686686567641000452565223434332100",
+   "forme": "mmmaooaomeooeoeeeeooooaoommmeooooaaaeeaaooaeammmmmaoaaaaammmeoooooooooaaammmmeaaeoameeoaeeeemmm"
+  },
+  "017": {
+   "fichier": "017.mp3",
+   "texte": "Plus d'erreur de monnaie. Je valide la vente.",
+   "duree_ms": 3200,
+   "bouche": "0001268947866765467766641000000000000044576436787635774442102100",
+   "forme": "mmmeeoooooaoooooooooaoaammmmmmmmmmmmmmaeeooaooaoooooaaaoaameemmm"
+  },
+  "018": {
+   "fichier": "018.mp3",
+   "texte": "La vente est enregistrée. Le stock de riz a baissé tout seul.",
+   "duree_ms": 4300,
+   "bouche": "00047876336662372266277575412241000000000034754316654685246841245376445621354467775210",
+   "forme": "mmmeoaaoaeooomeoaeaoeoeeaeemeeommmmmmmmmmmaooeeemeoooaoaeaooameaoooaeeeommeaeeeaooommm"
   }
  }
 }
