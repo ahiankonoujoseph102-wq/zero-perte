@@ -12,6 +12,9 @@ import android.os.Environment
 import android.os.StatFs
 import androidx.core.content.FileProvider
 import com.google.firebase.messaging.FirebaseMessaging
+import com.google.mlkit.vision.barcode.common.Barcode
+import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
+import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import android.Manifest
 import java.io.File
 import io.flutter.embedding.android.FlutterActivity
@@ -56,6 +59,10 @@ class MainActivity : FlutterActivity() {
                             appel.argument<String>("sujet"),
                         )
                     )
+                    // Ajout d'un vendeur : lecteur de QR code de Google Play
+                    // services (aucune autorisation d'appareil photo, presque
+                    // rien dans l'APK).
+                    "scannerQr" -> scannerQr(resultat)
                     // Démonstration guidée : voix d'Afi (fichier MP3).
                     "jouerSon" -> jouerSon(appel.argument<String>("chemin"), resultat)
                     "arreterSon" -> {
@@ -65,6 +72,22 @@ class MainActivity : FlutterActivity() {
                     else -> resultat.notImplemented()
                 }
             }
+    }
+
+    // --- Lecteur de QR code (Google code scanner) ---
+    private fun scannerQr(resultat: MethodChannel.Result) {
+        try {
+            val options = GmsBarcodeScannerOptions.Builder()
+                .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
+                .enableAutoZoom()
+                .build()
+            GmsBarcodeScanning.getClient(this, options).startScan()
+                .addOnSuccessListener { code -> resultat.success(code.rawValue) }
+                .addOnCanceledListener { resultat.success(null) }
+                .addOnFailureListener { e -> resultat.error("scanner", e.message, null) }
+        } catch (e: Exception) {
+            resultat.error("scanner", e.message, null)
+        }
     }
 
     // --- Voix de la démonstration (lecteur d'Android, sans bibliothèque) ---

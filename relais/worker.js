@@ -3,6 +3,7 @@
 // Rôle : un appareil de la boutique dépose une alerte (écart de caisse,
 // grosse annulation, code faux répété) ; le téléphone du patron la relève
 // dans la minute. Rien d'autre ne passe ici : ni ventes, ni clients.
+// Depuis la 0.35 : ajout d'un vendeur par QR code (plus bas).
 //
 // Sécurité : chaque boutique a un jeton secret (créé par l'application et
 // rangé dans le Google Drive de la boutique). Le relais ne garde que
@@ -97,10 +98,205 @@ function jetonDe(requete) {
   return m ? m[1] : null;
 }
 
-export default {
-  async fetch(requete, env, ctx) {
-    const url = new URL(requete.url);
-    if (url.pathname !== '/alertes') return reponse(404, { erreur: 'introuvable' });
+// --- Ajout d'un vendeur par QR code (voir docs/conception-ajout-vendeur.md) ---
+//
+// Le téléphone du vendeur n'a ni compte Google ni mot de passe : il reçoit du
+// patron (dans un paquet chiffré) un « jeton de longue durée » Google limité au
+// dossier caché de Zéro Perte (drive.appdata). Le CODE SECRET de l'identifiant
+// « Application Web » est seulement ici (secrets Cloudflare GOOGLE_WEB_ID et
+// GOOGLE_WEB_SECRET) : jamais dans l'application.
+//
+// Le relais ne garde AUCUN jeton Google : il échange et transmet, c'est tout.
+// Il garde seulement :
+// - la liste noire des appareils retirés (empreinte SHA-256 du jeton) ;
+// - les paquets chiffrés des invitations, 10 minutes au plus, lus une seule fois
+//   (le relais ne peut pas les ouvrir : la clé est dans le QR code).
+
+const DIX_MINUTES_MS = 10 * 60 * 1000;
+const UN_AN = 400 * 24 * 3600;
+const MAX_PAQUET = 8000;
+const GOOGLE_JETON = 'https://oauth2.googleapis.com/token';
+const GOOGLE_ANNULER = 'https://oauth2.googleapis.com/revoke';
+
+async function corpsJson(requete) {
+  try {
+    return await requete.json();
+  } catch (_) {
+    return null;
+  }
+}
+
+function googleConfigure(env) {
+  return Boolean(env.GOOGLE_WEB_ID && env.GOOGLE_WEB_SECRET);
+}
+
+async function demanderGoogle(env, champs) {
+  const corps = new URLSearchParams({
+    client_id: env.GOOGLE_WEB_ID,
+    client_secret: env.GOOGLE_WEB_SECRET,
+    ...champs,
+  });
+  const r = await fetch(GOOGLE_JETON, {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: corps.toString(),
+  });
+  let d = {};
+  try {
+    d = await r.json();
+  } catch (_) {}
+  return { ok: r.ok, d };
+}
+
+// Liste noire : une lecture du KV au plus toutes les 10 minutes par appareil
+// (mémoire de Cloudflare, gratuite), pour ne pas user les lectures permises.
+async function estRetire(env, empreinteJeton) {
+  const cle = `x:${empreinteJeton}`;
+  const cache = typeof caches !== 'undefined' ? caches.default : null;
+  const adresse = `https://liste-noire.zero-perte.invalid/${empreinteJeton}`;
+  if (cache) {
+    const m = await cache.match(adresse);
+    if (m) return (await m.text()) === '1';
+  }
+  const retire = (await env.ALERTES.get(cle)) !== null;
+  if (cache) {
+    await cache.put(
+      adresse,
+      new Response(retire ? '1' : '0', { headers: { 'cache-control': 'max-age=600' } }),
+    );
+  }
+  return retire;
+}
+
+async function oublierCache(empreinteJeton) {
+  if (typeof caches === 'undefined') return;
+  await caches.default.delete(`https://liste-noire.zero-perte.invalid/${empreinteJeton}`);
+}
+
+const ID_BOITE = /^[0-9a-f]{32}$/;
+const EMPREINTE = /^[0-9a-f]{64}$/;
+
+async function routeGoogle(requete, env, chemin) {
+  // Identifiant (public) de l'application Web : le téléphone du patron en a
+  // besoin pour demander l'accord à Google. Ce n'est pas un secret.
+  if (chemin === '/google/id' && requete.method === 'GET') {
+    if (!googleConfigure(env)) return reponse(503, { erreur: 'non configuré' });
+    return reponse(200, { id: env.GOOGLE_WEB_ID });
+  }
+  if (requete.method !== 'POST') return reponse(405, { erreur: 'méthode' });
+  if (!googleConfigure(env)) return reponse(503, { erreur: 'non configuré' });
+  const d = await corpsJson(requete);
+  if (!d) return reponse(400, { erreur: 'json' });
+
+  // Patron : code d'échange (un seul usage, quelques minutes) → jeton long.
+  if (chemin === '/google/echange') {
+    if (!jetonDe(requete)) return reponse(401, { erreur: 'jeton absent' });
+    if (typeof d.code !== 'string' || d.code.length > 2000) return reponse(400, { erreur: 'code' });
+    const g = await demanderGoogle(env, { code: d.code, grant_type: 'authorization_code', redirect_uri: '' });
+    if (!g.ok || !g.d.refresh_token) return reponse(400, { erreur: 'refusé par Google' });
+    return reponse(200, { jeton_long: g.d.refresh_token });
+  }
+
+  // Vendeur : accès d'une heure au Drive, si son appareil n'est pas retiré.
+  if (chemin === '/google/acces') {
+    if (typeof d.jeton_long !== 'string' || d.jeton_long.length > 2000) {
+      return reponse(400, { erreur: 'jeton' });
+    }
+    if (await estRetire(env, await empreinte(d.jeton_long))) {
+      return reponse(403, { erreur: 'retiré' });
+    }
+    const g = await demanderGoogle(env, { refresh_token: d.jeton_long, grant_type: 'refresh_token' });
+    if (!g.ok || !g.d.access_token) {
+      // invalid_grant : autorisation annulée (« Couper tous les vendeurs »).
+      return reponse(g.d.error === 'invalid_grant' ? 403 : 502, { erreur: 'refusé par Google' });
+    }
+    return reponse(200, { acces: g.d.access_token, expire_dans: g.d.expires_in ?? 3600 });
+  }
+
+  // Patron : retirer UN appareil (empreinte de son jeton, jamais le jeton).
+  if (chemin === '/google/retirer') {
+    if (!jetonDe(requete)) return reponse(401, { erreur: 'jeton absent' });
+    if (typeof d.empreinte !== 'string' || !EMPREINTE.test(d.empreinte)) {
+      return reponse(400, { erreur: 'empreinte' });
+    }
+    await env.ALERTES.put(`x:${d.empreinte}`, '1', { expirationTtl: UN_AN });
+    await oublierCache(d.empreinte);
+    return reponse(200, { ok: true });
+  }
+
+  // Patron : « Couper tous les vendeurs » : annule l'autorisation chez Google
+  // (tous les jetons longs de la boutique cessent de marcher).
+  if (chemin === '/google/couper') {
+    if (!jetonDe(requete)) return reponse(401, { erreur: 'jeton absent' });
+    if (typeof d.code !== 'string' || d.code.length > 2000) return reponse(400, { erreur: 'code' });
+    const g = await demanderGoogle(env, { code: d.code, grant_type: 'authorization_code', redirect_uri: '' });
+    const jeton = g.d.refresh_token || g.d.access_token;
+    if (!g.ok || !jeton) return reponse(400, { erreur: 'refusé par Google' });
+    const r = await fetch(GOOGLE_ANNULER, {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ token: jeton }).toString(),
+    });
+    return r.ok ? reponse(200, { ok: true }) : reponse(502, { erreur: 'refusé par Google' });
+  }
+  return reponse(404, { erreur: 'introuvable' });
+}
+
+// Boîte aux lettres d'une invitation : un paquet chiffré, 10 minutes, lu une fois.
+async function routeBoite(requete, env, id, url) {
+  const cle = `b:${id}`;
+  if (requete.method === 'PUT') {
+    if (!jetonDe(requete)) return reponse(401, { erreur: 'jeton absent' });
+    const d = await corpsJson(requete);
+    if (!d || typeof d.paquet !== 'string' || d.paquet.length > MAX_PAQUET) {
+      return reponse(400, { erreur: 'paquet' });
+    }
+    const fin = Date.now() + DIX_MINUTES_MS;
+    await env.ALERTES.put(cle, JSON.stringify({ paquet: d.paquet, fin }), { expirationTtl: 660 });
+    return reponse(201, { ok: true, fin });
+  }
+  if (requete.method === 'GET') {
+    const brut = await env.ALERTES.get(cle);
+    const v = brut ? JSON.parse(brut) : null;
+    const valable = v && Date.now() <= v.fin;
+    // Le patron regarde si le vendeur a pris le paquet (sans le prendre).
+    if (url.searchParams.get('etat') === '1') return reponse(200, { present: Boolean(valable) });
+    if (!valable) return reponse(404, { erreur: 'expiré ou déjà utilisé' });
+    await env.ALERTES.delete(cle);
+    return reponse(200, { paquet: v.paquet });
+  }
+  return reponse(405, { erreur: 'méthode' });
+}
+
+// Code de secours à 8 chiffres : le vendeur demande à entrer, le patron dit OUI.
+async function routeDemande(requete, env, id) {
+  if (requete.method === 'PUT') {
+    // Patron : ouvre l'attente (10 minutes).
+    if (!jetonDe(requete)) return reponse(401, { erreur: 'jeton absent' });
+    await env.ALERTES.put(`w:${id}`, String(Date.now() + DIX_MINUTES_MS), { expirationTtl: 660 });
+    return reponse(201, { ok: true });
+  }
+  if (requete.method === 'POST') {
+    // Vendeur : seulement si le patron attend vraiment ce code (sinon rien
+    // n'est écrit : essayer des codes au hasard ne remplit pas le relais).
+    const fin = parseInt((await env.ALERTES.get(`w:${id}`)) || '0', 10);
+    if (!fin || Date.now() > fin) return reponse(404, { erreur: 'code inconnu ou expiré' });
+    if (await env.ALERTES.get(`q:${id}`)) return reponse(409, { erreur: 'déjà demandé' });
+    const d = await corpsJson(requete);
+    if (!d || typeof d.cle !== 'string' || d.cle.length > 100) return reponse(400, { erreur: 'clé' });
+    const demande = { cle: d.cle, appareil: String(d.appareil || '').slice(0, 60) };
+    await env.ALERTES.put(`q:${id}`, JSON.stringify(demande), { expirationTtl: 660 });
+    return reponse(201, { ok: true });
+  }
+  if (requete.method === 'GET') {
+    if (!jetonDe(requete)) return reponse(401, { erreur: 'jeton absent' });
+    const brut = await env.ALERTES.get(`q:${id}`);
+    return reponse(200, { demande: brut ? JSON.parse(brut) : null });
+  }
+  return reponse(405, { erreur: 'méthode' });
+}
+
+async function routeAlertes(requete, env, ctx, url) {
     const jeton = jetonDe(requete);
     if (!jeton) return reponse(401, { erreur: 'jeton absent' });
     const boutique = await empreinte(jeton);
@@ -161,5 +357,19 @@ export default {
     }
 
     return reponse(405, { erreur: 'méthode' });
+}
+
+export default {
+  async fetch(requete, env, ctx) {
+    const url = new URL(requete.url);
+    const chemin = url.pathname;
+    if (chemin === '/alertes') return routeAlertes(requete, env, ctx, url);
+    if (chemin.startsWith('/google/')) return routeGoogle(requete, env, chemin);
+    const m = chemin.match(/^\/(boite|demande)\/([^/]+)$/);
+    if (m) {
+      if (!ID_BOITE.test(m[2])) return reponse(400, { erreur: 'identifiant' });
+      return m[1] === 'boite' ? routeBoite(requete, env, m[2], url) : routeDemande(requete, env, m[2]);
+    }
+    return reponse(404, { erreur: 'introuvable' });
   },
 };

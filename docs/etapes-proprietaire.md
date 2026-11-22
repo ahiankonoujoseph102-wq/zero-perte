@@ -336,3 +336,48 @@ Google n'utilise pas vos textes pour améliorer ses produits.
 **Secours OpenAI (facultatif)** : si vous avez un compte OpenAI, créez une clé sur
 **platform.openai.com/api-keys** et rangez-la comme secret **`ZP_CLE_VOIX_SECOURS`** : elle sert seulement si
 Gemini échoue.
+
+---
+
+## I. Ajout d'un vendeur par QR code (version 0.35) — Google Cloud + Cloudflare
+
+Environ 10 minutes, sur téléphone (Chrome, **⋮ → Version pour ordinateur**). Sans cette partie,
+l'application affiche « Le relais n'est pas encore prêt » quand le patron touche « Ajouter mon vendeur ».
+
+**Pourquoi** : le téléphone du vendeur n'a ni compte Google ni mot de passe. Il reçoit une autorisation
+limitée au dossier caché de Zéro Perte, que **seul le relais** sait renouveler, grâce au code secret d'un
+identifiant « Application Web ». Ce code secret reste **dans Cloudflare** : jamais dans l'application ni
+dans GitHub.
+
+### I1. Google Cloud : créer l'identifiant « Application Web » (sans adresse)
+1. **console.cloud.google.com** → en haut, vérifiez que le projet est **Zero Perte** (zero-perte-515421).
+2. Menu ☰ → **Google Auth Platform** (ou « API et services ») → **Clients** → **+ Créer un client**
+   (« Create client »).
+3. Type d'application : **Application Web** (« Web application »). Nom : `Zero Perte relais`.
+4. **Origines JavaScript autorisées** : **rien**. **URI de redirection autorisés** : **rien**.
+   *(Aucune adresse : personne ne peut s'en servir pour un faux site.)*
+5. **Créer**. Une fenêtre montre l'**ID client** (`…apps.googleusercontent.com`) et le **Code secret du
+   client** (`GOCSPX-…`).
+   ⚠️ Google ne remontre le code secret **qu'une fois** : gardez la fenêtre ouverte jusqu'à l'étape I2.
+   Si elle est fermée : ouvrez le client → **Ajouter un code secret** → copiez le nouveau.
+6. Ne touchez à rien d'autre : l'écran de consentement reste « En production », l'autorisation reste
+   `drive.appdata` seulement.
+
+### I2. Cloudflare : ranger les 2 valeurs en secrets
+1. **dash.cloudflare.com** → **Compute (Workers)** → **Workers & Pages** → `zero-perte-relais` →
+   onglet **Settings** → **Variables and Secrets** → **+ Add** :
+   - Type **Secret** · Variable name **`GOOGLE_WEB_ID`** · Value : l'**ID client** → **Deploy** ;
+   - **+ Add** encore : Type **Secret** · Variable name **`GOOGLE_WEB_SECRET`** · Value : le **code
+     secret** (`GOCSPX-…`) → **Deploy**.
+2. Ne mettez ces 2 valeurs **nulle part ailleurs** (ni GitHub, ni WhatsApp, ni dans une conversation).
+
+### I3. Cloudflare : mettre le nouveau relais
+1. Même Worker → **Edit Code** → effacez tout → collez le contenu **actuel** de `relais/worker.js`
+   (GitHub : dépôt zero-perte → `relais` → `worker.js` → **Copy raw file**) → **Deploy**.
+2. Les secrets `FCM_COMPTE`, `GOOGLE_WEB_ID`, `GOOGLE_WEB_SECRET` et la liaison KV `ALERTES` restent : rien
+   à refaire.
+
+### I4. Vérifier
+- Dites « Partie I faite » : Claude Code vérifie que le relais répond « prêt » **sans afficher** le code
+  secret (l'adresse `/google/id` montre seulement l'ID client, qui n'est pas un secret).
+- Essai sur 2 vrais téléphones : `docs/mise-en-service/1-guide-installation-agents.md`, partie 3 bis.

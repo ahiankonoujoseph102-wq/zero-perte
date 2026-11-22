@@ -26,7 +26,9 @@ Sans ces fichiers, la démonstration utilise la voix de synthèse installée sur
 
 - Flutter et le SDK Dart — licence BSD 3 clauses (Google).
 - `sqflite`, `sqflite_common_ffi`, `path_provider`, `path`, `url_launcher`, `image_picker`, `file_selector`,
-  `package_info_plus`, `google_sign_in`, `flutter_tts`, `crypto`, `cryptography`, `msix` — licences BSD ou MIT
+  `package_info_plus`, `google_sign_in`, `flutter_tts`, `crypto`, `cryptography`, `qr`, `msix` — licences BSD ou MIT
   (voir pub.dev pour chaque paquet).
 - SQLite — domaine public.
 - `com.google.firebase:firebase-messaging` (Android) — Apache 2.0.
+- `com.google.android.gms:play-services-code-scanner` (Android, lecteur de QR code) — conditions du SDK
+  Android / Google Play services.

@@ -19,10 +19,12 @@ import 'ecrans/accueil_vendeur.dart';
 import 'ecrans/assistant/assistant_installation.dart';
 import 'ecrans/code_patron.dart';
 import 'ecrans/connexion.dart';
+import 'ecrans/vendeur_qr.dart' show PageAppareilRetire;
 import 'services/mise_a_jour.dart';
 import 'services/aide.dart';
 import 'services/google.dart';
 import 'services/google_pc.dart' show connexionPcConfiguree;
+import 'synchro/invitation.dart' show ClientRelaisInvitations;
 import 'synchro/relais.dart';
 import 'services/notifications.dart';
 import 'services/partage.dart';
@@ -113,6 +115,8 @@ Future<EtatApplication> chargerEtatDuTelephone() async {
           : connecterDriveAndroid,
       choisirFichier: choisirFichierSauvegarde,
       activerNotifications: surWindows ? null : activerNotificationsAndroid,
+      codeGoogleServeur: surWindows ? null : codeGoogleServeurAndroid,
+      scannerQr: surWindows ? null : scannerQrAndroid,
     ),
   );
   // Relève des ventes des autres appareils (si le Drive est connecté).
@@ -120,6 +124,7 @@ Future<EtatApplication> chargerEtatDuTelephone() async {
   // Alertes graves par le relais (si cette version en a l'adresse).
   if (adresseRelais.isNotEmpty) {
     etat.transportAlertes = ClientRelais(adresseRelais);
+    etat.relaisInvitations = ClientRelaisInvitations(adresseRelais);
     etat.demarrerAlertesAuto();
   }
   return etat;
@@ -287,7 +292,9 @@ class ZeroPerteApp extends StatelessWidget {
       },
       home: ListenableBuilder(
         listenable: etat,
-        builder: (context, _) => !etat.installationTerminee
+        builder: (context, _) => etat.appareilRetire
+            ? const PageAppareilRetire()
+            : !etat.installationTerminee
             ? Builder(
                 builder: (context) => AssistantInstallation(
                   etat: etat,

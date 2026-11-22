@@ -73,6 +73,9 @@ jobs:
       - name: Lancer les tests
         run: flutter test
 
+      - name: Tester le relais Cloudflare
+        run: node relais/worker.test.mjs
+
       - name: Calculer le numéro de version
         id: version
         run: |

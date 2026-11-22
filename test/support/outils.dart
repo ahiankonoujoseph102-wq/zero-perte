@@ -18,6 +18,9 @@ import 'package:zero_perte/main.dart';
 import 'package:zero_perte/services/telephone.dart';
 import 'package:zero_perte/services/voix.dart';
 
+import 'faux_relais_invitations.dart';
+export 'faux_relais_invitations.dart';
+
 const telephoneCompatible = InfosTelephone(
   androidSdk: 30,
   androidVersion: '11',
@@ -173,6 +176,9 @@ Future<Environnement> environnementDeTest(
   StockageMemoire? drive,
   int Function()? horloge,
   String? chemin,
+  FauxRelaisInvitations? relais,
+  Future<String?> Function()? scanner,
+  bool accordGoogle = true,
 }) async {
   // Pas d'Internet dans les tests : aucune recherche de mise à jour.
   verifierMisesAJour = false;
@@ -227,8 +233,15 @@ Future<Environnement> environnementDeTest(
         ),
         choisirFichier: () async =>
             fichiers.isEmpty ? null : fichiers.removeAt(0),
+        codeGoogleServeur: relais == null
+            ? null
+            : (_) async => accordGoogle ? 'code-google-ok' : null,
+        scannerQr: scanner,
+        stockageParJeton: (jeton) =>
+            DriveParJeton(leDrive, jeton, reseau: relais),
       ),
     );
+    e.relaisInvitations = relais;
     if (preparer != null) await preparer(e);
     return e;
   });

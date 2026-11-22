@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/etat_application.dart';
 import '../../theme/couleurs.dart';
+import '../vendeur_qr.dart';
 import '../caisse/fermeture.dart';
 import '../caisse/saisie_montant.dart';
 import '../communs.dart';
@@ -36,6 +37,20 @@ class EntreePatron {
 
 /// Entrées du menu (les étapes suivantes en ajoutent).
 final List<EntreePatron> entreesPatron = [
+  EntreePatron(
+    'ajouter-vendeur',
+    Icons.qr_code_2_rounded,
+    'Ajouter mon vendeur',
+    CouleursZp.argentEntre,
+    (etat) => PageAjouterMonVendeur(etat: etat),
+  ),
+  EntreePatron(
+    'appareils',
+    Icons.devices_rounded,
+    'Mes appareils',
+    CouleursZp.marque,
+    (etat) => PageMesAppareils(etat: etat),
+  ),
   EntreePatron(
     'produits',
     Icons.sell_rounded,

@@ -13,6 +13,7 @@ import '../domaine/tableau.dart';
 import '../domaine/utilisateurs.dart';
 import '../theme/couleurs.dart';
 import 'bouton_action.dart';
+import 'communs.dart';
 import 'caisse/ma_caisse.dart';
 import 'caisse/saisie_montant.dart';
 import 'credit/clients.dart';
@@ -28,6 +29,7 @@ import 'logo_zero_perte.dart';
 import 'vente/devis.dart';
 import 'vente/page_vendre.dart';
 import 'vente/retour.dart';
+import 'vendeur_qr.dart';
 import '../domaine/panier.dart';
 import '../donnees/journal_local.dart' show OperationLue;
 
@@ -171,6 +173,15 @@ List<EntreeMenu> menuPrincipal(EtatApplication etat) => [
       surTelephone: false,
       ouvrir: (c) => _ouvrir(c, PageVendeurs(etat: etat)),
     ),
+    if (etat.ajoutParQrPossible)
+      EntreeMenu(
+        cle: 'ajouter-vendeur',
+        icone: Icons.qr_code_2_rounded,
+        titre: 'Ajouter mon vendeur',
+        couleur: CouleursZp.argentEntreClair,
+        surTelephone: false,
+        ouvrir: (c) => _ouvrir(c, PageAjouterMonVendeur(etat: etat)),
+      ),
     EntreeMenu(
       cle: 'espace-patron',
       icone: Icons.tune_rounded,
@@ -254,6 +265,20 @@ class AccueilVendeur extends StatelessWidget {
                     ),
                     SizedBox(height: bas ? 8 : 12),
                   ],
+                  if (etat.accesCoupe) ...[
+                    MediaQuery.withClampedTextScaling(
+                      maxScaleFactor: 1.2,
+                      child: BandeauAccesCoupe(etat: etat),
+                    ),
+                    SizedBox(height: bas ? 8 : 12),
+                  ],
+                  if (etat.proposerAjoutVendeur) ...[
+                    MediaQuery.withClampedTextScaling(
+                      maxScaleFactor: 1.2,
+                      child: BoutonAjouterMonVendeur(etat: etat, compact: bas),
+                    ),
+                    SizedBox(height: bas ? 8 : 12),
+                  ],
                   Expanded(
                     child: GrilleAccueil(
                       entrees: [
@@ -276,6 +301,29 @@ class AccueilVendeur extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Gros bouton « Ajouter mon vendeur » (accueil du patron).
+class BoutonAjouterMonVendeur extends StatelessWidget {
+  const BoutonAjouterMonVendeur({
+    super.key,
+    required this.etat,
+    this.compact = false,
+  });
+
+  final EtatApplication etat;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) => GrosBouton(
+    key: const Key('bouton-ajouter-mon-vendeur'),
+    texte: 'Ajouter mon vendeur',
+    icone: Icons.qr_code_2_rounded,
+    hauteur: compact ? 50 : 60,
+    onPressed: () => Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => PageAjouterMonVendeur(etat: etat)),
+    ),
+  );
 }
 
 /// Résumé du jour pour le patron sur téléphone : ventes, bénéfice estimé et
@@ -588,9 +636,20 @@ class _AccueilGrandEcranState extends State<_AccueilGrandEcran> {
                 constraints: const BoxConstraints(maxWidth: 820),
                 child: Padding(
                   padding: const EdgeInsets.all(24),
-                  child: GrilleAccueil(
-                    entrees: widget.entrees,
-                    cle: (e) => Key('tuile-${e.cle}'),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (widget.etat.accesCoupe) ...[
+                        BandeauAccesCoupe(etat: widget.etat),
+                        const SizedBox(height: 16),
+                      ],
+                      Expanded(
+                        child: GrilleAccueil(
+                          entrees: widget.entrees,
+                          cle: (e) => Key('tuile-${e.cle}'),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

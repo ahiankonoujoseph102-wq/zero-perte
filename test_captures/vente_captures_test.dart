@@ -346,6 +346,7 @@ void main() {
         find.byType(MaterialApp),
         matchesGoldenFile('captures/bienvenue_${e.key}.png'),
       );
+      await toucher(tester, find.byKey(const Key('bouton-autres-facons')));
       await toucher(tester, find.byKey(const Key('bouton-retrouver-boutique')));
       await expectLater(
         find.byType(MaterialApp),

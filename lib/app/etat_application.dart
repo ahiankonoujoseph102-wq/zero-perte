@@ -21,6 +21,8 @@ import '../donnees/journal_local.dart';
 import '../services/google.dart' show ConnexionStockage;
 import '../services/notifications.dart' show sujetAlertes;
 import '../services/partage.dart';
+import '../synchro/drive.dart' show StockageDriveAppData;
+import '../synchro/invitation.dart';
 import '../synchro/relais.dart';
 import '../synchro/synchro.dart';
 import '../services/aide.dart';
@@ -46,6 +48,9 @@ class ServicesZp {
     this.connecterDrive,
     this.choisirFichier,
     this.activerNotifications,
+    this.codeGoogleServeur,
+    this.scannerQr,
+    this.stockageParJeton,
   });
 
   final ServiceTelephone telephone;
@@ -84,6 +89,22 @@ class ServicesZp {
 
   /// Choisit un fichier de sauvegarde sur l'appareil (nul si annulé).
   final Future<Uint8List?> Function()? choisirFichier;
+
+  /// Téléphone du patron : demande à Google l'accord pour un vendeur (compte
+  /// de la boutique, dossier caché de Zéro Perte) et rend le code d'échange à
+  /// usage unique ; nul si la personne annule. Nul : pas possible ici.
+  final Future<String?> Function(String idClientWeb)? codeGoogleServeur;
+
+  /// Lecteur de QR code (Google Play services) ; rend le texte lu, ou nul si
+  /// la personne annule. Nul : pas de lecteur sur cet appareil.
+  final Future<String?> Function()? scannerQr;
+
+  /// Dossier de la boutique pour un téléphone entré par invitation (tests ;
+  /// par défaut, le vrai Google Drive).
+  final StockageDistant Function(
+    Future<String> Function({bool renouveler}) jeton,
+  )?
+  stockageParJeton;
 }
 
 /// Étapes de l'assistant d'installation, dans l'ordre.
@@ -144,6 +165,11 @@ class EtatApplication extends ChangeNotifier {
       await journal.produits(),
     );
     etat._stocks = await journal.stocks();
+    etat._appareilRetire = await journal.lireParametre(_cleRetire) == '1';
+    etat._nbAppareils = int.tryParse(
+      await journal.lireParametre('sync.appareils') ?? '',
+    );
+    etat._accesCoupe = await journal.lireParametre(_cleCoupe) == '1';
     etat._avertissements = _lireListe(
       await journal.lireParametre(_cleAvertissements),
     );
@@ -1438,6 +1464,9 @@ class EtatApplication extends ChangeNotifier {
 
   /// Connecte le dossier de la boutique. Faux si annulé ou impossible.
   Future<bool> connecterSynchro({bool silencieux = false}) async {
+    if (await journal.lireParametre(_cleModeSync) == _modeInvitation) {
+      return _connecterParRelais();
+    }
     final f = services.connecterDrive;
     if (f == null) return false;
     final c = await f(silencieux: silencieux);
@@ -1452,7 +1481,7 @@ class EtatApplication extends ChangeNotifier {
   /// Envoie ce qui est nouveau ici, reçoit ce qui vient des autres appareils.
   /// Les erreurs sont gardées (affichées au patron), jamais bloquantes.
   Future<ResultatSynchro?> synchroniser() async {
-    if (_synchroEnCours || estDemo) return null;
+    if (_synchroEnCours || estDemo || _appareilRetire) return null;
     if (_synchro == null) {
       if (await journal.lireParametre('sync.compte') == null) return null;
       if (!await connecterSynchro(silencieux: true)) return null;
@@ -1462,19 +1491,39 @@ class EtatApplication extends ChangeNotifier {
     try {
       final r = await _synchro!.synchroniser(
         maxAppareils: licence?.telephones,
-        nomAppareil: utilisateurActuel?.nom ?? patron?.nom ?? '',
+        nomAppareil:
+            await journal.lireParametre(_cleNomAppareil) ??
+            utilisateurActuel?.nom ??
+            patron?.nom ??
+            '',
         boutiqueId: licence?.boutiqueId,
       );
+      if (_accesCoupe) {
+        _accesCoupe = false;
+        await journal.ecrireParametre(_cleCoupe, '');
+      }
       await journal.ecrireParametre(
         'sync.derniere',
         '${maintenant().millisecondsSinceEpoch}',
       );
       await journal.ecrireParametre('sync.erreur', '');
       await journal.ecrireParametre('sync.appareils', '${r.appareils.length}');
+      _nbAppareils = r.appareils.length;
       if (r.recues > 0) await rechargerTout();
       // Le réseau est là : on envoie aussi les alertes en attente.
       unawaited(envoyerAlertesEnAttente());
       return r;
+    } on ErreurAppareilRetire {
+      await _marquerRetire();
+      return null;
+    } on ErreurAccesRetire {
+      await _marquerRetire();
+      return null;
+    } on ErreurAccesCoupe catch (e) {
+      _accesCoupe = true;
+      await journal.ecrireParametre(_cleCoupe, '1');
+      await journal.ecrireParametre('sync.erreur', '$e');
+      return null;
     } catch (e) {
       await journal.ecrireParametre('sync.erreur', '$e');
       return null;
@@ -1705,6 +1754,415 @@ class EtatApplication extends ChangeNotifier {
   ) async {
     final n = await restaurerSauvegarde(fichier, code);
     if (n > 0) await allerA(EtapeAssistant.termine);
+    return n;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Ajout d'un vendeur par QR code (0.35, docs/conception-ajout-vendeur.md)
+  // ---------------------------------------------------------------------------
+
+  static const String _cleModeSync = 'sync.mode';
+  static const String _modeInvitation = 'invitation';
+  static const String _cleJetonLong = 'sync.jeton_long';
+  static const String _cleInvitation = 'sync.invitation';
+  static const String _cleNomAppareil = 'appareil.nom';
+  static const String _cleRetire = 'appareil.retire';
+  static const String _cleCoupe = 'sync.coupe';
+
+  /// Relais pour l'ajout des vendeurs (nul : pas de relais dans cette version).
+  RelaisInvitations? relaisInvitations;
+
+  bool _appareilRetire = false;
+  bool _accesCoupe = false;
+  int? _nbAppareils;
+
+  /// Montrer « Ajouter mon vendeur » sur l'accueil du patron : seulement s'il
+  /// reste de la place dans la licence (sinon, il passe par Gestion).
+  bool get proposerAjoutVendeur {
+    final lic = licence;
+    return voitTout &&
+        ajoutParQrPossible &&
+        lic != null &&
+        (_nbAppareils ?? 1) < lic.telephones;
+  }
+
+  /// Ce téléphone a été retiré par le patron : il est bloqué.
+  bool get appareilRetire => _appareilRetire;
+
+  /// Google a coupé l'accès de ce téléphone : refaire un QR code (les ventes
+  /// faites ici sont gardées et partiront après le nouveau QR code).
+  bool get accesCoupe => _accesCoupe;
+
+  /// Ce téléphone est entré par QR code (ou code de secours).
+  Future<bool> estEntreParInvitation() async =>
+      await journal.lireParametre(_cleModeSync) == _modeInvitation;
+
+  /// Ce téléphone (patron) peut-il ajouter un vendeur par QR code ?
+  bool get ajoutParQrPossible =>
+      relaisInvitations != null && services.codeGoogleServeur != null;
+
+  /// Ce téléphone (vendeur) peut-il scanner un QR code ?
+  bool get scannerPossible => services.scannerQr != null;
+
+  Future<void> _marquerRetire() async {
+    _appareilRetire = true;
+    _synchro = null;
+    _minuterie?.cancel();
+    await journal.ecrireParametre(_cleRetire, '1');
+    // Le jeton Google est oublié : ce téléphone ne peut plus rien lire.
+    await journal.ecrireParametre(_cleJetonLong, '');
+    _utilisateurActuel = null;
+    notifyListeners();
+  }
+
+  RelaisInvitations _relais() {
+    final r = relaisInvitations;
+    if (r == null) {
+      throw const ErreurZeroPerte(
+        'Cette version ne permet pas l\'ajout par QR code (relais absent). '
+        'Mettez l\'application à jour.',
+      );
+    }
+    return r;
+  }
+
+  StockageDistant _stockageParRelais(RelaisInvitations r, String jetonLong) {
+    final j = JetonParRelais(r, jetonLong);
+    final f = services.stockageParJeton;
+    return f != null ? f(j.jeton) : StockageDriveAppData(jeton: j.jeton);
+  }
+
+  Future<bool> _connecterParRelais() async {
+    final r = relaisInvitations;
+    final jl = await journal.lireParametre(_cleJetonLong);
+    if (r == null || jl == null || jl.isEmpty) return false;
+    _synchro = Synchroniseur(
+      journal: journal,
+      stockage: _stockageParRelais(r, jl),
+    );
+    _compteSynchro = await journal.lireParametre('sync.compte');
+    notifyListeners();
+    return true;
+  }
+
+  /// Appareils encore dans la boutique, avec ceux qui ont été retirés à part
+  /// (nul si le Drive n'est pas connecté).
+  Future<({List<Appareil> actifs, Set<String> retires})?> mesAppareils() async {
+    if (_synchro == null &&
+        await journal.lireParametre('sync.compte') != null) {
+      await connecterSynchro(silencieux: true);
+    }
+    final s = _synchro;
+    if (s == null) return null;
+    final r = await s.retraits();
+    final tous = await s.appareils();
+    return (
+      actifs: [
+        for (final a in tous)
+          if (!r.containsKey(a.id)) a,
+      ],
+      retires: r.keys.toSet(),
+    );
+  }
+
+  /// Identifiant de CE téléphone (pour le reconnaître dans la liste).
+  String get idCeTelephone => journal.telephoneId;
+
+  /// PATRON — 1re partie : contrôles, accord de Google (un toucher sur
+  /// « Continuer »), création du vendeur et de son code. Rend le paquet secret
+  /// à remettre par QR code ou par code de secours.
+  Future<PaquetInvitation> preparerInvitation(String prenom) async {
+    if (!voitTout) {
+      throw const ErreurZeroPerte('Seul le patron peut ajouter un vendeur.');
+    }
+    final nom = prenom.trim();
+    if (nom.isEmpty) {
+      throw const ErreurZeroPerte('Écrivez le prénom du vendeur.');
+    }
+    final relais = _relais();
+    final demanderCode = services.codeGoogleServeur;
+    if (demanderCode == null) {
+      throw const ErreurZeroPerte(
+        'Sur cet appareil, ajoutez le vendeur avec « Autres façons ».',
+      );
+    }
+    final lic = licence;
+    if (lic == null) {
+      throw const ErreurZeroPerte(
+        'Activez d\'abord la licence de la boutique.',
+      );
+    }
+    // Le Drive de la boutique doit être relié sur le téléphone du patron.
+    if (_synchro == null && !await connecterSynchro()) {
+      throw const ErreurZeroPerte(
+        'Reliez d\'abord le compte Google de la boutique : '
+        'Gestion, « Appareils et Drive ».',
+      );
+    }
+    final r = await synchroniser();
+    if (r == null) {
+      throw ErreurZeroPerte(
+        'Synchronisation impossible : vérifiez Internet. '
+                '${await journal.lireParametre('sync.erreur') ?? ''}'
+            .trim(),
+      );
+    }
+    // Licence pleine : refusé, sauf pour refaire le QR code d'un vendeur dont
+    // le téléphone est déjà dans la liste (même téléphone, pas de place en
+    // plus ; un AUTRE téléphone serait refusé à son arrivée).
+    final dejaLa = r.appareils.any(
+      (a) =>
+          a.parInvitation &&
+          a.nom.toLowerCase() == 'téléphone de ${nom.toLowerCase()}',
+    );
+    if (r.appareils.length >= lic.telephones && !dejaLa) {
+      throw ErreurLicencePleine(lic.telephones);
+    }
+    final idWeb = await relais.idClientWeb();
+    if (idWeb == null || idWeb.isEmpty) {
+      throw const ErreurZeroPerte(
+        'Le relais n\'est pas encore prêt pour l\'ajout par QR code '
+        '(identifiant Google à mettre dans Cloudflare).',
+      );
+    }
+    final code = await demanderCode(idWeb);
+    if (code == null) {
+      throw const ErreurZeroPerte('Accord de Google annulé. Réessayez.');
+    }
+    final jetonRelais = await _jetonRelais();
+    if (jetonRelais == null) {
+      throw const ErreurZeroPerte('Synchronisez d\'abord la boutique.');
+    }
+    final jetonLong = await relais.echangerCode(jetonRelais, code);
+
+    // Le vendeur : nouveau, ou le même prénom déjà là (nouveau code).
+    final existant = vendeurs
+        .where((v) => v.actif && v.nom.toLowerCase() == nom.toLowerCase())
+        .firstOrNull;
+    final String vendeurId;
+    final String codeVendeur;
+    if (existant != null) {
+      vendeurId = existant.id;
+      codeVendeur = await nouveauCodeVendeur(existant);
+    } else {
+      final v = await ajouterVendeur(nom: nom);
+      vendeurId = v.vendeur.id;
+      codeVendeur = v.code;
+    }
+    // Le vendeur doit être dans le Drive avant que son téléphone n'arrive.
+    await synchroniser();
+    return PaquetInvitation(
+      invitation: _hexAleatoire(16),
+      compte: _compteSynchro ?? '',
+      jetonLong: jetonLong,
+      jetonRelais: jetonRelais,
+      vendeurId: vendeurId,
+      vendeurNom: existant?.nom ?? nom,
+      codeVendeur: codeVendeur,
+      nomBoutique: config.nom,
+    );
+  }
+
+  static String _hexAleatoire(int n) =>
+      [for (final b in octetsAleatoires(n)) b.toRadixString(16).padLeft(2, '0')]
+          .join();
+
+  /// PATRON — 2e partie (QR code) : dépose le paquet chiffré sur le relais et
+  /// rend ce qu'il faut afficher dans le QR code.
+  Future<QrInvitation> publierQr(PaquetInvitation p) async {
+    final relais = _relais();
+    final qr = QrInvitation.nouveau();
+    await relais.deposer(
+      p.jetonRelais,
+      qr.idBoite,
+      await chiffrerPourQr(p, qr),
+    );
+    return qr;
+  }
+
+  /// PATRON : le vendeur a-t-il pris le paquet du QR code ?
+  Future<bool> invitationPrise(QrInvitation qr) async =>
+      !await _relais().present(qr.idBoite);
+
+  /// PATRON — code de secours : ouvre l'attente sur le relais, rend le code.
+  Future<String> ouvrirCodeSecours(PaquetInvitation p) async {
+    final code = nouveauCodeSecours();
+    await _relais().ouvrirAttente(p.jetonRelais, boiteDuCode(code));
+    return code;
+  }
+
+  /// PATRON — code de secours : un téléphone a-t-il demandé à entrer ?
+  Future<DemandeEntree?> demandeRecue(PaquetInvitation p, String code) =>
+      _relais().lireDemande(p.jetonRelais, boiteDuCode(code));
+
+  /// PATRON — code de secours : « OUI », le paquet part vers CE téléphone.
+  Future<void> accepterDemande(
+    PaquetInvitation p,
+    String code,
+    DemandeEntree d,
+  ) async {
+    final paquet = await chiffrerPourDemande(p, code, d.clePublique);
+    await _relais().deposer(p.jetonRelais, boiteDuCode(code), paquet);
+  }
+
+  /// PATRON : le vendeur a-t-il pris le paquet du code de secours ?
+  Future<bool> codeSecoursUtilise(String code) async =>
+      !await _relais().present(boiteDuCode(code));
+
+  /// VENDEUR : entre dans la boutique avec le texte du QR code.
+  Future<PaquetInvitation> entrerParQr(String texte) async {
+    final qr = QrInvitation.lire(texte);
+    final brut = await _relais().prendre(qr.idBoite);
+    if (brut == null) {
+      throw const ErreurInvitation(
+        'Ce QR code a expiré ou a déjà servi. Demandez au patron d\'en refaire un.',
+      );
+    }
+    final p = await dechiffrerDepuisQr(brut, qr);
+    await _rejoindre(p);
+    return p;
+  }
+
+  /// VENDEUR — code de secours : demande à entrer. Nul si le patron n'attend
+  /// pas ce code (faux ou expiré).
+  Future<DemandeParCode?> demanderParCode(String code, String appareil) async {
+    final d = await DemandeParCode.nouvelle(code);
+    final ok = await _relais().demander(d.idBoite, d.clePublique, appareil);
+    return ok ? d : null;
+  }
+
+  /// VENDEUR — code de secours : le patron a-t-il dit OUI ? Nul : pas encore.
+  Future<PaquetInvitation?> verifierReponse(DemandeParCode d) async {
+    final brut = await _relais().prendre(d.idBoite);
+    if (brut == null) return null;
+    final p = await d.ouvrir(brut);
+    await _rejoindre(p);
+    return p;
+  }
+
+  /// Le téléphone du vendeur se relie au Drive de la boutique avec le jeton
+  /// du paquet, récupère la boutique et s'inscrit (licence contrôlée).
+  Future<void> _rejoindre(PaquetInvitation p) async {
+    if (_appareilRetire) throw const ErreurAppareilRetire();
+    final relais = _relais();
+    final ancienJeton = await journal.lireParametre('relais.jeton');
+    final dejaInstalle = await journal.dernierNumero(journal.telephoneId) > 0;
+    if (dejaInstalle && ancienJeton != null && ancienJeton != p.jetonRelais) {
+      throw const ErreurZeroPerte(
+        'Ce téléphone appartient déjà à une autre boutique.',
+      );
+    }
+    final synchro = Synchroniseur(
+      journal: journal,
+      stockage: _stockageParRelais(relais, p.jetonLong),
+    );
+    final fichiers = await synchro.stockage.lister();
+    // Une seule fois : un autre téléphone est-il déjà entré avec ce code ?
+    if ((await synchro.appareils(fichiers)).any(
+      (a) => a.invitation == p.invitation && a.id != journal.telephoneId,
+    )) {
+      throw const ErreurInvitationUtilisee();
+    }
+    await journal.ecrireParametre('relais.jeton', p.jetonRelais);
+    if (!dejaInstalle) {
+      await synchro.recupererBoutique();
+      await rechargerTout();
+    }
+    final infos = await journal.lireParametre(_cleNomAppareil);
+    final nomAppareil = infos ?? 'Téléphone de ${p.vendeurNom}';
+    try {
+      await synchro.synchroniser(
+        maxAppareils: licence?.telephones,
+        nomAppareil: nomAppareil,
+        boutiqueId: licence?.boutiqueId,
+        invitation: p.invitation,
+        empreinte: empreinteJeton(p.jetonLong),
+      );
+    } on ErreurAppareilRetire {
+      await _marquerRetire();
+      rethrow;
+    }
+    await journal.ecrireParametre(_cleModeSync, _modeInvitation);
+    await journal.ecrireParametre(_cleJetonLong, p.jetonLong);
+    await journal.ecrireParametre(_cleInvitation, p.invitation);
+    await journal.ecrireParametre(_cleNomAppareil, nomAppareil);
+    await journal.ecrireParametre('sync.compte', p.compte);
+    await journal.ecrireParametre(
+      'sync.derniere',
+      '${maintenant().millisecondsSinceEpoch}',
+    );
+    await journal.ecrireParametre('sync.erreur', '');
+    await journal.ecrireParametre(_cleCoupe, '');
+    _accesCoupe = false;
+    _synchro = synchro;
+    _compteSynchro = p.compte;
+    await rechargerTout();
+    if (etape != EtapeAssistant.termine) await allerA(EtapeAssistant.termine);
+    notifyListeners();
+  }
+
+  /// PATRON : retire un appareil de la boutique.
+  Future<void> retirerAppareil(Appareil a) async {
+    if (!voitTout) {
+      throw const ErreurZeroPerte('Seul le patron peut retirer un appareil.');
+    }
+    final s = _synchro;
+    if (s == null) {
+      throw const ErreurZeroPerte(
+        'Reliez d\'abord le compte Google de la boutique.',
+      );
+    }
+    // D'abord le relais (plus aucun accès), puis la boutique (licence libérée).
+    if (a.empreinte != null) {
+      final j = await _jetonRelais();
+      if (j == null) throw const ErreurZeroPerte('Synchronisez d\'abord.');
+      await _relais().retirer(j, a.empreinte!);
+    }
+    await s.retirer(
+      a,
+      quand: maintenant().millisecondsSinceEpoch,
+      par: utilisateurActuel?.nom ?? '',
+    );
+    notifyListeners();
+  }
+
+  /// PATRON : « Couper tous les vendeurs » — annule chez Google toutes les
+  /// autorisations données par QR code, et retire tous ces téléphones.
+  /// Rend le nombre de téléphones retirés.
+  Future<int> couperTousLesVendeurs() async {
+    if (!voitTout) {
+      throw const ErreurZeroPerte('Seul le patron peut faire cela.');
+    }
+    final relais = _relais();
+    final demanderCode = services.codeGoogleServeur;
+    final s = _synchro;
+    if (demanderCode == null || s == null) {
+      throw const ErreurZeroPerte(
+        'Reliez d\'abord le compte Google de la boutique.',
+      );
+    }
+    final j = await _jetonRelais();
+    if (j == null) throw const ErreurZeroPerte('Synchronisez d\'abord.');
+    final idWeb = await relais.idClientWeb();
+    if (idWeb == null) {
+      throw const ErreurZeroPerte('Le relais n\'est pas prêt.');
+    }
+    final code = await demanderCode(idWeb);
+    if (code == null) {
+      throw const ErreurZeroPerte(
+        'Accord de Google annulé. Rien n\'a été coupé.',
+      );
+    }
+    await relais.couper(j, code);
+    final quand = maintenant().millisecondsSinceEpoch;
+    var n = 0;
+    for (final a in (await mesAppareils())?.actifs ?? const <Appareil>[]) {
+      if (!a.parInvitation || a.id == journal.telephoneId) continue;
+      if (a.empreinte != null) await relais.retirer(j, a.empreinte!);
+      await s.retirer(a, quand: quand, par: utilisateurActuel?.nom ?? '');
+      n++;
+    }
+    notifyListeners();
     return n;
   }
 

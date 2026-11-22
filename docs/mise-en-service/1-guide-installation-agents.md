@@ -48,9 +48,44 @@ L'application avance d'elle-même, étape par étape (bouton **Écouter** pour e
 Gestion → **Produits et prix** : ajouter un produit qui manque (nom, prix de vente, prix d'achat, stock de
 départ), puis changer un prix. Le patron le fait lui-même une fois devant vous.
 
-## 3 bis. Ajouter les vendeurs
-Gestion (ou menu de gauche) → **Vendeurs** → **Ajouter un vendeur** → prénom → l'application **tire un code
-au hasard** → le montrer au vendeur seul, qui le note. Recommencer pour chaque vendeur.
+## 3 bis. Ajouter les vendeurs (QR code, comme WhatsApp Web) — version 0.35 et plus
+Il faut **Internet sur les 2 téléphones** et le compte Google de la boutique déjà relié sur le téléphone du
+patron (Gestion → **Appareils et Drive**). **Aucun compte Google ni mot de passe** sur le téléphone du vendeur.
+
+**Sur le téléphone du patron**
+1. Accueil → gros bouton **Ajouter mon vendeur** (ou Gestion → **Ajouter mon vendeur**).
+2. Taper le **prénom** du vendeur → **Continuer**.
+3. Google s'ouvre : choisir le **compte de la boutique**, puis **Continuer** (un seul toucher, pas de mot de
+   passe).
+4. Un **QR code** s'affiche. Il marche **10 minutes** et **une seule fois**.
+
+**Sur le téléphone du vendeur**
+1. Installer Zéro Perte (même lien qu'au point 1) et l'ouvrir.
+2. Toucher le bouton vert **Je suis vendeur** → **Scanner le QR code** → viser le QR du patron.
+3. La boutique se télécharge (environ 1 minute). Le **code secret à 4 chiffres** du vendeur s'affiche :
+   **lui seul** le regarde et l'apprend. → **J'ai retenu mon code** → il tape son code : il peut vendre.
+4. Sur le téléphone du patron : **« Téléphone de … ajouté »** → **Terminé**.
+
+**Pas d'appareil photo** (ou le scan ne marche pas, téléphone sans services Google, PC) : sous le QR,
+toucher **Pas d'appareil photo ?** → 8 chiffres s'affichent. Sur le téléphone du vendeur : **Je suis
+vendeur** → **Pas d'appareil photo ?** → taper les 8 chiffres → **Valider**. Le téléphone du patron demande
+alors « Un téléphone veut entrer : Tecno Spark 7… » → vérifier que c'est bien le téléphone **posé devant
+vous** → **OUI**.
+
+**Messages possibles**
+- « La licence permet 2 appareils et ils sont déjà tous utilisés » → Gestion → **Mes appareils** → retirer
+  un ancien appareil, ou vendre un **appareil en plus** (`4-procedure-codes.md`).
+- « Ce QR code a expiré ou a déjà servi » → sur le téléphone du patron : **Refaire un QR code**.
+- « Le relais n'est pas encore prêt » → prévenir l'assistance (réglage à faire par le propriétaire).
+
+**Un vendeur qui partage le téléphone du patron** (pas de téléphone à lui) : Gestion → **Vendeurs** →
+**Ajouter un vendeur** → prénom → l'application tire un code → le montrer au vendeur seul.
+
+**Retirer un téléphone** (vendeur parti, téléphone perdu) : Gestion → **Mes appareils** → **Retirer**.
+Téléphone **volé** ou doute : **Couper tous les vendeurs** (il faudra refaire un QR pour chacun).
+
+**Ancien parcours** (compte Google sur chaque appareil, ou fichier de sauvegarde) : premier écran →
+**Autres façons** → « J'ai déjà une boutique : la retrouver ».
 
 ## 4. Première journée (10 minutes de pratique, obligatoire)
 Avec un vendeur, sur le vrai téléphone :

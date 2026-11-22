@@ -83,4 +83,8 @@ dependencies {
     // seulement si la fabrication a reçu les identifiants Firebase (aucun fichier
     // google-services.json : les identifiants Firebase ne sont pas des secrets).
     implementation("com.google.firebase:firebase-messaging:24.0.0")
+    // Ajout d'un vendeur : lecteur de QR code fourni par Google Play services
+    // (le module de lecture est téléchargé par Play services, pas dans l'APK ;
+    // aucune autorisation d'appareil photo pour l'application).
+    implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
 }

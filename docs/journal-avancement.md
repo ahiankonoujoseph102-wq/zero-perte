@@ -1127,3 +1127,31 @@ libellé du seuil de stock bas coupé. 458 tests.
   de contrôle et cache les erreurs d'envoi ; un POST d'essai écrirait dans le KV sans rien prouver. Preuve
   prévue : l'essai F4 sur 2 vrais téléphones. Si la notification n'arrive pas, ajouter au relais une page
   de contrôle en lecture seule (le propriétaire recolle `worker.js`).
+
+### Version 0.35.0 — ajout d'un vendeur par QR code (22/11)
+Conception validée par le propriétaire (questions A taille et B secret réglées avant le code) :
+`docs/conception-ajout-vendeur.md`.
+- **Patron** : bouton **Ajouter mon vendeur** (accueil s'il reste de la place dans la licence, Gestion,
+  menu de gauche sur grand écran) → prénom → accord Google (un toucher) → QR code 10 minutes, une fois.
+  **Pas d'appareil photo ?** → code de 8 chiffres + « OUI » du patron. **Mes appareils** (Gestion) :
+  Retirer, Couper tous les vendeurs.
+- **Vendeur** : premier écran → **Je suis vendeur** → scanner (Google code scanner,
+  `play-services-code-scanner` 16.1.0, aucune autorisation d'appareil photo) → boutique + code à 4 chiffres.
+  Ancien parcours sous **Autres façons**.
+- **Relais** (`relais/worker.js`) : `/google/id`, `/google/echange`, `/google/acces` (liste noire),
+  `/google/retirer`, `/google/couper`, `/boite/<id>` (10 min, lecture unique), `/demande/<id>`. Code secret
+  de l'identifiant Web seulement en secret Cloudflare (`GOOGLE_WEB_ID`, `GOOGLE_WEB_SECRET`). Tests du relais
+  ajoutés à la fabrication (`node relais/worker.test.mjs`).
+- **Synchro** : `retrait-<id>.json` (licence libérée, opérations après le retrait refusées), invitation et
+  empreinte du jeton dans `appareil-<id>.json`, une seule entrée par invitation.
+- **Choix faits en codant** (à signaler) : (1) un téléphone retiré est **bloqué**, pas effacé (la base
+  interdit tout effacement de l'historique) ; (2) licence pleine : refaire le QR d'un vendeur déjà dans la
+  liste reste permis (même téléphone, après un accès coupé) ; un autre téléphone est refusé à son arrivée ;
+  (3) « Couper tous » retire aussi tous les téléphones ajoutés par QR code.
+- Code : `lib/synchro/invitation.dart`, `lib/ecrans/vendeur_qr.dart`, `etat_application.dart` (section
+  « Ajout d'un vendeur »), `synchro.dart`, `services/google.dart`, `MainActivity.kt`.
+- Tests : `test/ecrans/ajout_vendeur_test.dart` (19 : chiffrement, 10 minutes, une fois, licence, retrait,
+  opérations après retrait, sans réseau, code de secours, Couper tous, accès coupé, écrans) ; relais : tests
+  des nouvelles routes. Captures 4 tailles : `test_captures/ajout_vendeur_captures_test.dart` (48 images).
+- Guides mis à jour : agents (3 bis), aide-mémoire du patron ; étapes du propriétaire : partie **I**.
+- **Jamais essayé sur un vrai téléphone** : accord Google (`serverAuthCode`), lecteur de QR de Google.

@@ -10,6 +10,7 @@ import '../../theme/couleurs.dart';
 import '../accueil_vendeur.dart';
 import 'etapes_boutique.dart';
 import 'retrouver.dart';
+import '../vendeur_qr.dart' show PageJeSuisVendeur;
 
 /// Assistant d'installation : une étape par écran, une voix qui lit la consigne,
 /// un bouton d'aide toujours visible. Il reprend là où il s'était arrêté.
@@ -303,6 +304,50 @@ class _AssistantInstallationState extends State<AssistantInstallation> {
     );
   }
 
+  /// Anciens parcours (compte Google de la boutique, fichier de sauvegarde).
+  Future<void> _autresFacons() => showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (c) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Autres façons',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              key: const Key('bouton-retrouver-boutique'),
+              onPressed: () {
+                Navigator.of(c).pop();
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => PageRetrouverBoutique(etat: etat),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.restore_rounded, size: 26),
+              label: const Text(
+                'J\'ai déjà une boutique : la retrouver\n'
+                '(compte Google ou fichier de sauvegarde)',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+              ),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(0, 64),
+                alignment: Alignment.centerLeft,
+                padding: const EdgeInsets.all(12),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+
   Future<void> _aideDepuisEtape(EtapeAssistant e) async {
     String diagnostic = 'inconnu';
     try {
@@ -314,19 +359,42 @@ class _AssistantInstallationState extends State<AssistantInstallation> {
 
   Widget _contenu(EtapeAssistant e) => switch (e) {
     EtapeAssistant.bienvenue => Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Expanded(child: _Bienvenue()),
-        TextButton.icon(
-          key: const Key('bouton-retrouver-boutique'),
-          onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => PageRetrouverBoutique(etat: etat),
+        Expanded(child: _Bienvenue(vendeur: etat.relaisInvitations != null)),
+        // Le vendeur n'installe pas de boutique : il scanne le QR code du
+        // patron (aucun compte Google ni mot de passe sur son téléphone).
+        if (etat.relaisInvitations != null)
+          FilledButton.icon(
+            key: const Key('bouton-je-suis-vendeur'),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => PageJeSuisVendeur(etat: etat)),
+            ),
+            style: FilledButton.styleFrom(
+              backgroundColor: CouleursZp.argentEntre,
+              minimumSize: const Size(0, 64),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+            ),
+            icon: const Icon(Icons.qr_code_scanner_rounded, size: 30),
+            label: const FittedBox(
+              child: Text(
+                'Je suis vendeur',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+              ),
             ),
           ),
-          icon: const Icon(Icons.restore_rounded, size: 26),
-          label: const Text(
-            'J\'ai déjà une boutique : la retrouver',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+        TextButton(
+          key: const Key('bouton-autres-facons'),
+          onPressed: _autresFacons,
+          child: const Text(
+            'Autres façons',
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              decoration: TextDecoration.underline,
+            ),
           ),
         ),
       ],
@@ -492,17 +560,22 @@ class _BoutonAide extends StatelessWidget {
 }
 
 class _Bienvenue extends StatelessWidget {
-  const _Bienvenue();
+  const _Bienvenue({this.vendeur = false});
+
+  /// Le bouton « Je suis vendeur » est affiché en dessous.
+  final bool vendeur;
 
   @override
   Widget build(BuildContext context) {
-    return const _Message(
+    return _Message(
       icone: Icons.storefront_rounded,
       couleur: CouleursZp.marque,
       titre: 'Bienvenue dans Zéro Perte',
-      texte:
-          'Nous allons préparer votre boutique ensemble, une étape à la fois.\n\n'
-          'Touchez « Écouter » pour entendre les explications.',
+      texte: vendeur
+          ? 'Patron : touchez « Commencer » pour préparer votre boutique.\n\n'
+                'Vendeur : touchez le bouton vert « Je suis vendeur ».'
+          : 'Nous allons préparer votre boutique ensemble, une étape à la fois.\n\n'
+                'Touchez « Écouter » pour entendre les explications.',
     );
   }
 }

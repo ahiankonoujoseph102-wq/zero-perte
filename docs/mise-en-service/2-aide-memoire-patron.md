@@ -34,8 +34,17 @@ s'ouvre avec la liste déjà écrite. Ajoutez les quantités, puis envoyez.
 **Inventaire** — **Inventaire → Compter les produits du jour** (quelques produits chaque jour) : les écarts
 montrent ce qui disparaît.
 
-**Vendeurs** — Gestion → **Vendeurs** : ajouter, bloquer, changer un code. Chaque vendeur a **son** code :
-vous savez qui a vendu quoi.
+**Ajouter un vendeur avec son téléphone** — Accueil → **Ajouter mon vendeur** → son prénom → Google :
+choisissez le compte de la boutique → **Continuer** → un **QR code** s'affiche (10 minutes, une seule fois).
+Le vendeur installe Zéro Perte → **Je suis vendeur** → il scanne. Son code à 4 chiffres s'affiche sur
+**son** téléphone. Pas d'appareil photo ? Touchez **Pas d'appareil photo ?** et dites **OUI** quand votre
+téléphone vous le demande.
+
+**Mes appareils** — Gestion → **Mes appareils** : la liste des téléphones de la boutique (2 par licence).
+**Retirer** un téléphone (vendeur parti). Téléphone **volé** : **Couper tous les vendeurs**.
+
+**Vendeurs** — Gestion → **Vendeurs** : bloquer, changer un code, ou ajouter un vendeur qui utilise
+**votre** téléphone. Chaque vendeur a **son** code : vous savez qui a vendu quoi.
 
 **Sécurité** — Votre code de **6 chiffres** ne se donne à personne, même pas à l'assistance.
 5 codes faux = écran bloqué 5 minutes, et vous êtes prévenu.

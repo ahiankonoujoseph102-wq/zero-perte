@@ -71,6 +71,8 @@ class Appareil {
     required this.nom,
     required this.inscrit,
     this.formatSync = 1,
+    this.invitation,
+    this.empreinte,
   });
 
   factory Appareil.depuisJson(List<int> octets) {
@@ -81,6 +83,8 @@ class Appareil {
       nom: (d['nom'] as String?) ?? '',
       inscrit: (d['inscrit'] as int?) ?? 0,
       formatSync: (d['format_sync'] as int?) ?? 1,
+      invitation: d['invitation'] as String?,
+      empreinte: d['empreinte'] as String?,
     );
   }
 
@@ -94,12 +98,25 @@ class Appareil {
   /// départ ». Les versions avant 0.33 n'écrivent rien (= 1).
   final int formatSync;
 
+  /// Invitation (QR code ou code de secours) par laquelle cet appareil est
+  /// entré ; nulle pour un appareil connecté avec le compte Google.
+  final String? invitation;
+
+  /// Empreinte SHA-256 du jeton Google de cet appareil (entré par invitation) :
+  /// sert au patron à le RETIRER sur le relais. Ce n'est pas le jeton.
+  final String? empreinte;
+
+  /// Entré par QR code ou code de secours (sans compte Google).
+  bool get parInvitation => invitation != null;
+
   Appareil avecFormat(int f) => Appareil(
     id: id,
     prefixe: prefixe,
     nom: nom,
     inscrit: inscrit,
     formatSync: f,
+    invitation: invitation,
+    empreinte: empreinte,
   );
 
   List<int> versJson() => utf8.encode(
@@ -109,8 +126,22 @@ class Appareil {
       'nom': nom,
       'inscrit': inscrit,
       'format_sync': formatSync,
+      if (invitation != null) 'invitation': invitation,
+      if (empreinte != null) 'empreinte': empreinte,
     }),
   );
+}
+
+/// Cet appareil a été retiré de la boutique par le patron.
+class ErreurAppareilRetire extends ErreurZeroPerte {
+  const ErreurAppareilRetire()
+    : super('Ce téléphone a été retiré de la boutique par le patron.');
+}
+
+/// L'invitation (QR code ou code de secours) a déjà servi sur un autre téléphone.
+class ErreurInvitationUtilisee extends ErreurZeroPerte {
+  const ErreurInvitationUtilisee()
+    : super('Ce code a déjà servi. Demandez au patron de refaire un QR code.');
 }
 
 /// Licence pleine : la boutique a déjà tous ses appareils.
@@ -188,6 +219,60 @@ class Synchroniseur {
     ];
   }
 
+  /// Appareils retirés par le patron : identifiant → heure du retrait.
+  Future<Map<String, int>> retraits([List<FichierDistant>? liste]) async {
+    final fichiers = liste ?? await stockage.lister();
+    final r = <String, int>{};
+    for (final f in fichiers.where(
+      (f) => f.nom.startsWith('retrait-') && f.nom.endsWith('.json'),
+    )) {
+      final d = (jsonDecode(utf8.decode(await stockage.lire(f))) as Map)
+          .cast<String, Object?>();
+      r[d['appareil'] as String] = (d['quand'] as int?) ?? 0;
+    }
+    return r;
+  }
+
+  /// Appareils encore dans la boutique (ceux qui comptent pour la licence).
+  Future<List<Appareil>> appareilsActifs([List<FichierDistant>? liste]) async {
+    final fichiers = liste ?? await stockage.lister();
+    final retires = await retraits(fichiers);
+    return [
+      for (final a in await appareils(fichiers))
+        if (!retires.containsKey(a.id)) a,
+    ];
+  }
+
+  /// Le patron retire un appareil : il ne compte plus pour la licence, ses
+  /// opérations faites après [quand] sont refusées par tous les appareils, et
+  /// il s'efface à sa prochaine synchronisation.
+  Future<void> retirer(
+    Appareil a, {
+    required int quand,
+    String par = '',
+  }) async {
+    if (a.id == journal.telephoneId) {
+      throw const ErreurZeroPerte('On ne peut pas retirer ce téléphone-ci.');
+    }
+    await stockage.ecrire(
+      'retrait-${a.id}.json',
+      utf8.encode(jsonEncode({'appareil': a.id, 'quand': quand, 'par': par})),
+    );
+  }
+
+  /// Retire les opérations d'appareils retirés faites après leur retrait.
+  static List<Operation> _sansRetires(
+    List<Operation> ops,
+    Map<String, int> retires,
+  ) => retires.isEmpty
+      ? ops
+      : [
+          for (final o in ops)
+            if (!retires.containsKey(o.telephoneId) ||
+                o.heureTelephone <= retires[o.telephoneId]!)
+              o,
+        ];
+
   /// Lit `boutique.json` (nul si la boutique n'en a pas encore).
   Future<Map<String, Object?>?> infosBoutique([
     List<FichierDistant>? liste,
@@ -208,13 +293,24 @@ class Synchroniseur {
     String nomAppareil = '',
     String? boutiqueId,
     int Function()? horloge,
+    String? invitation,
+    String? empreinte,
   }) async {
     var fichiers = await stockage.lister();
 
-    // 1. Inscription (une seule fois) et contrôle de la licence.
+    // 1. Inscription (une seule fois) et contrôle de la licence (les
+    //    appareils retirés ne comptent plus).
+    final retires = await retraits(fichiers);
+    if (retires.containsKey(journal.telephoneId)) {
+      throw const ErreurAppareilRetire();
+    }
     var liste = await appareils(fichiers);
     if (!liste.any((a) => a.id == journal.telephoneId)) {
-      if (maxAppareils != null && liste.length >= maxAppareils) {
+      if (invitation != null && liste.any((a) => a.invitation == invitation)) {
+        throw const ErreurInvitationUtilisee();
+      }
+      final actifs = liste.where((a) => !retires.containsKey(a.id)).length;
+      if (maxAppareils != null && actifs >= maxAppareils) {
         throw ErreurLicencePleine(maxAppareils);
       }
       final pris = {for (final a in liste) a.prefixe};
@@ -237,17 +333,35 @@ class Synchroniseur {
         nom: nomAppareil,
         inscrit: (horloge ?? () => DateTime.now().millisecondsSinceEpoch)(),
         formatSync: formatSyncActuel,
+        invitation: invitation,
+        empreinte: empreinte,
       );
       await stockage.ecrire('appareil-${moi.id}.json', moi.versJson());
       liste = [...liste, moi];
     }
+    liste = [
+      for (final a in liste)
+        if (!retires.containsKey(a.id)) a,
+    ];
     // Appareil déjà inscrit par une ancienne version : il annonce maintenant
     // qu'il sait lire les fichiers compressés.
     final moiInscrit = liste
         .where((a) => a.id == journal.telephoneId)
         .firstOrNull;
-    if (moiInscrit != null && moiInscrit.formatSync < formatSyncActuel) {
-      final maj = moiInscrit.avecFormat(formatSyncActuel);
+    if (moiInscrit != null &&
+        (moiInscrit.formatSync < formatSyncActuel ||
+            (empreinte != null && moiInscrit.empreinte != empreinte))) {
+      // (Nouveau QR code sur le même téléphone : nouvelle empreinte, pour que
+      // le patron puisse encore le retirer.)
+      final maj = Appareil(
+        id: moiInscrit.id,
+        prefixe: moiInscrit.prefixe,
+        nom: moiInscrit.nom,
+        inscrit: moiInscrit.inscrit,
+        formatSync: formatSyncActuel,
+        invitation: invitation ?? moiInscrit.invitation,
+        empreinte: empreinte ?? moiInscrit.empreinte,
+      );
       await stockage.ecrire('appareil-${maj.id}.json', maj.versJson());
       liste = [for (final a in liste) a.id == maj.id ? maj : a];
     }
@@ -320,7 +434,7 @@ class Synchroniseur {
         if (!lus.add((debut, fin))) continue;
         ops.addAll(await _lireOps(f));
       }
-      recues += await journal.importerOperations(ops);
+      recues += await journal.importerOperations(_sansRetires(ops, retires));
     }
 
     // 4. Point de départ pour les nouveaux appareils (une fois par semaine),
@@ -377,15 +491,17 @@ class Synchroniseur {
       if (!vues.add('${m.group(1)}-${m.group(2)}-${m.group(3)}')) continue;
       ops.addAll(await _lireOps(f));
     }
-    if (remplace == null) return journal.importerOperations(ops);
+    final retires = await retraits(fichiers);
+    final gardees = _sansRetires(ops, retires);
+    if (remplace == null) return journal.importerOperations(gardees);
     // Nos propres opérations (ancien appareil) : on les reprend telles quelles.
-    final miennes = ops.where((o) => o.telephoneId == remplace.id).toList()
+    final miennes = gardees.where((o) => o.telephoneId == remplace.id).toList()
       ..sort((a, b) => a.numero.compareTo(b.numero));
     final n = await journal.restaurerOperationsPropres(miennes);
     if (miennes.isNotEmpty) {
       await journal.ecrireParametre(_cleEnvoye, '${miennes.last.numero}');
     }
-    return n + await journal.importerOperations(ops);
+    return n + await journal.importerOperations(gardees);
   }
 
   static String _n8(int n) => n.toString().padLeft(8, '0');

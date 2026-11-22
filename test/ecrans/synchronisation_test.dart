@@ -69,6 +69,7 @@ void main() {
       );
       final neuf = await environnementDeTest(tester, drive: ancien.drive);
       await afficherApp(tester, neuf.etat);
+      await toucher(tester, find.byKey(const Key('bouton-autres-facons')));
       await toucher(tester, find.byKey(const Key('bouton-retrouver-boutique')));
       await toucher(tester, find.byKey(const Key('retrouver-drive')));
       await attendre(tester, tours: 10);
@@ -98,6 +99,7 @@ void main() {
       final neuf = await environnementDeTest(tester);
       neuf.fichiers.add(fichier);
       await afficherApp(tester, neuf.etat);
+      await toucher(tester, find.byKey(const Key('bouton-autres-facons')));
       await toucher(tester, find.byKey(const Key('bouton-retrouver-boutique')));
       await toucher(tester, find.byKey(const Key('retrouver-fichier')));
       await attendre(tester, tours: 6);
@@ -212,6 +214,7 @@ void main() {
         final neuf = await environnementDeTest(tester, drive: env.drive);
         await tester.pumpWidget(const SizedBox()); // nouvelle application
         await afficherApp(tester, neuf.etat, taille: taille, densite: densite);
+        await toucher(tester, find.byKey(const Key('bouton-autres-facons')));
         await toucher(
           tester,
           find.byKey(const Key('bouton-retrouver-boutique')),
