@@ -1633,6 +1633,178 @@ class EtatApplication extends ChangeNotifier {
     await rechargerProduits();
   }
 
+  // --- Produits et prix après l'installation (patron seul) -------------------
+
+  void _patronSeul() {
+    if (!voitTout) {
+      throw const ErreurZeroPerte(
+        'Seul le patron peut changer les produits et les prix.',
+      );
+    }
+  }
+
+  /// Nouveau produit : nom, unité, prix de vente, prix d'achat, seuil de
+  /// stock bas, image, emballages (« carton de 12 »), stock de départ.
+  Future<Produit> creerProduit({
+    required String nom,
+    required String uniteBase,
+    required int prixVente,
+    int? prixAchat,
+    int seuilAlerteMilliemes = 0,
+    String? emoji,
+    String? photo,
+    List<(String, int, int)> conditionnements = const [],
+    int stockDepart = 0,
+  }) async {
+    _patronSeul();
+    final n = nom.trim();
+    if (n.isEmpty) throw const ErreurZeroPerte('Donnez un nom au produit.');
+    if (prixVente <= 0) {
+      throw const ErreurZeroPerte(
+        'Le prix de vente doit être plus grand que 0.',
+      );
+    }
+    final existe = _produits.any(
+      (p) => p.nom.trim().toLowerCase() == n.toLowerCase(),
+    );
+    if (existe) {
+      throw ErreurZeroPerte('Un produit s\'appelle déjà « $n ».');
+    }
+    final id = await journal.definirProduit(
+      nom: n,
+      uniteBase: uniteBase.trim().isEmpty ? 'pièce' : uniteBase.trim(),
+      prixUnitaire: prixVente,
+      prixAchat: prixAchat,
+      seuilAlerteMilliemes: seuilAlerteMilliemes,
+      emoji: emoji,
+      photo: photo,
+      auteurId: auteurActuel,
+    );
+    for (final (nomC, unites, prix) in conditionnements) {
+      if (nomC.trim().isEmpty || unites <= 0) continue;
+      await journal.definirConditionnement(
+        produitId: id,
+        nom: nomC.trim(),
+        facteurMilliemes: unites * milliemesParUnite,
+        prixVente: prix,
+        auteurId: auteurActuel,
+      );
+    }
+    if (stockDepart > 0) {
+      await journal.enregistrerArrivage(
+        produitId: id,
+        nombre: stockDepart,
+        coutTotal: (prixAchat ?? 0) * stockDepart,
+        auteurId: auteurActuel,
+      );
+    }
+    await rechargerProduits();
+    return journal.produit(id);
+  }
+
+  /// Modifie un produit (nouvelle version ; les ventes passées ne changent
+  /// pas). Un changement de prix écrit l'ancien prix dans le journal.
+  Future<void> modifierProduit(
+    Produit p, {
+    String? nom,
+    String? uniteBase,
+    int? prixVente,
+    int? prixAchat,
+    int? seuilAlerteMilliemes,
+    String? emoji,
+    String? photo,
+    bool effacerPhoto = false,
+    bool? actif,
+  }) async {
+    _patronSeul();
+    final n = (nom ?? p.nom).trim();
+    if (n.isEmpty) throw const ErreurZeroPerte('Donnez un nom au produit.');
+    final prix = prixVente ?? p.prixUnitaire;
+    if (prix <= 0 && (actif ?? p.actif)) {
+      throw const ErreurZeroPerte(
+        'Le prix de vente doit être plus grand que 0.',
+      );
+    }
+    final autre = _produits.any(
+      (x) => x.id != p.id && x.nom.trim().toLowerCase() == n.toLowerCase(),
+    );
+    if (autre) throw ErreurZeroPerte('Un produit s\'appelle déjà « $n ».');
+    await journal.definirProduit(
+      produitId: p.id,
+      nom: n,
+      uniteBase: (uniteBase ?? p.uniteBase).trim().isEmpty
+          ? p.uniteBase
+          : (uniteBase ?? p.uniteBase).trim(),
+      prixUnitaire: prix,
+      seuilAlerteMilliemes: seuilAlerteMilliemes ?? p.seuilAlerteMilliemes,
+      emballage: p.emballage,
+      consigne: p.consigne,
+      emoji: emoji ?? p.emoji,
+      catalogueId: p.catalogueId,
+      auMontant: p.auMontant,
+      photo: effacerPhoto ? null : (photo ?? p.photo),
+      actif: actif ?? p.actif,
+      prixAchat: prixAchat ?? p.prixAchat,
+      prixPrecedent: prix != p.prixUnitaire && p.prixUnitaire > 0
+          ? p.prixUnitaire
+          : null,
+      auteurId: auteurActuel,
+    );
+    await rechargerProduits();
+  }
+
+  /// Masque un produit qui ne se vend plus (il disparaît de « Vendre ») ou le
+  /// fait revenir. Rien n'est effacé : ventes et historique restent.
+  Future<void> masquerProduit(Produit p, {bool masquer = true}) =>
+      modifierProduit(p, actif: !masquer);
+
+  /// Tous les produits, masqués compris (page « Produits et prix »).
+  Future<List<Produit>> tousLesProduits() =>
+      journal.produits(memeInactifs: true);
+
+  /// Change le prix d'un emballage (« carton de 12 »).
+  Future<void> changerPrixConditionnement(
+    Produit p,
+    Conditionnement c,
+    int prix,
+  ) async {
+    _patronSeul();
+    if (prix < 0) {
+      throw const ErreurZeroPerte('Un prix ne peut pas être négatif.');
+    }
+    await journal.definirConditionnement(
+      conditionnementId: c.id,
+      produitId: p.id,
+      nom: c.nom,
+      facteurMilliemes: c.facteurMilliemes,
+      prixVente: prix,
+      aVerifier: false,
+      auteurId: auteurActuel,
+    );
+    await rechargerProduits();
+  }
+
+  /// Ajoute un emballage à un produit existant.
+  Future<void> ajouterConditionnement(
+    Produit p, {
+    required String nom,
+    required int unites,
+    required int prix,
+  }) async {
+    _patronSeul();
+    if (nom.trim().isEmpty) {
+      throw const ErreurZeroPerte('Donnez un nom (ex. « carton de 12 »).');
+    }
+    await journal.definirConditionnement(
+      produitId: p.id,
+      nom: nom.trim(),
+      facteurMilliemes: unites * milliemesParUnite,
+      prixVente: prix,
+      auteurId: auteurActuel,
+    );
+    await rechargerProduits();
+  }
+
   /// Ajoute à la boutique les produits choisis dans le catalogue (sans prix :
   /// le patron les fixe ensuite). Les produits déjà présents ne sont pas recréés.
   Future<void> ajouterDuCatalogue(Iterable<ProduitCatalogue> choisis) async {
@@ -1682,6 +1854,9 @@ class EtatApplication extends ChangeNotifier {
         catalogueId: p.catalogueId,
         auMontant: p.auMontant,
         photo: p.photo,
+        prixAchat: p.prixAchat,
+        // Premier prix (installation) : pas d'« ancien prix ».
+        prixPrecedent: p.prixUnitaire > 0 ? p.prixUnitaire : null,
         auteurId: auteurActuel,
       );
     }

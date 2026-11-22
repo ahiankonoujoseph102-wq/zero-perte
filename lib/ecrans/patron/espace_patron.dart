@@ -8,6 +8,7 @@ import '../communs.dart';
 import '../vente/devis.dart';
 import '../vente/retour.dart';
 import 'arrivages.dart';
+import 'produits.dart';
 import 'rapports.dart';
 import 'fournisseurs.dart';
 import 'inventaire.dart';
@@ -36,6 +37,13 @@ class EntreePatron {
 
 /// Entrées du menu (les étapes suivantes en ajoutent).
 final List<EntreePatron> entreesPatron = [
+  EntreePatron(
+    'produits',
+    Icons.sell_rounded,
+    'Produits et prix',
+    CouleursZp.argentEntre,
+    (etat) => PageProduits(etat: etat),
+  ),
   EntreePatron(
     'rapports',
     Icons.summarize_rounded,

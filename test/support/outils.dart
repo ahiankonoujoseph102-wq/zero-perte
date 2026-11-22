@@ -393,7 +393,7 @@ Future<void> revenirAccueil(WidgetTester tester) async {
 /// « Gestion »).
 Future<void> ouvrirPagePatron(WidgetTester tester, String cle) async {
   final largeur = tester.view.physicalSize.width / tester.view.devicePixelRatio;
-  if (largeur < 840) {
+  if (largeur < 840 || find.byKey(Key('patron-$cle')).evaluate().isNotEmpty) {
     await toucher(tester, find.byKey(Key('patron-$cle')));
     return;
   }

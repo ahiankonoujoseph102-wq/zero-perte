@@ -96,10 +96,15 @@ class Produit {
     this.auMontant = false,
     this.photo,
     this.actif = true,
+    this.prixAchat,
   });
   final String id;
   final String nom;
   final String uniteBase;
+
+  /// Prix d'achat d'UNE unité de base (F), saisi par le patron ; nul si
+  /// inconnu (le coût vient alors du dernier arrivage).
+  final int? prixAchat;
 
   /// Prix de vente d'UNE unité de base (F).
   final int prixUnitaire;
@@ -363,6 +368,7 @@ class JournalLocal implements ReglagesLocaux {
           'catalogue_id': d['catalogue'],
           'au_montant': d['au_montant'] == true ? 1 : 0,
           'photo': d['photo'],
+          'prix_achat': d['prix_achat'],
         });
       case TypeOperation.conditionnementDefini:
         await t.insert('conditionnements_versions', {
@@ -1247,9 +1253,11 @@ class JournalLocal implements ReglagesLocaux {
     bool auMontant = false,
     String? photo,
     bool actif = true,
+    int? prixAchat,
+    int? prixPrecedent,
     required String auteurId,
   }) async {
-    if (prixUnitaire < 0 || consigne < 0) {
+    if (prixUnitaire < 0 || consigne < 0 || (prixAchat ?? 0) < 0) {
       throw const ErreurZeroPerte('Un prix ne peut pas être négatif.');
     }
     final id = produitId ?? nouvelIdentifiant();
@@ -1271,10 +1279,34 @@ class JournalLocal implements ReglagesLocaux {
           'catalogue': catalogueId,
           'au_montant': auMontant,
           'photo': photo,
+          // Champs ajoutés en 0.32 (ignorés par les versions plus anciennes) :
+          // seulement s'ils servent, pour garder les autres opérations
+          // identiques.
+          'prix_achat': ?prixAchat,
+          // Changement de prix : l'ancien prix est écrit dans le journal.
+          'prix_precedent': ?prixPrecedent,
         },
       ),
     );
     return id;
+  }
+
+  /// Historique des prix de vente d'un produit : (heure, prix), du plus
+  /// ancien au plus récent, un élément par changement.
+  Future<List<(DateTime, int)>> historiquePrix(String produitId) async {
+    final r = await _db.rawQuery(
+      'SELECT pv.prix_unitaire AS p, o.heure_telephone AS h FROM produits_versions pv '
+      'JOIN operations o ON o.id = pv.operation_id WHERE pv.produit_id = ? '
+      'ORDER BY o.heure_telephone, o.numero',
+      [produitId],
+    );
+    final liste = <(DateTime, int)>[];
+    for (final l in r) {
+      final prix = l['p'] as int;
+      if (liste.isNotEmpty && liste.last.$2 == prix) continue;
+      liste.add((DateTime.fromMillisecondsSinceEpoch(l['h'] as int), prix));
+    }
+    return liste;
   }
 
   /// Crée (ou change) un conditionnement : « sac = 40 bols, 23 000 F ».
@@ -1344,6 +1376,7 @@ class JournalLocal implements ReglagesLocaux {
       auMontant: l['au_montant'] == 1,
       photo: l['photo'] as String?,
       actif: l['actif'] == 1,
+      prixAchat: l['prix_achat'] as int?,
     );
   }
 
@@ -1360,6 +1393,7 @@ class JournalLocal implements ReglagesLocaux {
     auMontant: l['au_montant'] == 1,
     photo: l['photo'] as String?,
     actif: l['actif'] == 1,
+    prixAchat: l['prix_achat'] as int?,
   );
 
   /// Tous les produits (version actuelle de chacun), actifs seulement par défaut,
@@ -1598,7 +1632,16 @@ class JournalLocal implements ReglagesLocaux {
       'ORDER BY o.heure_telephone DESC, o.numero DESC LIMIT 1',
       [produitId],
     );
-    if (r.isEmpty) return null;
+    if (r.isEmpty) {
+      // Pas encore d'arrivage : prix d'achat saisi par le patron, s'il existe.
+      final achat = (await _produitActuel(t, produitId)).prixAchat;
+      if (achat == null || achat <= 0) return null;
+      return coutPourQuantite(
+        milliemes: milliemes,
+        coutAchat: achat,
+        milliemesAchetes: milliemesParUnite,
+      );
+    }
     return coutPourQuantite(
       milliemes: milliemes,
       coutAchat: r.first['c'] as int,

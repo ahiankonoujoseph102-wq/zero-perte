@@ -91,6 +91,8 @@ CREATE TABLE stocks_courants (
   produit_id TEXT PRIMARY KEY NOT NULL,
   quantite_milliemes INTEGER NOT NULL
 )''',
+    // Prix d'achat saisi par le patron (bénéfice estimé avant tout arrivage).
+    'ALTER TABLE produits_versions ADD COLUMN prix_achat INTEGER',
     // « Produits déjà reçus » sans parcourir tous les mouvements.
     'CREATE INDEX mouvements_nature ON mouvements_stock (nature, produit_id)',
     'INSERT INTO stocks_courants (produit_id, quantite_milliemes) '
