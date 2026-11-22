@@ -1155,3 +1155,7 @@ Conception validée par le propriétaire (questions A taille et B secret réglé
   des nouvelles routes. Captures 4 tailles : `test_captures/ajout_vendeur_captures_test.dart` (48 images).
 - Guides mis à jour : agents (3 bis), aide-mémoire du patron ; étapes du propriétaire : partie **I**.
 - **Jamais essayé sur un vrai téléphone** : accord Google (`serverAuthCode`), lecteur de QR de Google.
+- **Publiée** le 22/11 : Release **`v0.35.0-n104`**. Signature vérifiée (SHA-1 49:27:0C:…:B1:A3). APK
+  universel **18,84 Mo** (0.34 : 18,65 Mo → **+0,19 Mo** pour le lecteur de QR et le module `qr`) ; arm64
+  10,55 Mo ; armv7 10,05 Mo. Aucun code secret Google (`GOCSPX…`) dans l'APK. Tests : 498 (Flutter) + relais.
+- Le relais en ligne est encore l'ancien (`/google/id` → 404) : partie **I** à faire par le propriétaire.
