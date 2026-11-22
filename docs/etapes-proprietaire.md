@@ -86,19 +86,30 @@ Le programme est déjà écrit : `relais/worker.js` dans le dépôt.
 2. Confirmez l'adresse avec le lien reçu par e-mail.
 
 ### B2. Espace de stockage des alertes
-1. Menu → **Stockage et bases de données** → **KV** (ou « Workers KV ») → **Créer** (« Create a namespace »).
-2. Nom : `ALERTES` → **Ajouter**.
+*(Noms des menus vérifiés en novembre 2026 ; Cloudflare est en anglais.)*
+1. Menu de gauche → **Storage & databases** → **Workers KV** → bouton **Create instance**.
+2. Nom (« Namespace name ») : `ALERTES` → **Create**.
 
 ### B3. Le relais
-1. Menu → **Workers et Pages** → **Créer** → **Créer un Worker** (« Hello World ») → nom :
-   `zero-perte-relais` → **Déployer**.
-2. **Modifier le code** : effacez tout le code affiché, puis copiez-collez le contenu du fichier
-   `relais/worker.js` (sur GitHub : dépôt zero-perte → dossier `relais` → `worker.js` → bouton « Copier »).
-   → **Déployer**.
-3. Retour au Worker → **Paramètres** → **Liaisons** (« Bindings ») → **Ajouter** → **Espace de noms KV** →
-   nom de la variable : **`ALERTES`** (en majuscules) → espace : `ALERTES` → **Enregistrer**.
-4. Notez l'adresse du Worker, du type `https://zero-perte-relais.<votre-nom>.workers.dev`.
-   *Ce n'est pas un secret.*
+1. Menu de gauche → **Compute (Workers)** → **Workers & Pages** → **Create application** →
+   **Start with Hello World!** → nom (« Worker name ») : `zero-perte-relais` → **Deploy**.
+2. Sur la page qui s'affiche → **Edit Code** : effacez tout le code affiché, puis copiez-collez le contenu du
+   fichier `relais/worker.js` (sur GitHub : dépôt zero-perte → dossier `relais` → `worker.js` → bouton
+   « Copy raw file »). → bouton **Deploy** (en haut à droite).
+   *Sur téléphone :* l'éditeur est petit mais fonctionne ; tournez le téléphone à l'horizontale.
+3. Retour au Worker → onglet **Bindings** → **Add binding** → **KV namespace** → **Add Binding** →
+   « Variable name » : **`ALERTES`** (en majuscules) → « KV namespace » : `ALERTES` → **Add Binding**
+   (le Worker est redéployé tout seul).
+4. Notez l'adresse du Worker (onglet **Settings** → **Domains & Routes**, ligne `workers.dev`), du type
+   `https://zero-perte-relais.<votre-nom>.workers.dev`. *Ce n'est pas un secret.*
+
+**Mise à jour du relais** (quand le fichier `relais/worker.js` change, par exemple la version de
+novembre 2026 qui économise les lectures) : refaites seulement B3.2 (Edit Code → coller → Deploy).
+
+**À savoir :** les limites gratuites de Cloudflare valent pour TOUT le compte (toutes les boutiques
+ensemble : 100 000 lectures, 1 000 écritures et 1 000 listes par jour). Avec la case « dernière alerte »,
+une consultation sans nouveauté coûte 1 lecture et aucune liste : cela tient environ 70 boutiques
+(une consultation par minute et par patron). **À 50 boutiques, il faudra revoir le relais.**
 
 ### B4. Donner l'adresse à la fabrication de l'application
 1. GitHub → dépôt **zero-perte** → **Settings** → **Secrets and variables** → **Actions** → onglet

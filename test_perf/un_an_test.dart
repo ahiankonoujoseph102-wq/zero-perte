@@ -12,6 +12,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:zero_perte/app/etat_application.dart';
 import 'package:zero_perte/domaine/tableau.dart';
 import 'package:zero_perte/donnees/journal_local.dart';
+import 'package:zero_perte/synchro/point_depart.dart';
 
 import '../test/support/outils.dart';
 
@@ -206,6 +207,34 @@ void main() {
       r.add(
         'Opérations : ${ops.length} ; envoyées à la première '
         'synchronisation : ${(json.length / 1048576).toStringAsFixed(1)} Mo',
+      );
+      var gz = 0;
+      for (var i = 0; i < ops.length; i += 500) {
+        gz += gzip
+            .encode(
+              JournalLocal.operationsVersJson(
+                ops.sublist(i, min(i + 500, ops.length)),
+              ),
+            )
+            .length;
+      }
+      r.add(
+        'Fichiers compressés (format 2) : '
+        '${(gz / 1048576).toStringAsFixed(1)} Mo',
+      );
+      final pd = await chrono(
+        'Fabriquer le point de départ',
+        () async => fabriquerPointDepart(ops),
+        r,
+      );
+      r.add(
+        'Point de départ (nouvel appareil) : '
+        '${(pd.length / 1048576).toStringAsFixed(1)} Mo',
+      );
+      await chrono(
+        'Relire et vérifier le point de départ',
+        () async => lirePointDepart(pd),
+        r,
       );
     });
     // ignore: avoid_print

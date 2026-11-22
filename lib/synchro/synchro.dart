@@ -14,6 +14,10 @@
 library;
 
 import 'dart:convert';
+import 'dart:io' show gzip;
+
+import 'point_depart.dart';
+
 import 'dart:math';
 
 import '../domaine/operation.dart';
@@ -66,6 +70,7 @@ class Appareil {
     required this.prefixe,
     required this.nom,
     required this.inscrit,
+    this.formatSync = 1,
   });
 
   factory Appareil.depuisJson(List<int> octets) {
@@ -75,6 +80,7 @@ class Appareil {
       prefixe: d['prefixe'] as String,
       nom: (d['nom'] as String?) ?? '',
       inscrit: (d['inscrit'] as int?) ?? 0,
+      formatSync: (d['format_sync'] as int?) ?? 1,
     );
   }
 
@@ -83,12 +89,26 @@ class Appareil {
   final String nom;
   final int inscrit;
 
+  /// Formats de synchronisation que cet appareil sait lire : 1 = fichiers
+  /// JSON ; 2 = aussi les fichiers compressés (.json.gz) et le « point de
+  /// départ ». Les versions avant 0.33 n'écrivent rien (= 1).
+  final int formatSync;
+
+  Appareil avecFormat(int f) => Appareil(
+    id: id,
+    prefixe: prefixe,
+    nom: nom,
+    inscrit: inscrit,
+    formatSync: f,
+  );
+
   List<int> versJson() => utf8.encode(
     jsonEncode({
       'appareil': id,
       'prefixe': prefixe,
       'nom': nom,
       'inscrit': inscrit,
+      'format_sync': formatSync,
     }),
   );
 }
@@ -120,6 +140,9 @@ class ResultatSynchro {
 }
 
 const _cleEnvoye = 'sync.envoye';
+
+/// Format de synchronisation de cette version (voir [Appareil.formatSync]).
+const int formatSyncActuel = 2;
 const int _parFichier = 500;
 
 /// Synchronise le journal local avec le dossier partagé de la boutique.
@@ -129,7 +152,30 @@ class Synchroniseur {
   final JournalLocal journal;
   final StockageDistant stockage;
 
-  static final RegExp _nomOps = RegExp(r'^ops-(.+)-(\d{8})-(\d{8})\.json$');
+  static const String _clePointDepart = 'sync.point_depart';
+  static const int _intervallePointDepart = 7 * 24 * 3600 * 1000;
+
+  static final RegExp _nomOps = RegExp(
+    r'^ops-(.+)-(\d{8})-(\d{8})\.json(\.gz)?$',
+  );
+
+  /// Contenu d'un fichier d'opérations (compressé ou non).
+  /// Un fichier abîmé ou trafiqué est refusé : rien n'est écrit.
+  Future<List<Operation>> _lireOps(FichierDistant f) async {
+    final octets = await stockage.lire(f);
+    try {
+      return JournalLocal.operationsDepuisJson(
+        f.nom.endsWith('.gz') ? gzip.decode(octets) : octets,
+      );
+    } on ErreurZeroPerte {
+      rethrow;
+    } catch (_) {
+      throw ErreurZeroPerte(
+        'Fichier de synchronisation illisible (${f.nom}) : rien n\'a été '
+        'importé. Relancez la synchronisation depuis l\'appareil qui l\'a envoyé.',
+      );
+    }
+  }
 
   /// Appareils inscrits dans le dossier partagé.
   Future<List<Appareil>> appareils([List<FichierDistant>? liste]) async {
@@ -190,9 +236,36 @@ class Synchroniseur {
         prefixe: journal.prefixeRecu,
         nom: nomAppareil,
         inscrit: (horloge ?? () => DateTime.now().millisecondsSinceEpoch)(),
+        formatSync: formatSyncActuel,
       );
       await stockage.ecrire('appareil-${moi.id}.json', moi.versJson());
       liste = [...liste, moi];
+    }
+    // Appareil déjà inscrit par une ancienne version : il annonce maintenant
+    // qu'il sait lire les fichiers compressés.
+    final moiInscrit = liste
+        .where((a) => a.id == journal.telephoneId)
+        .firstOrNull;
+    if (moiInscrit != null && moiInscrit.formatSync < formatSyncActuel) {
+      final maj = moiInscrit.avecFormat(formatSyncActuel);
+      await stockage.ecrire('appareil-${maj.id}.json', maj.versJson());
+      liste = [for (final a in liste) a.id == maj.id ? maj : a];
+    }
+    // Fichiers compressés seulement si TOUS les appareils savent les lire
+    // (sinon un appareil resté sur une ancienne version perdrait des ventes).
+    final compresser = liste.every((a) => a.formatSync >= 2);
+    if (!compresser) {
+      // Un appareil d'une ancienne version est (re)venu : nos fichiers déjà
+      // compressés sont aussi écrits en clair pour qu'il ne perde rien.
+      final noms = {for (final f in fichiers) f.nom};
+      for (final f in fichiers) {
+        final m = _nomOps.firstMatch(f.nom);
+        if (m == null || m.group(1) != journal.telephoneId) continue;
+        if (!f.nom.endsWith('.gz')) continue;
+        final clair = f.nom.substring(0, f.nom.length - 3);
+        if (noms.contains(clair)) continue;
+        await stockage.ecrire(clair, gzip.decode(await stockage.lire(f)));
+      }
     }
     if (!fichiers.any((f) => f.nom == 'boutique.json')) {
       await stockage.ecrire(
@@ -214,7 +287,12 @@ class Synchroniseur {
       final lot = aEnvoyer.sublist(i, min(i + _parFichier, aEnvoyer.length));
       final nom =
           'ops-${journal.telephoneId}-${_n8(lot.first.numero)}-${_n8(lot.last.numero)}.json';
-      await stockage.ecrire(nom, JournalLocal.operationsVersJson(lot));
+      final json = JournalLocal.operationsVersJson(lot);
+      if (compresser) {
+        await stockage.ecrire('$nom.gz', gzip.encode(json));
+      } else {
+        await stockage.ecrire(nom, json);
+      }
       await journal.ecrireParametre(_cleEnvoye, '${lot.last.numero}');
     }
 
@@ -235,11 +313,35 @@ class Synchroniseur {
       lots.sort((a, b) => a.$1.compareTo(b.$1));
       final connu = await journal.dernierNumero(tel);
       final ops = <Operation>[];
-      for (final (_, fin, f) in lots) {
+      final lus = <(int, int)>{};
+      for (final (debut, fin, f) in lots) {
         if (fin <= connu) continue;
-        ops.addAll(JournalLocal.operationsDepuisJson(await stockage.lire(f)));
+        // Même lot en clair et compressé : une seule lecture.
+        if (!lus.add((debut, fin))) continue;
+        ops.addAll(await _lireOps(f));
       }
       recues += await journal.importerOperations(ops);
+    }
+
+    // 4. Point de départ pour les nouveaux appareils (une fois par semaine),
+    //    seulement quand tous les appareils savent le lire.
+    if (compresser) {
+      final maintenant =
+          (horloge ?? () => DateTime.now().millisecondsSinceEpoch)();
+      final dernier =
+          int.tryParse(await journal.lireParametre(_clePointDepart) ?? '') ?? 0;
+      final present = fichiers.any((f) => f.nom == nomPointDepart);
+      if (!present || maintenant - dernier > _intervallePointDepart) {
+        final tout = <Operation>[
+          for (final tel in await journal.telephonesConnus())
+            ...await journal.operationsDuTelephone(tel),
+        ];
+        await stockage.ecrire(
+          nomPointDepart,
+          fabriquerPointDepart(tout, cree: maintenant),
+        );
+        await journal.ecrireParametre(_clePointDepart, '$maintenant');
+      }
     }
 
     return ResultatSynchro(
@@ -258,8 +360,22 @@ class Synchroniseur {
     }
     final fichiers = await stockage.lister();
     final ops = <Operation>[];
+    final vues = <String>{};
+    // Point de départ : tout l'historique en un seul fichier ; ensuite,
+    // seulement les fichiers plus récents que lui.
+    var jusqua = const <String, int>{};
+    final depart = fichiers.where((f) => f.nom == nomPointDepart).firstOrNull;
+    if (depart != null) {
+      final p = lirePointDepart(await stockage.lire(depart));
+      ops.addAll(p.operations);
+      jusqua = p.jusqua;
+    }
     for (final f in fichiers.where((f) => _nomOps.hasMatch(f.nom))) {
-      ops.addAll(JournalLocal.operationsDepuisJson(await stockage.lire(f)));
+      final m = _nomOps.firstMatch(f.nom)!;
+      if (int.parse(m.group(3)!) <= (jusqua[m.group(1)] ?? 0)) continue;
+      // Même lot en clair et compressé : une seule lecture.
+      if (!vues.add('${m.group(1)}-${m.group(2)}-${m.group(3)}')) continue;
+      ops.addAll(await _lireOps(f));
     }
     if (remplace == null) return journal.importerOperations(ops);
     // Nos propres opérations (ancien appareil) : on les reprend telles quelles.

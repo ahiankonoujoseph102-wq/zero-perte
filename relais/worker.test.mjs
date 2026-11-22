@@ -4,11 +4,17 @@ import relais from './worker.js';
 import { createHash } from 'node:crypto';
 
 class KvMemoire {
-  constructor() { this.m = new Map(); }
-  async get(k) { return this.m.has(k) ? this.m.get(k) : null; }
+  constructor() { this.m = new Map(); this.listes = 0; this.lectures = 0; }
+  async get(k) { this.lectures++; return this.m.has(k) ? this.m.get(k) : null; }
   async put(k, v) { this.m.set(k, v); }
-  async list({ prefix }) {
-    return { keys: [...this.m.keys()].filter((k) => k.startsWith(prefix)).sort().map((name) => ({ name })) };
+  // Comme Cloudflare : pages de « limit » clés, avec un curseur.
+  async list({ prefix, limit = 1000, cursor }) {
+    this.listes++;
+    const toutes = [...this.m.keys()].filter((k) => k.startsWith(prefix)).sort();
+    const debut = cursor ? parseInt(cursor, 10) : 0;
+    const keys = toutes.slice(debut, debut + limit).map((name) => ({ name }));
+    const fini = debut + limit >= toutes.length;
+    return fini ? { keys, list_complete: true } : { keys, list_complete: false, cursor: String(debut + limit) };
   }
 }
 const env = { ALERTES: new KvMemoire() };
@@ -41,9 +47,37 @@ const t = d.alertes[0]?.heure ?? Date.now();
 d = await (await relais.fetch(req('GET', J1, null, '/alertes?depuis=' + Date.now()), env)).json();
 assert.equal(d.alertes.length, 0);
 
+// « Dernière alerte » : sans nouveauté, une seule lecture et AUCUNE liste.
+{
+  const listes = env.ALERTES.listes;
+  const lectures = env.ALERTES.lectures;
+  const vide = await (await relais.fetch(req('GET', J1, null, '/alertes?depuis=' + Date.now()), env)).json();
+  assert.equal(vide.alertes.length, 0);
+  assert.equal(env.ALERTES.listes, listes);
+  assert.equal(env.ALERTES.lectures, lectures + 1);
+  // Boutique sans aucune alerte : pareil.
+  await relais.fetch(req('GET', J2), env);
+  assert.equal(env.ALERTES.listes, listes);
+}
+
 // Limite : 60 par heure.
 for (let i = 0; i < 59; i++) await relais.fetch(req('POST', J1, { type: 't', message: 'x' }), env);
 assert.equal((await relais.fetch(req('POST', J1, { type: 't', message: 'x' }), env)).status, 429);
+
+// Plus de 100 alertes : la plus récente n'est jamais perdue (pages suivies).
+{
+  const env3 = { ALERTES: new KvMemoire() };
+  const heureOrigine = Date.now;
+  let h = 1_800_000_000_000;
+  Date.now = () => (h += 3_600_000); // une alerte par heure : pas de limite
+  for (let i = 0; i < 150; i++) {
+    assert.equal((await relais.fetch(req('POST', J1, { type: 't', message: 'n' + i }), env3)).status, 201);
+  }
+  Date.now = heureOrigine;
+  const tout = await (await relais.fetch(req('GET', J1), env3)).json();
+  assert.equal(tout.alertes.length, 150);
+  assert.equal(tout.alertes.at(-1).message, 'n149');
+}
 // Notification Firebase : appel du jeton Google puis de FCM, sur le bon canal.
 {
   const { generateKeyPairSync } = await import('node:crypto');

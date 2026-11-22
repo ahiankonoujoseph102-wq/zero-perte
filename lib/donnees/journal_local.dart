@@ -982,13 +982,26 @@ class JournalLocal implements ReglagesLocaux {
     final aAjouter = <Operation>[];
     for (final MapEntry(key: tel, value: liste) in parTelephone.entries) {
       liste.sort((a, b) => a.numero.compareTo(b.numero));
-      final connues = await operationsDuTelephone(tel);
-      final dernier = connues.isEmpty ? 0 : connues.last.numero;
+      // Seule la dernière opération connue sert : l'historique a déjà été
+      // vérifié à son arrivée (après un an, relire 70 000 opérations à
+      // chaque synchronisation serait très lent).
+      final derniere = await _db.rawQuery(
+        'SELECT numero, empreinte FROM operations WHERE telephone_id = ? '
+        'ORDER BY numero DESC LIMIT 1',
+        [tel],
+      );
+      final dernier = derniere.isEmpty ? 0 : derniere.first['numero'] as int;
+      final empreinte = derniere.isEmpty
+          ? ''
+          : derniere.first['empreinte'] as String;
       final nouvelles = liste.where((o) => o.numero > dernier).toList();
       if (nouvelles.isEmpty) continue;
       // La suite doit continuer exactement la chaîne déjà connue.
-      final chaine = [...connues, ...nouvelles];
-      final problemes = verifierChaine(chaine);
+      final problemes = verifierChaine(
+        nouvelles,
+        depuisNumero: dernier,
+        depuisEmpreinte: empreinte,
+      );
       if (problemes.isNotEmpty) {
         throw ErreurZeroPerte(
           'Données reçues d\'un autre appareil refusées : ${problemes.first}',

@@ -185,10 +185,16 @@ String nouvelIdentifiant() {
 
 /// Vérifie la chaîne des opérations d'UN téléphone (triées par numéro).
 /// Renvoie la liste des problèmes trouvés (vide si tout est en ordre).
-List<String> verifierChaine(List<Operation> operations) {
+/// [depuisNumero] / [depuisEmpreinte] : dernière opération déjà connue et
+/// vérifiée (on ne revérifie pas tout l'historique à chaque synchronisation).
+List<String> verifierChaine(
+  List<Operation> operations, {
+  int depuisNumero = 0,
+  String depuisEmpreinte = '',
+}) {
   final problemes = <String>[];
-  var precedente = '';
-  var attendu = 1;
+  var precedente = depuisEmpreinte;
+  var attendu = depuisNumero + 1;
   for (final op in operations) {
     if (op.numero != attendu) {
       problemes.add(

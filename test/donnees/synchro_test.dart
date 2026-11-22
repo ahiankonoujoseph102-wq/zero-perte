@@ -1,6 +1,10 @@
+import 'dart:convert';
+import 'dart:io' show gzip;
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:zero_perte/donnees/journal_local.dart';
+import 'package:zero_perte/synchro/point_depart.dart';
 import 'package:zero_perte/synchro/synchro.dart';
 
 void main() {
@@ -176,9 +180,13 @@ void main() {
 
   test('fichier trafiqué dans le Drive : refusé, rien n\'est écrit', () async {
     await Synchroniseur(journal: patron, stockage: drive).synchroniser();
+    // Sans point de départ : lecture fichier par fichier.
+    drive.fichiers.remove(nomPointDepart);
     final nom = drive.fichiers.keys.firstWhere((n) => n.startsWith('ops-'));
-    final texte = String.fromCharCodes(drive.fichiers[nom]!);
-    drive.fichiers[nom] = texte.replaceFirst('600', '60').codeUnits;
+    final gz = nom.endsWith('.gz');
+    final brut = gz ? gzip.decode(drive.fichiers[nom]!) : drive.fichiers[nom]!;
+    final trafique = utf8.encode(utf8.decode(brut).replaceFirst('600', '60'));
+    drive.fichiers[nom] = gz ? gzip.encode(trafique) : trafique;
     await expectLater(
       Synchroniseur(journal: vendeur, stockage: drive).recupererBoutique(),
       throwsA(isA<ErreurZeroPerte>()),
@@ -193,4 +201,119 @@ void main() {
     expect(r.envoyees, 0);
     expect(r.recues, 0);
   });
+
+  test(
+    'fichiers compressés seulement si tous les appareils savent les lire',
+    () async {
+      // Un appareil d'une ancienne version (sans « format_sync ») est inscrit.
+      await drive.ecrire(
+        'appareil-ancien.json',
+        utf8.encode(
+          jsonEncode({
+            'appareil': 'ancien',
+            'prefixe': 'Z',
+            'nom': 'Vieux téléphone',
+            'inscrit': 1,
+          }),
+        ),
+      );
+      await Synchroniseur(journal: patron, stockage: drive).synchroniser();
+      expect(
+        drive.fichiers.keys.where((n) => n.startsWith('ops-')),
+        everyElement(endsWith('.json')),
+      );
+      // L'ancien appareil remplacé (fichier retiré) : les suivants sont compressés,
+      // et le vendeur relit tout sans doublon.
+      drive.fichiers.remove('appareil-ancien.json');
+      final riz = (await patron.produits()).first;
+      await patron.enregistrerVente(
+        lignes: [LigneDemandee.quantite(produitId: riz.id, nombre: 1)],
+        mode: ModePaiement.especes,
+        montantRecu: 10000,
+        auteurId: 'patron',
+      );
+      await Synchroniseur(journal: patron, stockage: drive).synchroniser();
+      expect(drive.fichiers.keys.any((n) => n.endsWith('.json.gz')), isTrue);
+      final n = await Synchroniseur(
+        journal: vendeur,
+        stockage: drive,
+      ).recupererBoutique();
+      expect(n, await patron.nombreOperations());
+      expect(await vendeur.stocks(), await patron.stocks());
+    },
+  );
+
+  test(
+    'fichier compressé abîmé : refusé proprement, rien n\'est écrit',
+    () async {
+      await Synchroniseur(journal: patron, stockage: drive).synchroniser();
+      drive.fichiers.remove(nomPointDepart);
+      final nom = drive.fichiers.keys.firstWhere((n) => n.startsWith('ops-'));
+      drive.fichiers.remove(nom);
+      drive.fichiers[nom.endsWith('.gz') ? nom : '$nom.gz'] = [1, 2, 3, 4];
+      await expectLater(
+        Synchroniseur(journal: vendeur, stockage: drive).recupererBoutique(),
+        throwsA(isA<ErreurZeroPerte>()),
+      );
+      expect(await vendeur.nombreOperations(), 0);
+    },
+  );
+
+  test('point de départ : un nouvel appareil lit un seul fichier', () async {
+    final riz = (await patron.produits()).first;
+    for (var i = 0; i < 3; i++) {
+      await patron.enregistrerVente(
+        lignes: [LigneDemandee.quantite(produitId: riz.id, nombre: 1)],
+        mode: ModePaiement.especes,
+        montantRecu: 10000,
+        auteurId: 'patron',
+      );
+    }
+    await Synchroniseur(journal: patron, stockage: drive).synchroniser();
+    expect(drive.fichiers.containsKey(nomPointDepart), isTrue);
+    // Les anciens fichiers ne sont plus nécessaires au nouvel appareil :
+    // on les rend illisibles pour prouver qu'il ne les lit pas.
+    for (final n in drive.fichiers.keys.where((n) => n.startsWith('ops-'))) {
+      drive.fichiers[n] = [0, 0, 0];
+    }
+    final n = await Synchroniseur(
+      journal: vendeur,
+      stockage: drive,
+    ).recupererBoutique();
+    expect(n, await patron.nombreOperations());
+    expect(await vendeur.stocks(), await patron.stocks());
+  });
+
+  test('point de départ modifié : refusé, rien n\'est écrit', () async {
+    await Synchroniseur(journal: patron, stockage: drive).synchroniser();
+    final texte = utf8.decode(gzip.decode(drive.fichiers[nomPointDepart]!));
+    expect(texte, contains('600'));
+    drive.fichiers[nomPointDepart] = gzip.encode(
+      utf8.encode(texte.replaceFirst('600', '60')),
+    );
+    await expectLater(
+      Synchroniseur(journal: vendeur, stockage: drive).recupererBoutique(),
+      throwsA(isA<ErreurZeroPerte>()),
+    );
+    expect(await vendeur.nombreOperations(), 0);
+  });
+
+  test(
+    'pas de point de départ tant qu\'un ancien appareil est inscrit',
+    () async {
+      await drive.ecrire(
+        'appareil-ancien.json',
+        utf8.encode(
+          jsonEncode({
+            'appareil': 'ancien',
+            'prefixe': 'Z',
+            'nom': '',
+            'inscrit': 1,
+          }),
+        ),
+      );
+      await Synchroniseur(journal: patron, stockage: drive).synchroniser();
+      expect(drive.fichiers.containsKey(nomPointDepart), isFalse);
+    },
+  );
 }

@@ -124,6 +124,9 @@ export default {
       };
       const cle = `a:${boutique}:${String(alerte.heure).padStart(15, '0')}:${crypto.randomUUID()}`;
       await env.ALERTES.put(cle, JSON.stringify(alerte), { expirationTtl: SEPT_JOURS });
+      // Case « dernière alerte » : les consultations la lisent d'abord (lecture
+      // simple) et ne listent les alertes que s'il y a du nouveau.
+      await env.ALERTES.put(`d:${boutique}`, String(alerte.heure), { expirationTtl: SEPT_JOURS });
       // Notification (sans faire attendre l'appareil qui envoie l'alerte).
       const envoi = notifier(env, boutique, alerte).catch(() => {});
       if (ctx && ctx.waitUntil) ctx.waitUntil(envoi);
@@ -132,13 +135,24 @@ export default {
 
     if (requete.method === 'GET') {
       const depuis = parseInt(url.searchParams.get('depuis') || '0', 10) || 0;
-      const liste = await env.ALERTES.list({ prefix: `a:${boutique}:`, limit: 100 });
+      // Rien de nouveau depuis la dernière consultation : une seule lecture,
+      // pas de liste (les listes sont comptées à part et bien plus limitées).
+      const derniere = parseInt((await env.ALERTES.get(`d:${boutique}`)) || '0', 10) || 0;
       const alertes = [];
-      for (const k of liste.keys) {
-        const heure = parseInt(k.name.split(':')[2], 10);
-        if (heure <= depuis) continue;
-        const v = await env.ALERTES.get(k.name);
-        if (v) alertes.push(JSON.parse(v));
+      if (derniere <= depuis) return reponse(200, { alertes });
+      // Les clés sont rangées par heure : on suit les pages jusqu'au bout
+      // (au plus 5 pages de 100) pour ne jamais manquer les plus récentes.
+      let curseur;
+      for (let page = 0; page < 5; page++) {
+        const liste = await env.ALERTES.list({ prefix: `a:${boutique}:`, limit: 100, cursor: curseur });
+        for (const k of liste.keys) {
+          const heure = parseInt(k.name.split(':')[2], 10);
+          if (heure <= depuis) continue;
+          const v = await env.ALERTES.get(k.name);
+          if (v) alertes.push(JSON.parse(v));
+        }
+        if (liste.list_complete !== false || !liste.cursor) break;
+        curseur = liste.cursor;
       }
       return reponse(200, { alertes });
     }
