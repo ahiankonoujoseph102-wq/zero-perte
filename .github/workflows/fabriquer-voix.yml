@@ -21,6 +21,10 @@ on:
         type: choice
         options: ["extraits", "voix"]
         default: "extraits"
+      refaire:
+        description: "Numéros de phrases à refaire (ex. 020,037), sinon vide"
+        required: false
+        default: ""
       essai:
         description: "oui = sons de test sans service d'IA (pour vérifier la chaîne)"
         type: choice
@@ -82,6 +86,7 @@ jobs:
           ZP_CLE_VOIX_SECOURS: ${{ secrets.ZP_CLE_VOIX_SECOURS }}
           ZP_VOIX_MODELE: ${{ vars.ZP_VOIX_MODELE }}
           ZP_VOIX_NOM: ${{ vars.ZP_VOIX_NOM }}
+          ZP_VOIX_REFAIRE: ${{ github.event.inputs.refaire }}
         run: |
           set -o pipefail
           ARGS=()

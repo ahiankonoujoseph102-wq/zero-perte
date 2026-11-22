@@ -999,3 +999,8 @@ fournisseurs depuis le stock bas, rappel automatique des crédits.
 4. 0.32 (réponses à l'audit), puis correction du relais Cloudflare.
 Travail hors 0.31.0 sur la branche `claude/suite-apres-031` (liste : `docs/reste-a-faire.md` sur cette
 branche).
+- 22/11 à 8 h 13 (quota remis à zéro) : **48/50 phrases** (gemini-3.1-flash-tts-preview, Sulafat, 206 s,
+  622 Ko). Restent 049 et 050. Vérification des 48 : même voix, volume régulier (−16 à −20 dB) ; **020** touche
+  0 dB (risque de saturation) et **037** a une pause de 1,5 s au milieu de la phrase → seront refaites. Script :
+  pauses de plus de 0,6 s dans une phrase ramenées à 0,35 s, volume plafonné, option « refaire » (action 6).
+  Relance programmée le 23/11 à 8 h 12 (020, 037, 049, 050 : un seul lot).

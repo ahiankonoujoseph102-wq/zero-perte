@@ -310,6 +310,45 @@ def decouper(pcm, textes):
     return morceaux
 
 
+def _raccourcir_pauses(pcm, max_ms=600, garde_ms=350):
+    """Une pause de plus de 0,6 s au milieu d'une phrase est ramenée à 0,35 s
+    (la voix ne doit pas s'arrêter net au milieu d'une phrase)."""
+    niv = _niveaux(pcm)
+    if not niv:
+        return pcm
+    haut = sorted(niv)[int(len(niv) * 0.95)] or 1
+    pas = TAUX * PAS_BOUCHE_MS // 1000 * 2
+    calme = [v < haut * 0.06 for v in niv]
+    garde = garde_ms // PAS_BOUCHE_MS
+    sortie, i = bytearray(), 0
+    while i < len(calme):
+        if calme[i]:
+            j = i
+            while j < len(calme) and calme[j]:
+                j += 1
+            if (j - i) * PAS_BOUCHE_MS > max_ms and i > 0 and j < len(calme):
+                sortie += pcm[i * pas : (i + garde) * pas]
+            else:
+                sortie += pcm[i * pas : j * pas]
+            i = j
+        else:
+            sortie += pcm[i * pas : (i + 1) * pas]
+            i += 1
+    return bytes(sortie)
+
+
+def _plafonner(pcm, plafond=29000):
+    """Volume plafonné juste sous le maximum (pas de son saturé)."""
+    ech = struct.unpack(f"<{len(pcm) // 2}h", pcm[: len(pcm) // 2 * 2])
+    if not ech:
+        return pcm
+    crete = max(abs(x) for x in ech)
+    if crete <= plafond:
+        return pcm
+    k = plafond / crete
+    return struct.pack(f"<{len(ech)}h", *(int(x * k) for x in ech))
+
+
 def _retirer_silence(pcm):
     """Retire le silence au début et à la fin (garde 150 ms)."""
     niv = _niveaux(pcm)
@@ -438,10 +477,16 @@ def main():
         if meme:
             services = meme
             textes = {n: t for n, _, t in phrases}
+            # Phrases à refaire (ex. ZP_VOIX_REFAIRE="020,037") : pause trop
+            # longue, son trop fort…
+            refaire = {x.strip() for x in os.environ.get("ZP_VOIX_REFAIRE", "").split(",") if x.strip()}
             deja = {
                 n: p for n, p in ancien["phrases"].items()
-                if p.get("texte") == textes.get(n) and os.path.exists(os.path.join(SORTIE, p["fichier"]))
+                if p.get("texte") == textes.get(n) and n not in refaire
+                and os.path.exists(os.path.join(SORTIE, p["fichier"]))
             }
+            if refaire:
+                print(f"À refaire : {', '.join(sorted(refaire))}.")
             print(f"Reprise : {len(deja)} phrases déjà faites ({ancien.get('modele')}, {ancien.get('voix')}).")
 
     def ecrire(service, mod, voix, resultat):
@@ -468,7 +513,7 @@ def main():
         print(f"Voix {etat} : {len(resultat)}/{len(phrases)} phrases, {duree:.0f} s, {total / 1024:.0f} Ko.")
 
     def garder(resultat, n, fichier, texte, pcm):
-        pcm = _retirer_silence(pcm)
+        pcm = _plafonner(_raccourcir_pauses(_retirer_silence(pcm)))
         encoder(pcm, os.path.join(SORTIE, fichier))
         resultat[n] = {
             "fichier": fichier,
