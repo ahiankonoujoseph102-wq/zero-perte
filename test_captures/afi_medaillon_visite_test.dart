@@ -1,12 +1,10 @@
-// Captures de la visite guidée avec Afi en médaillon (essai, NON activé dans
-// l'application) sur les 4 tailles.
+// Captures de la visite guidée avec Afi en médaillon sur les 4 tailles.
 // Lancement : flutter test test_captures/afi_medaillon_visite_test.dart --update-goldens
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zero_perte/demo_guidee/visite_guidee.dart';
 import 'package:zero_perte/demo_guidee/voix_demo.dart';
 
 import '../test/support/outils.dart';
@@ -40,11 +38,9 @@ void main() {
   for (final e in tailles.entries) {
     final (taille, densite) = e.value;
     testWidgets('visite médaillon ${e.key}', (tester) async {
-      afiMedaillonVisite = true;
       dureeParoleVisite = (_) => const Duration(seconds: 3);
       pauseEntrePhrasesVisite = const Duration(milliseconds: 10);
       addTearDown(() {
-        afiMedaillonVisite = false;
         dureeParoleVisite = dureeEstimee;
         pauseEntrePhrasesVisite = const Duration(milliseconds: 700);
       });

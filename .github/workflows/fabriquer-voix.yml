@@ -64,6 +64,18 @@ jobs:
           command -v ffmpeg >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg; }
           ffmpeg -hide_banner -encoders 2>/dev/null | grep -q libmp3lame
 
+      - name: "Voix : reprendre ce qui est déjà fait"
+        if: github.event.inputs.mode == 'voix'
+        run: |
+          # Les phrases déjà fabriquées (quota du jour atteint la veille) sont
+          # sur la branche voix-demonstration : on les reprend.
+          if git fetch -q origin voix-demonstration 2>/dev/null; then
+            git checkout FETCH_HEAD -- assets/demo/voix && git reset -q
+            echo "Reprise depuis voix-demonstration."
+          else
+            echo "Première fabrication."
+          fi
+
       - name: Fabriquer la voix
         env:
           ZP_CLE_VOIX: ${{ secrets.ZP_CLE_VOIX }}
@@ -108,10 +120,20 @@ jobs:
         run: |
           git config user.name "zero-perte-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -B voix-demonstration
-          git add assets/demo/voix
-          git commit -m "Voix de la démonstration guidée (action 6)" || { echo "Rien de nouveau."; exit 0; }
-          git push --force-with-lease origin voix-demonstration
+          ETAT=$(grep -o "Voix [^:]*: [0-9]*/[0-9]*" "$RUNNER_TEMP/voix.txt" | tail -n 1 || true)
+          # Seul le dossier de la voix va sur la branche voix-demonstration.
+          cp -r assets/demo/voix "$RUNNER_TEMP/voix-faite"
+          git reset -q --hard
+          git clean -fdq assets/demo/voix
+          if git fetch -q origin voix-demonstration 2>/dev/null; then
+            git checkout -q -B voix-demonstration FETCH_HEAD
+          else
+            git checkout -q -B voix-demonstration
+          fi
+          rm -rf assets/demo/voix && cp -r "$RUNNER_TEMP/voix-faite" assets/demo/voix
+          git add -A assets/demo/voix
+          git commit -q -m "${ETAT:-Voix} (action 6) [skip ci]" || { echo "Rien de nouveau."; exit 0; }
+          git push origin voix-demonstration
 
       - name: Résumé
         if: github.event.inputs.mode == 'voix'

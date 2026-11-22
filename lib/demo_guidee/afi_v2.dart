@@ -3,8 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-/// Afi, version 2 (refonte, EN ATTENTE DE VALIDATION : pas encore utilisée
-/// par défaut dans l'application).
+/// Afi (validée par le propriétaire le 22/11).
 ///
 /// Afi en buste (tête, cou, haut des épaules) dans un médaillon rond aux
 /// couleurs de l'application, comme les assistants des grandes applications.
@@ -781,7 +780,7 @@ class MedaillonAfi extends StatefulWidget {
 
   final double taille;
   final ValueListenable<double> bouche;
-  final ValueListenable<FormeBouche>? forme;
+  final ValueListenable<FormeBouche?>? forme;
   final Humeur humeur;
 
   /// « Au revoir » : yeux rieurs et petit signe de tête.

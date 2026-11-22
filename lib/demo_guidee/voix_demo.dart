@@ -8,6 +8,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
+import 'afi_v2.dart' show FormeBouche;
+
 /// Une phrase enregistrée : durée et mouvement de la bouche calculé d'avance
 /// (un chiffre de 0 à 9 toutes les [pasBoucheMs] millisecondes).
 class PhraseEnregistree {
@@ -15,6 +17,7 @@ class PhraseEnregistree {
     required this.fichier,
     required this.dureeMs,
     required this.bouche,
+    this.forme = '',
   });
 
   factory PhraseEnregistree.depuisJson(Map<String, dynamic> j) =>
@@ -22,11 +25,30 @@ class PhraseEnregistree {
         fichier: j['fichier'] as String,
         dureeMs: (j['duree_ms'] as num).toInt(),
         bouche: j['bouche'] as String? ?? '',
+        forme: j['forme'] as String? ?? '',
       );
 
   final String fichier;
   final int dureeMs;
   final String bouche;
+
+  /// Forme de la bouche toutes les [pasBoucheMs] ms (« a », « e », « o »,
+  /// « m »), calculée par l'action 6 ; vide pour une ancienne voix.
+  final String forme;
+
+  /// Forme de la bouche au temps [ms] (nul si inconnue).
+  FormeBouche? formeA(int ms) {
+    if (forme.isEmpty || ms < 0) return null;
+    final i = ms ~/ pasBoucheMs;
+    if (i >= forme.length) return FormeBouche.fermee;
+    return switch (forme[i]) {
+      'a' => FormeBouche.a,
+      'e' => FormeBouche.e,
+      'o' => FormeBouche.o,
+      'm' => FormeBouche.m,
+      _ => null,
+    };
+  }
 
   /// Ouverture de la bouche (0 à 1) au temps [ms].
   double boucheA(int ms) {

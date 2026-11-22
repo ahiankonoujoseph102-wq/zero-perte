@@ -58,7 +58,34 @@ def lire_phrases():
     return [(n, f, p.strip()) for n, f, _, p in lignes]
 
 
-def requete(url, corps, entetes, essais=4):
+class QuotaDuJour(RuntimeError):
+    """Quota du jour atteint (offre gratuite) : on garde ce qui est fait et
+    on reprendra après la remise à zéro (minuit en Californie)."""
+
+
+def _analyser_429(texte):
+    """(quota du jour ?, attente conseillée en s, description) d'une réponse
+    429 de Google, sans jamais citer la clé (elle n'y est pas)."""
+    try:
+        j = json.loads(texte)
+    except ValueError:
+        return False, 30, texte[:200]
+    jour, attente, quotas = False, 30, []
+    for d in j.get("error", {}).get("details", []):
+        for v in d.get("violations", []):
+            q = f"{v.get('quotaId', '?')} = {v.get('quotaValue', '?')}"
+            quotas.append(q)
+            if "PerDay" in v.get("quotaId", ""):
+                jour = True
+        if "retryDelay" in d:
+            try:
+                attente = float(str(d["retryDelay"]).rstrip("s")) + 2
+            except ValueError:
+                pass
+    return jour, attente, "; ".join(quotas) or j.get("error", {}).get("message", "")[:200]
+
+
+def requete(url, corps, entetes, essais=6):
     """POST JSON ; renvoie les octets de la réponse. Les erreurs ne citent
     jamais la clé (elle est dans un en-tête, pas dans l'adresse)."""
     donnees = json.dumps(corps).encode("utf-8")
@@ -67,14 +94,23 @@ def requete(url, corps, entetes, essais=4):
         for k, v in entetes.items():
             req.add_header(k, v)
         try:
-            with urllib.request.urlopen(req, timeout=120) as r:
+            with urllib.request.urlopen(req, timeout=180) as r:
                 return r.read()
         except urllib.error.HTTPError as e:
-            message = e.read()[:300].decode("utf-8", "replace")
-            if e.code in (429, 500, 502, 503) and essai < essais - 1:
+            texte = e.read().decode("utf-8", "replace")
+            if e.code == 429:
+                jour, attente, quotas = _analyser_429(texte)
+                if jour:
+                    raise QuotaDuJour(f"quota du jour atteint ({quotas})")
+                if essai < essais - 1:
+                    print(f"  quota par minute ({quotas}) : attente {attente:.0f} s")
+                    time.sleep(min(attente, 90))
+                    continue
+                raise RuntimeError(f"HTTP 429 : {quotas}")
+            if e.code in (500, 502, 503) and essai < essais - 1:
                 time.sleep(5 * (essai + 1))
                 continue
-            raise RuntimeError(f"HTTP {e.code} : {message}")
+            raise RuntimeError(f"HTTP {e.code} : {texte[:300]}")
         except urllib.error.URLError as e:
             if essai < essais - 1:
                 time.sleep(5)
@@ -83,10 +119,10 @@ def requete(url, corps, entetes, essais=4):
     raise RuntimeError("trop d'essais")
 
 
-def gemini(texte, cle, modele, voix):
+def gemini(texte, cle, modele, voix, style=STYLE):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{modele}:generateContent"
     corps = {
-        "contents": [{"parts": [{"text": STYLE + texte}]}],
+        "contents": [{"parts": [{"text": style + texte}]}],
         "generationConfig": {
             "responseModalities": ["AUDIO"],
             "speechConfig": {
@@ -182,6 +218,88 @@ def encoder(pcm, sortie):
         )
     finally:
         os.unlink(brut)
+
+
+STYLE_LOT = (
+    "Lis ce texte en français, avec une voix de femme chaleureuse, claire et "
+    "souriante, au rythme posé, comme une commerçante qui explique gentiment "
+    "à un client. Il y a plusieurs paragraphes : lis-les dans l'ordre et fais "
+    "une longue pause, d'environ deux secondes, entre deux paragraphes. Ne lis "
+    "que le texte, sans rien ajouter :\n\n"
+)
+TAILLE_LOT = 5
+
+
+def _niveaux(pcm):
+    """Volume (RMS) toutes les 50 ms."""
+    ech = struct.unpack(f"<{len(pcm) // 2}h", pcm[: len(pcm) // 2 * 2])
+    pas = TAUX * PAS_BOUCHE_MS // 1000
+    return [
+        math.sqrt(sum(x * x for x in ech[i : i + pas]) / max(1, len(ech[i : i + pas])))
+        for i in range(0, len(ech), pas)
+    ]
+
+
+def decouper(pcm, textes):
+    """Découpe l'audio d'un lot en autant de morceaux que de phrases, aux
+    pauses les plus longues. Renvoie la liste des PCM, ou None si le
+    découpage n'est pas sûr (on demandera alors phrase par phrase)."""
+    n = len(textes)
+    if n == 1:
+        return [pcm]
+    niv = _niveaux(pcm)
+    if not niv:
+        return None
+    haut = sorted(niv)[int(len(niv) * 0.95)] or 1
+    calme = [v < haut * 0.06 for v in niv]
+    # Pauses : suites de blocs calmes (début, longueur), hors début et fin.
+    pauses, i = [], 0
+    while i < len(calme):
+        if calme[i]:
+            j = i
+            while j < len(calme) and calme[j]:
+                j += 1
+            if i > 0 and j < len(calme):
+                pauses.append((i, j - i))
+            i = j
+        else:
+            i += 1
+    if len(pauses) < n - 1:
+        return None
+    par_longueur = sorted(pauses, key=lambda p: -p[1])
+    choisies = sorted(par_longueur[: n - 1])
+    plus_courte = min(p[1] for p in choisies)
+    suivante = par_longueur[n - 1][1] if len(par_longueur) >= n else 0
+    # Les pauses entre phrases doivent être nettement plus longues que les
+    # pauses à l'intérieur d'une phrase.
+    if plus_courte < 12 or (suivante and plus_courte < suivante * 1.4):
+        return None
+    pas = TAUX * PAS_BOUCHE_MS // 1000 * 2  # octets par bloc
+    marge = 3  # blocs de silence gardés de chaque côté (150 ms)
+    morceaux, debut = [], 0
+    for d, l in choisies:
+        morceaux.append(pcm[debut * pas : (d + marge) * pas])
+        debut = d + l - marge
+    morceaux.append(pcm[debut * pas :])
+    # Durées cohérentes avec la longueur des textes.
+    rapports = [len(m) / max(1, len(t)) for m, t in zip(morceaux, textes)]
+    milieu = sorted(rapports)[len(rapports) // 2]
+    if any(r < milieu * 0.55 or r > milieu * 1.8 for r in rapports):
+        return None
+    return morceaux
+
+
+def _retirer_silence(pcm):
+    """Retire le silence au début et à la fin (garde 150 ms)."""
+    niv = _niveaux(pcm)
+    if not niv:
+        return pcm
+    haut = sorted(niv)[int(len(niv) * 0.95)] or 1
+    actifs = [i for i, v in enumerate(niv) if v >= haut * 0.06]
+    if not actifs:
+        return pcm
+    pas = TAUX * PAS_BOUCHE_MS // 1000 * 2
+    return pcm[max(0, actifs[0] - 3) * pas : (actifs[-1] + 4) * pas]
 
 
 EXTRAIT = (
@@ -284,28 +402,29 @@ def main():
 
     phrases = lire_phrases()
     os.makedirs(SORTIE, exist_ok=True)
-    for service, k, mod, voix in services:
-        print(f"Service : {service} {mod} {voix}".rstrip())
-        resultat = {}
-        try:
-            for n, fichier, texte in phrases:
-                if service == "gemini":
-                    pcm = gemini(texte, k, mod, voix)
-                elif service == "openai":
-                    pcm = openai(texte, k, mod, voix)
-                else:
-                    pcm = bip(texte)
-                encoder(pcm, os.path.join(SORTIE, fichier))
-                resultat[n] = {
-                    "fichier": fichier,
-                    "duree_ms": round(len(pcm) / 2 / TAUX * 1000),
-                    "bouche": bouche(pcm),
-                    "forme": formes(pcm),
-                }
-                print(f"  {n} : {resultat[n]['duree_ms']} ms")
-        except Exception as e:  # le message ne contient jamais la clé
-            print(f"  échec avec {service} : {e}")
-            continue
+    chemin_json = os.path.join(SORTIE, "bouches.json")
+
+    # Reprise : on garde les phrases déjà faites (même texte, même service,
+    # même voix) et on continue avec le même modèle (une seule voix).
+    ancien = {}
+    try:
+        ancien = json.load(open(chemin_json, encoding="utf-8"))
+    except (OSError, ValueError):
+        pass
+    deja = {}
+    if ancien.get("phrases") and not essai:
+        meme = [x for x in services if x[0] == ancien.get("service") and x[2] == ancien.get("modele") and x[3] == ancien.get("voix")]
+        if meme:
+            services = meme
+            textes = {n: t for n, _, t in phrases}
+            deja = {
+                n: p for n, p in ancien["phrases"].items()
+                if p.get("texte") == textes.get(n) and os.path.exists(os.path.join(SORTIE, p["fichier"]))
+            }
+            print(f"Reprise : {len(deja)} phrases déjà faites ({ancien.get('modele')}, {ancien.get('voix')}).")
+
+    def ecrire(service, mod, voix, resultat):
+        complet = len(resultat) == len(phrases)
         json.dump(
             {
                 "version": 1,
@@ -314,16 +433,71 @@ def main():
                 "voix": voix,
                 "pas_bouche_ms": PAS_BOUCHE_MS,
                 "fabrique_le": datetime.date.today().isoformat(),
+                "complet": complet,
                 "mention": "Voix générée par intelligence artificielle",
-                "phrases": resultat,
+                "phrases": dict(sorted(resultat.items())),
             },
-            open(os.path.join(SORTIE, "bouches.json"), "w", encoding="utf-8"),
+            open(chemin_json, "w", encoding="utf-8"),
             ensure_ascii=False,
             indent=1,
         )
         total = sum(os.path.getsize(os.path.join(SORTIE, p["fichier"])) for p in resultat.values())
         duree = sum(p["duree_ms"] for p in resultat.values()) / 1000
-        print(f"Voix fabriquée : {len(resultat)} phrases, {duree:.0f} s, {total / 1024:.0f} Ko.")
+        etat = "complète" if complet else "INCOMPLÈTE"
+        print(f"Voix {etat} : {len(resultat)}/{len(phrases)} phrases, {duree:.0f} s, {total / 1024:.0f} Ko.")
+
+    def garder(resultat, n, fichier, texte, pcm):
+        pcm = _retirer_silence(pcm)
+        encoder(pcm, os.path.join(SORTIE, fichier))
+        resultat[n] = {
+            "fichier": fichier,
+            "texte": texte,
+            "duree_ms": round(len(pcm) / 2 / TAUX * 1000),
+            "bouche": bouche(pcm),
+            "forme": formes(pcm),
+        }
+        print(f"  {n} : {resultat[n]['duree_ms']} ms")
+
+    for service, k, mod, voix in services:
+        print(f"Service : {service} {mod} {voix}".rstrip())
+        resultat = dict(deja) if deja else {}
+        restantes = [x for x in phrases if x[0] not in resultat]
+        try:
+            if service == "gemini":
+                # Par lots de 5 (10 demandes au lieu de 50) ; lot douteux :
+                # phrase par phrase.
+                for i in range(0, len(restantes), TAILLE_LOT):
+                    lot = restantes[i : i + TAILLE_LOT]
+                    morceaux = None
+                    if len(lot) > 1:
+                        pcm = gemini("\n\n".join(t for _, _, t in lot), k, mod, voix, STYLE_LOT)
+                        morceaux = decouper(pcm, [t for _, _, t in lot])
+                        if morceaux is None:
+                            print(f"  lot {lot[0][0]}–{lot[-1][0]} : découpage pas sûr, phrase par phrase")
+                    if morceaux is None:
+                        morceaux = [gemini(t, k, mod, voix) for _, _, t in lot]
+                    for (n, fichier, texte), m in zip(lot, morceaux):
+                        garder(resultat, n, fichier, texte, m)
+                    time.sleep(2)
+            else:
+                for n, fichier, texte in restantes:
+                    pcm = openai(texte, k, mod, voix) if service == "openai" else bip(texte)
+                    garder(resultat, n, fichier, texte, pcm)
+        except QuotaDuJour as e:
+            print(f"  {e}")
+            if resultat:
+                # On garde ce qui est fait ; même modèle à la reprise.
+                ecrire(service, mod, voix, resultat)
+                print("À relancer après la remise à zéro du quota (vers 8 h, heure de Lomé).")
+                return
+            continue
+        except Exception as e:  # le message ne contient jamais la clé
+            print(f"  échec avec {service} : {e}")
+            if resultat and len(resultat) > len(deja):
+                ecrire(service, mod, voix, resultat)
+                return
+            continue
+        ecrire(service, mod, voix, resultat)
         return
     sys.exit("Aucun service n'a pu fabriquer la voix.")
 

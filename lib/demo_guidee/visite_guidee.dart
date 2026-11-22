@@ -11,13 +11,8 @@ import '../domaine/panier.dart';
 import '../services/voix.dart';
 import '../theme/couleurs.dart';
 import 'afi_v2.dart';
-import 'avatar.dart';
 import 'script_visite.dart';
 import 'voix_demo.dart';
-
-/// Afi en médaillon (version 2) au lieu de l'Afi actuelle. FAUX tant que le
-/// propriétaire n'a pas validé : seules les captures d'essai l'activent.
-bool afiMedaillonVisite = false;
 
 /// Commande la visite guidée depuis l'extérieur (bandeau de la démo).
 class ControleurVisite extends ChangeNotifier {
@@ -87,6 +82,11 @@ class EtatVisite extends State<VisiteGuidee> {
   final _clePile = GlobalKey();
   final _clePanneau = GlobalKey(debugLabel: 'visite-panneau');
   final ValueNotifier<double> _bouche = ValueNotifier(0);
+  final ValueNotifier<FormeBouche?> _forme = ValueNotifier(null);
+
+  /// Échecs du lecteur de voix à la suite : après 2, la voix de l'appareil
+  /// prend le relais pour toute la visite.
+  int _echecsLecteur = 0;
 
   late final List<ChapitreVisite> _chapitres = chapitresVisite(
     salutation: phraseSalutation(widget.etat.maintenant()),
@@ -134,6 +134,7 @@ class EtatVisite extends State<VisiteGuidee> {
     _c.removeListener(_surControleur);
     _minuterieBouche?.cancel();
     _bouche.dispose();
+    _forme.dispose();
     widget.voix.arreter();
     widget.lecteur.arreter();
     super.dispose();
@@ -272,12 +273,38 @@ class EtatVisite extends State<VisiteGuidee> {
 
   Future<void> _dire(EtapeVisite e, int g) async {
     final rec = _enregistree.phrases[e.phrase];
-    if (rec != null) {
+    if (rec != null && _echecsLecteur < 2) {
       final debut = DateTime.now();
-      _animerBouche((ms) => rec.boucheA(ms), debut);
-      final ok = await widget.lecteur.jouer(rec.fichier);
+      _animerBouche((ms) => rec.boucheA(ms), debut, rec.formeA);
+      // Vrai quand la moitié de la phrase a eu le temps d'être dite.
+      var assezLong = false;
+      final moitie = Timer(
+        Duration(milliseconds: rec.dureeMs ~/ 2),
+        () => assezLong = true,
+      );
+      // Le lecteur ne doit jamais bloquer la visite : au plus la durée de la
+      // phrase et 4 s de marge.
+      var ok = await widget.lecteur
+          .jouer(rec.fichier)
+          .timeout(
+            Duration(milliseconds: rec.dureeMs + 4000),
+            // Lecteur qui ne répond plus : arrêté, compté comme un échec.
+            onTimeout: () {
+              unawaited(widget.lecteur.arreter());
+              return false;
+            },
+          );
+      moitie.cancel();
       _arreterBouche();
-      if (ok || g != _generation) return;
+      if (g != _generation) return;
+      // Son arrêté beaucoup trop tôt (fichier muet, lecteur sans décodeur) :
+      // c'est un échec, on prend la voix de l'appareil.
+      if (ok && !assezLong) ok = false;
+      if (ok) {
+        _echecsLecteur = 0;
+        return;
+      }
+      _echecsLecteur++;
     }
     // Voix de synthèse de l'appareil (sous-titres toujours affichés).
     unawaited(widget.voix.dire(e.texte));
@@ -286,11 +313,17 @@ class EtatVisite extends State<VisiteGuidee> {
     _arreterBouche();
   }
 
-  void _animerBouche(double Function(int ms) f, DateTime debut) {
+  void _animerBouche(
+    double Function(int ms) f,
+    DateTime debut, [
+    FormeBouche? Function(int ms)? forme,
+  ]) {
     _minuterieBouche?.cancel();
     if (!widget.anime) return;
     _minuterieBouche = Timer.periodic(const Duration(milliseconds: 50), (_) {
-      _bouche.value = f(DateTime.now().difference(debut).inMilliseconds);
+      final ms = DateTime.now().difference(debut).inMilliseconds;
+      _bouche.value = f(ms);
+      _forme.value = forme?.call(ms);
     });
   }
 
@@ -298,6 +331,7 @@ class EtatVisite extends State<VisiteGuidee> {
     _minuterieBouche?.cancel();
     _minuterieBouche = null;
     _bouche.value = 0;
+    _forme.value = null;
   }
 
   void _arreterTout() {
@@ -575,31 +609,22 @@ class EtatVisite extends State<VisiteGuidee> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (afiMedaillonVisite)
-                    MedaillonAfi(
-                      key: const Key('visite-avatar'),
-                      taille: tailleAvatar,
-                      bouche: _bouche,
-                      humeur: switch (_expression) {
-                        Expression.neutre => Humeur.neutre,
-                        Expression.sourire => Humeur.sourire,
-                        _ => Humeur.joie,
-                      },
-                      auRevoir: _fini || _expression == Expression.auRevoir,
-                      cible: geste == null
-                          ? null
-                          : Offset(math.cos(geste), math.sin(geste)),
-                      anime: widget.anime,
-                    )
-                  else
-                    AvatarAfi(
-                      key: const Key('visite-avatar'),
-                      taille: tailleAvatar,
-                      bouche: _bouche,
-                      expression: _fini ? Expression.auRevoir : _expression,
-                      geste: geste,
-                      anime: widget.anime,
-                    ),
+                  MedaillonAfi(
+                    key: const Key('visite-avatar'),
+                    taille: tailleAvatar,
+                    bouche: _bouche,
+                    forme: _forme,
+                    humeur: switch (_expression) {
+                      Expression.neutre => Humeur.neutre,
+                      Expression.sourire => Humeur.sourire,
+                      _ => Humeur.joie,
+                    },
+                    auRevoir: _fini || _expression == Expression.auRevoir,
+                    cible: geste == null
+                        ? null
+                        : Offset(math.cos(geste), math.sin(geste)),
+                    anime: widget.anime,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Column(
@@ -634,7 +659,7 @@ class EtatVisite extends State<VisiteGuidee> {
                             height: 1.25,
                           ),
                         ),
-                        if (_enregistree.mentionIA)
+                        if (_enregistree.mentionIA && _echecsLecteur < 2)
                           const Padding(
                             padding: EdgeInsets.only(top: 2),
                             child: Text(

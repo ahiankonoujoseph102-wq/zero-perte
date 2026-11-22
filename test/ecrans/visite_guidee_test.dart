@@ -1,3 +1,4 @@
+import 'dart:async';
 // Démonstration guidée avec Afi : la visite entière se joue sur chaque taille
 // d'écran, chaque bouton montré est trouvé, la vente est vraiment faite.
 import 'dart:io';
@@ -282,8 +283,9 @@ void main() {
             voixEnregistree: Future.value(
               VoixEnregistree.depuisJson(
                 '{"service":"gemini","phrases":{'
-                '"001":{"fichier":"001.mp3","duree_ms":400,"bouche":"0594"},'
-                '"003":{"fichier":"003.mp3","duree_ms":400,"bouche":"0594"}}}',
+                '"001":{"fichier":"001.mp3","duree_ms":60,"bouche":"0594",'
+                '"forme":"maem"},'
+                '"003":{"fichier":"003.mp3","duree_ms":60,"bouche":"0594"}}}',
               ),
             ),
             dureeParole: (_) => const Duration(milliseconds: 30),
@@ -308,6 +310,92 @@ void main() {
       await attendre(tester);
     },
   );
+
+  _testsLecteurEnPanne();
+}
+
+void _testsLecteurEnPanne() {
+  for (final panne in ['refuse', 'muet', 'bloque']) {
+    testWidgets('lecteur en panne ($panne) : Afi prend la voix de l\'appareil, '
+        'la visite continue', (tester) async {
+      final env = await environnementDeTest(
+        tester,
+        etape: EtapeAssistant.activation,
+      );
+      final d = (await tester.runAsync(() => demo(env, cheminDemo())))!;
+      d.maintenant = () => DateTime(2026, 11, 21, 9);
+      final lecteur = _LecteurEnPanne(panne);
+      final ctrl = ControleurVisite();
+      final nav = GlobalKey<NavigatorState>();
+      tester.view.physicalSize = const Size(720, 1280);
+      tester.view.devicePixelRatio = 2;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MaterialApp(
+          navigatorKey: nav,
+          builder: (context, enfant) => VisiteGuidee(
+            etat: d,
+            controleur: ctrl,
+            navigateur: nav,
+            voix: env.voix,
+            lecteur: lecteur,
+            voixEnregistree: Future.value(
+              VoixEnregistree.depuisJson(
+                '{"service":"gemini","phrases":{'
+                '"001":{"fichier":"001.mp3","duree_ms":2000,"bouche":"05"},'
+                '"003":{"fichier":"003.mp3","duree_ms":2000,"bouche":"05"},'
+                '"004":{"fichier":"004.mp3","duree_ms":2000,"bouche":"05"}'
+                '}}',
+              ),
+            ),
+            dureeParole: (_) => const Duration(milliseconds: 30),
+            pauseEntrePhrases: const Duration(milliseconds: 10),
+            child: enfant!,
+          ),
+          home: const Scaffold(body: SizedBox.expand()),
+        ),
+      );
+      for (var i = 0; i < 150; i++) {
+        if (env.voix.phrases.contains(phrasesVisite['004'])) break;
+        await attendre(tester, tours: 1);
+        await tester.pump(const Duration(milliseconds: 300));
+      }
+      // Chaque phrase est dite par la voix de l'appareil, dans l'ordre.
+      expect(env.voix.phrases, contains('Bonjour !'));
+      expect(env.voix.phrases, contains(phrasesVisite['003']));
+      expect(env.voix.phrases, contains(phrasesVisite['004']));
+      // Après 2 échecs, le lecteur n'est plus essayé.
+      expect(lecteur.essais, 2);
+      expect(tester.takeException(), isNull);
+      ctrl.quitter();
+      await tester.pump(const Duration(seconds: 15));
+      await attendre(tester);
+    });
+  }
+}
+
+/// Lecteur qui refuse le fichier, s'arrête tout de suite (muet) ou ne
+/// répond jamais.
+class _LecteurEnPanne implements LecteurVoixDemo {
+  _LecteurEnPanne(this.panne);
+  final String panne;
+  int essais = 0;
+  @override
+  Future<bool> jouer(String fichier) async {
+    essais++;
+    switch (panne) {
+      case 'refuse':
+        return false;
+      case 'muet':
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        return true;
+      default:
+        return Completer<bool>().future;
+    }
+  }
+
+  @override
+  Future<void> arreter() async {}
 }
 
 class _FauxLecteur implements LecteurVoixDemo {

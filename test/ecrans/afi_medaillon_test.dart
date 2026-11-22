@@ -1,4 +1,4 @@
-// Afi en médaillon (essai, pas encore activé) : à vitesse réelle, sur les 4
+// Afi en médaillon : à vitesse réelle, sur les 4
 // tailles, chaque bouton de la visite est trouvé et entouré, et le panneau
 // d'Afi ne le cache jamais (haut du bouton toujours visible, au plus un quart
 // recouvert pour les très grands éléments sur 4 pouces).
@@ -44,8 +44,6 @@ void main() {
     testWidgets('médaillon ne cache aucun bouton montré ${e.key}', (
       tester,
     ) async {
-      afiMedaillonVisite = true;
-      addTearDown(() => afiMedaillonVisite = false);
       await ouvrirDemo(
         tester,
         taille: taille,
