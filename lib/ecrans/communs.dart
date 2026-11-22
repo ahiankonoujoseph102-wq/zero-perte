@@ -352,3 +352,68 @@ NavigatorState navigateurDeLApplication(BuildContext context) {
   });
   return dernier ?? Navigator.of(context, rootNavigator: true);
 }
+
+/// Page encore vide : une icône, ce qui manque, et à quoi sert la page
+/// (pour donner envie de s'en servir), au lieu d'une phrase seule.
+class EtatVide extends StatelessWidget {
+  const EtatVide({
+    super.key,
+    required this.icone,
+    required this.titre,
+    required this.explication,
+    this.couleur = CouleursZp.marque,
+  });
+
+  final IconData icone;
+  final String titre;
+  final String explication;
+  final Color couleur;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = couleur == CouleursZp.marque
+        ? Theme.of(context).colorScheme.primary
+        : couleur;
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 460),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 88,
+                height: 88,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: c.withValues(alpha: 0.14),
+                ),
+                child: Icon(icone, size: 46, color: c),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                titre,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 21,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                explication,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 17,
+                  height: 1.35,
+                  color: CouleursZp.texteDoux,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

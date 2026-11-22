@@ -57,7 +57,7 @@ void main() {
       );
       await afficherApp(tester, env.etat);
       await ouvrirEspacePatron(tester);
-      await toucher(tester, find.byKey(const Key('patron-inventaire')));
+      await ouvrirPagePatron(tester, 'inventaire');
       await attendre(tester, tours: 6);
       await toucher(tester, find.byKey(const Key('bouton-inventaire-complet')));
       await attendre(tester, tours: 6);
@@ -139,7 +139,7 @@ void main() {
       );
       await afficherApp(tester, env.etat, taille: taille, densite: densite);
       await ouvrirEspacePatron(tester);
-      await toucher(tester, find.byKey(const Key('patron-inventaire')));
+      await ouvrirPagePatron(tester, 'inventaire');
       await attendre(tester, tours: 6);
       await toucher(tester, find.byKey(const Key('bouton-inventaire-complet')));
       await attendre(tester, tours: 6);

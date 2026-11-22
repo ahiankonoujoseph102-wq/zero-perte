@@ -94,7 +94,7 @@ final List<EntreePatron> entreesPatron = [
   ),
   EntreePatron(
     'fournisseurs',
-    Icons.local_shipping_rounded,
+    Icons.handshake_rounded,
     'Fournisseurs',
     CouleursZp.marque,
     (etat) => PageFournisseurs(etat: etat),
@@ -131,12 +131,27 @@ class EspacePatron extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Pas de sauvegarde en démonstration : ses données ne doivent pas en sortir.
+    // Tablette et PC : les pages déjà dans le menu de gauche ne sont pas
+    // répétées ici (une seule façon d'y aller, moins de confusion).
+    final menuAGauche = MediaQuery.sizeOf(context).width >= 840;
+    const dansLeMenu = {
+      'rapports',
+      'devis',
+      'retours',
+      'tableau',
+      'arrivages',
+      'vendeurs',
+      'inventaire',
+      'fournisseurs',
+    };
     final entrees = [
       for (final e in entreesPatron)
-        if (!(etat.estDemo && (e.cle == 'sauvegarde' || e.cle == 'synchro'))) e,
+        if (!(etat.estDemo && (e.cle == 'sauvegarde' || e.cle == 'synchro')) &&
+            !(menuAGauche && dansLeMenu.contains(e.cle)))
+          e,
     ];
     return PageZp(
-      titre: 'Espace patron',
+      titre: 'Gestion',
       icone: Icons.key_rounded,
       corps: GridView.builder(
         padding: const EdgeInsets.all(16),

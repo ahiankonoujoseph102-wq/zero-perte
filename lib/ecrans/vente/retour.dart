@@ -585,14 +585,14 @@ class PageRetours extends StatelessWidget {
           }
           final liste = s.data!;
           if (liste.isEmpty) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Text(
-                  'Aucun retour pour l\'instant.',
-                  style: TextStyle(fontSize: 20),
-                ),
-              ),
+            return const EtatVide(
+              icone: Icons.assignment_return_rounded,
+              couleur: CouleursZp.argentSort,
+              titre: 'Aucun retour pour l\'instant.',
+              explication:
+                  'Quand un client rapporte un produit, ouvrez la vente dans '
+                  '« Ventes du jour » et touchez « Retour » : l\'argent rendu et '
+                  'le stock sont corrigés tout seuls, rien ne se perd.',
             );
           }
           return ListView.separated(

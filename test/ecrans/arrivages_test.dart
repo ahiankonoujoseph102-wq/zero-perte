@@ -20,7 +20,7 @@ void main() {
       await toucher(tester, find.byKey(const Key('bouton-espace-patron')));
       expect(find.byType(EspacePatron), findsOneWidget);
 
-      await toucher(tester, find.byKey(const Key('patron-arrivages')));
+      await ouvrirPagePatron(tester, 'arrivages');
       expect(find.textContaining('En stock : 0 kg'), findsOneWidget);
       await toucher(tester, find.byKey(const Key('arrivage-alimentation.riz')));
       // Par défaut : le plus grand conditionnement (sac de 50 kg).
@@ -116,10 +116,14 @@ void main() {
         preparer: boutiqueInstallee,
       );
       await afficherApp(tester, env.etat, taille: taille, densite: densite);
-      final nav = tester.state<NavigatorState>(find.byType(Navigator).first);
-      nav.push(MaterialPageRoute(builder: (_) => EspacePatron(etat: env.etat)));
-      await attendre(tester);
-      await toucher(tester, find.byKey(const Key('patron-arrivages')));
+      if (taille.width < 840) {
+        final nav = tester.state<NavigatorState>(find.byType(Navigator).first);
+        nav.push(
+          MaterialPageRoute(builder: (_) => EspacePatron(etat: env.etat)),
+        );
+        await attendre(tester);
+      }
+      await ouvrirPagePatron(tester, 'arrivages');
       await toucher(tester, find.byKey(const Key('arrivage-alimentation.riz')));
       expect(tester.takeException(), isNull);
       expect(

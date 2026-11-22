@@ -47,7 +47,7 @@ class _PageFournisseursState extends State<PageFournisseurs> {
   Widget build(BuildContext context) {
     return PageZp(
       titre: 'Fournisseurs',
-      icone: Icons.local_shipping_rounded,
+      icone: Icons.handshake_rounded,
       bas: GrosBouton(
         key: const Key('bouton-nouveau-fournisseur'),
         texte: 'Nouveau fournisseur',
@@ -66,15 +66,12 @@ class _PageFournisseursState extends State<PageFournisseurs> {
           }
           final liste = s.data!;
           if (liste.isEmpty) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Text(
-                  'Aucun fournisseur pour l\'instant.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 20),
-                ),
-              ),
+            return const EtatVide(
+              icone: Icons.handshake_rounded,
+              titre: 'Aucun fournisseur pour l\'instant.',
+              explication:
+                  'Ajoutez vos grossistes : vous saurez toujours combien vous '
+                  'leur devez, et leur numéro est au même endroit.',
             );
           }
           final total = liste.fold<int>(0, (t, f) => t + f.doit);
@@ -290,14 +287,14 @@ class _PageFournisseurState extends State<PageFournisseur> {
         if (f == null) {
           return const PageZp(
             titre: 'Fournisseur',
-            icone: Icons.local_shipping_rounded,
+            icone: Icons.handshake_rounded,
             corps: Center(child: CircularProgressIndicator()),
           );
         }
         final h = s.data!.$2;
         return PageZp(
           titre: f.nom,
-          icone: Icons.local_shipping_rounded,
+          icone: Icons.handshake_rounded,
           bas: GrosBouton(
             key: const Key('bouton-payer-fournisseur'),
             texte: 'Je paie',

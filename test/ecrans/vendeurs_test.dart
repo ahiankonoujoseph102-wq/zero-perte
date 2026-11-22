@@ -34,7 +34,7 @@ void main() {
       );
       await afficherApp(tester, env.etat);
       await ouvrirEspacePatron(tester);
-      await toucher(tester, find.byKey(const Key('patron-vendeurs')));
+      await ouvrirPagePatron(tester, 'vendeurs');
       await toucher(tester, find.byKey(const Key('bouton-ajouter-vendeur')));
       await tester.enterText(
         find.byKey(const Key('champ-nom-vendeur')),
@@ -99,7 +99,7 @@ void main() {
       );
       await afficherApp(tester, env.etat);
       await ouvrirEspacePatron(tester);
-      await toucher(tester, find.byKey(const Key('patron-vendeurs')));
+      await ouvrirPagePatron(tester, 'vendeurs');
       await toucher(tester, find.byKey(const Key('bloquer-Kossi')));
       expect(find.text('Bloqué'), findsOneWidget);
 

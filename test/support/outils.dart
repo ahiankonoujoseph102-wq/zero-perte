@@ -382,3 +382,15 @@ Future<void> revenirAccueil(WidgetTester tester) async {
   }
   await attendre(tester, tours: 4);
 }
+
+/// Ouvre une page de l'espace patron : sur téléphone par sa tuile ; sur
+/// tablette et PC par le menu de gauche (elle n'est pas répétée dans
+/// « Gestion »).
+Future<void> ouvrirPagePatron(WidgetTester tester, String cle) async {
+  final largeur = tester.view.physicalSize.width / tester.view.devicePixelRatio;
+  if (largeur < 840) {
+    await toucher(tester, find.byKey(Key('patron-$cle')));
+    return;
+  }
+  await toucher(tester, find.byKey(Key('menu-$cle')));
+}

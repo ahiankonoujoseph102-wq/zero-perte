@@ -99,7 +99,7 @@ void main() {
     );
     await afficherApp(tester, env.etat);
     await ouvrirEspacePatron(tester);
-    await toucher(tester, find.byKey(const Key('patron-vendeurs')));
+    await ouvrirPagePatron(tester, 'vendeurs');
 
     // Ajout d'Afi : aucun clavier de code, seulement le prénom.
     await toucher(tester, find.byKey(const Key('bouton-ajouter-vendeur')));
@@ -264,7 +264,7 @@ void main() {
       );
       await afficherApp(tester, env.etat, taille: taille, densite: densite);
       await ouvrirEspacePatron(tester);
-      await toucher(tester, find.byKey(const Key('patron-vendeurs')));
+      await ouvrirPagePatron(tester, 'vendeurs');
       await toucher(tester, find.byKey(const Key('bouton-ajouter-vendeur')));
       expect(tester.takeException(), isNull);
       await tester.enterText(

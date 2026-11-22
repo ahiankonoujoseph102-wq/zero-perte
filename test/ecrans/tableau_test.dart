@@ -91,7 +91,7 @@ void main() {
       final env = await environnementDeTest(tester, preparer: journee);
       await afficherApp(tester, env.etat);
       await ouvrirEspacePatron(tester);
-      await toucher(tester, find.byKey(const Key('patron-tableau')));
+      await ouvrirPagePatron(tester, 'tableau');
       await attendre(tester, tours: 10);
 
       String texte(String cle) =>
@@ -141,7 +141,7 @@ void main() {
       await afficherApp(tester, env.etat, taille: taille, densite: densite);
       await ouvrirEspacePatron(tester);
       expect(tester.takeException(), isNull);
-      await toucher(tester, find.byKey(const Key('patron-tableau')));
+      await ouvrirPagePatron(tester, 'tableau');
       await attendre(tester, tours: 10);
       expect(tester.takeException(), isNull);
       await toucher(tester, find.byKey(const Key('periode-semaine')));

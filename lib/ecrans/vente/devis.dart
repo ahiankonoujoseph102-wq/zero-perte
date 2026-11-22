@@ -194,16 +194,13 @@ class _PageListeDevisState extends State<PageListeDevis> {
           }
           final liste = s.data!;
           if (liste.isEmpty) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Text(
-                  'Aucun devis. Dans « Vendre », remplissez le panier puis '
-                  'touchez l\'icône « Devis » en haut.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 19),
-                ),
-              ),
+            return const EtatVide(
+              icone: Icons.request_quote_rounded,
+              titre: 'Aucun devis pour l\'instant.',
+              explication:
+                  'Un client demande un prix ? Dans « Vendre », remplissez le '
+                  'panier puis touchez « Devis » en haut. Il reçoit le devis sur '
+                  'WhatsApp et les prix sont gardés 7 jours.',
             );
           }
           return ListView.separated(

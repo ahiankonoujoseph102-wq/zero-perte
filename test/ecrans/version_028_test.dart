@@ -54,7 +54,7 @@ Future<void> devisPuisHausse(EtatApplication etat) async {
 /// encaisse le compte exact.
 Future<void> transformerEtEncaisser(WidgetTester tester) async {
   await ouvrirEspacePatron(tester);
-  await toucher(tester, find.byKey(const Key('patron-devis')));
+  await ouvrirPagePatron(tester, 'devis');
   await toucher(tester, find.byKey(const Key('devis-0')));
   await attendre(tester, tours: 6);
   await toucher(tester, find.byKey(const Key('bouton-devis-en-vente')));
@@ -102,7 +102,7 @@ void main() {
       env.etat.maintenant = () => DateTime.now().add(const Duration(days: 8));
       await afficherApp(tester, env.etat);
       await ouvrirEspacePatron(tester);
-      await toucher(tester, find.byKey(const Key('patron-devis')));
+      await ouvrirPagePatron(tester, 'devis');
       await toucher(tester, find.byKey(const Key('devis-0')));
       await attendre(tester, tours: 6);
       expect(

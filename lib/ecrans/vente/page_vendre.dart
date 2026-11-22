@@ -57,6 +57,15 @@ class _PageVendreState extends State<PageVendre> {
   /// Catégorie affichée (null = toutes).
   String? _categorie;
 
+  /// Recherche d'un produit par son nom (grandes boutiques).
+  final _recherche = TextEditingController();
+
+  @override
+  void dispose() {
+    _recherche.dispose();
+    super.dispose();
+  }
+
   Future<void> _choisirClient() async {
     if (_panier.clientId != null) {
       setState(() => _panier.choisirClient(null, null));
@@ -164,9 +173,37 @@ class _PageVendreState extends State<PageVendre> {
         final tous = etat.produits;
         String cat(Produit p) => p.catalogueId?.split('.').first ?? 'autres';
         final categories = <String>{for (final p in tous) cat(p)}.toList();
-        final produits = _categorie == null
-            ? tous
-            : tous.where((p) => cat(p) == _categorie).toList();
+        final cherche = sansAccents(_recherche.text.trim());
+        final produits = [
+          for (final p in tous)
+            if ((_categorie == null || cat(p) == _categorie) &&
+                (cherche.isEmpty || correspond(p.nom, cherche)))
+              p,
+        ];
+        // Au-delà de 12 produits, une case pour chercher par le nom.
+        final champRecherche = tous.length > 12
+            ? Padding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                child: TextField(
+                  key: const Key('recherche-produit'),
+                  controller: _recherche,
+                  onChanged: (_) => setState(() {}),
+                  style: const TextStyle(fontSize: 18),
+                  decoration: InputDecoration(
+                    hintText: 'Chercher un produit',
+                    prefixIcon: const Icon(Icons.search_rounded),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                    suffixIcon: _recherche.text.isEmpty
+                        ? null
+                        : IconButton(
+                            tooltip: 'Effacer',
+                            icon: const Icon(Icons.close_rounded),
+                            onPressed: () => setState(_recherche.clear),
+                          ),
+                  ),
+                ),
+              )
+            : null;
         String nomCategorie(String id) =>
             etat.catalogue.categories
                 .where((c) => c.id == id)
@@ -206,6 +243,21 @@ class _PageVendreState extends State<PageVendre> {
                     'Aucun produit. Le patron doit d\'abord ajouter ses produits.',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 20),
+                  ),
+                ),
+              )
+            : produits.isEmpty
+            ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(
+                    'Aucun produit ne s\'appelle « ${_recherche.text.trim()} ».',
+                    key: const Key('recherche-vide'),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      color: CouleursZp.texteDoux,
+                    ),
                   ),
                 ),
               )
@@ -290,22 +342,23 @@ class _PageVendreState extends State<PageVendre> {
             ),
           ],
         );
+        // Icône + mot : on comprend sans deviner.
         final actions = [
-          IconButton(
-            key: const Key('bouton-devis'),
-            tooltip: 'Faire un devis',
-            iconSize: 30,
+          _ActionHaut(
+            cle: 'bouton-devis',
+            icone: Icons.request_quote_rounded,
+            texte: 'Devis',
+            aide: 'Faire un devis',
             onPressed: _faireDevis,
-            icon: const Icon(Icons.request_quote_rounded),
           ),
-          IconButton(
-            key: const Key('bouton-ventes-du-jour'),
-            tooltip: 'Ventes du jour',
-            iconSize: 30,
+          _ActionHaut(
+            cle: 'bouton-ventes-du-jour',
+            icone: Icons.receipt_long_rounded,
+            texte: 'Ventes',
+            aide: 'Ventes du jour',
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => PageVentesDuJour(etat: etat)),
             ),
-            icon: const Icon(Icons.receipt_long_rounded),
           ),
           const SizedBox(width: 8),
         ];
@@ -323,6 +376,7 @@ class _PageVendreState extends State<PageVendre> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      ?champRecherche,
                       ?filtre,
                       Expanded(child: grille),
                     ],
@@ -379,6 +433,7 @@ class _PageVendreState extends State<PageVendre> {
           corps: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              ?champRecherche,
               // Filtre par catégorie, seulement si la boutique en a plusieurs.
               ?filtre,
               Expanded(child: grille),
@@ -392,6 +447,53 @@ class _PageVendreState extends State<PageVendre> {
       },
     );
   }
+}
+
+class _ActionHaut extends StatelessWidget {
+  const _ActionHaut({
+    required this.cle,
+    required this.icone,
+    required this.texte,
+    required this.aide,
+    required this.onPressed,
+  });
+
+  final String cle;
+  final IconData icone;
+  final String texte;
+  final String aide;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => Tooltip(
+    message: aide,
+    child: InkWell(
+      key: Key(cle),
+      borderRadius: BorderRadius.circular(12),
+      onTap: onPressed,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: 56, minHeight: 48),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icone, size: 26),
+              Text(
+                texte,
+                maxLines: 1,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
 }
 
 class _TuileVente extends StatelessWidget {
@@ -732,4 +834,27 @@ class _ListePanier extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Texte en minuscules sans accents (« Pâtes » se trouve en tapant « pate »).
+String sansAccents(String t) {
+  const avec = 'àâäáãçéèêëíìîïñóòôöõúùûüÿœæ';
+  const sans = 'aaaaaceeeeiiiinooooouuuuyoa';
+  final b = StringBuffer();
+  for (final c in t.toLowerCase().split('')) {
+    final i = avec.indexOf(c);
+    b.write(i < 0 ? c : sans[i]);
+  }
+  return b.toString();
+}
+
+/// Vrai si un mot du nom commence par ce qui est tapé (« ri » trouve « Riz »,
+/// pas « Sucrerie ») ; à partir de 4 lettres, n'importe où dans le nom.
+bool correspond(String nom, String cherche) {
+  final n = sansAccents(nom);
+  if (cherche.length >= 4 && n.contains(cherche)) return true;
+  return n
+          .split(RegExp(r"[\s,'’()/-]+"))
+          .any((mot) => mot.startsWith(cherche)) ||
+      n.startsWith(cherche);
 }

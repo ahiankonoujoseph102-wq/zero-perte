@@ -31,15 +31,12 @@ class PageVendeurs extends StatelessWidget {
             ),
           ),
           corps: vendeurs.isEmpty
-              ? const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Text(
-                      'Aucun vendeur pour l\'instant.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 20),
-                    ),
-                  ),
+              ? const EtatVide(
+                  icone: Icons.badge_rounded,
+                  titre: 'Aucun vendeur pour l\'instant.',
+                  explication:
+                      'Donnez à chaque vendeur son propre code : vous savez qui a '
+                      'vendu quoi, et il ne voit ni les bénéfices ni les réglages.',
                 )
               : ListView.separated(
                   padding: const EdgeInsets.all(16),

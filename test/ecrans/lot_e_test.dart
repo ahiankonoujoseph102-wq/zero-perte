@@ -355,7 +355,7 @@ void main() {
       // Le patron rouvre le devis : « Déjà vendu », plus de bouton.
       await revenirAccueil(tester);
       await ouvrirEspacePatron(tester);
-      await toucher(tester, find.byKey(const Key('patron-devis')));
+      await ouvrirPagePatron(tester, 'devis');
       expect(find.textContaining('vendu (A-000001)'), findsOneWidget);
       await toucher(tester, find.byKey(const Key('devis-0')));
       await attendre(tester, tours: 6);
@@ -410,7 +410,7 @@ void main() {
     );
     await afficherApp(tester, env.etat);
     await ouvrirEspacePatron(tester);
-    await toucher(tester, find.byKey(const Key('patron-rapports')));
+    await ouvrirPagePatron(tester, 'rapports');
     await attendre(tester, tours: 10);
     String montant(String cle) =>
         tester.widget<Text>(find.byKey(Key(cle))).data!;
@@ -481,7 +481,7 @@ void main() {
 
       await revenirAccueil(tester);
       await ouvrirEspacePatron(tester);
-      await toucher(tester, find.byKey(const Key('patron-rapports')));
+      await ouvrirPagePatron(tester, 'rapports');
       await attendre(tester, tours: 10);
       expect(tester.takeException(), isNull);
       await toucher(tester, find.byKey(const Key('rapport-mois')));
@@ -490,14 +490,14 @@ void main() {
 
       await revenirAccueil(tester);
       await ouvrirEspacePatron(tester);
-      await toucher(tester, find.byKey(const Key('patron-devis')));
+      await ouvrirPagePatron(tester, 'devis');
       await toucher(tester, find.byKey(const Key('devis-0')));
       await attendre(tester, tours: 6);
       expect(tester.takeException(), isNull);
 
       await revenirAccueil(tester);
       await ouvrirEspacePatron(tester);
-      await toucher(tester, find.byKey(const Key('patron-retours')));
+      await ouvrirPagePatron(tester, 'retours');
       expect(find.byKey(const Key('retour-0')), findsOneWidget);
       expect(tester.takeException(), isNull);
     });

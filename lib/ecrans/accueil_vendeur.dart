@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../app/etat_application.dart';
+import '../domaine/argent.dart';
 import '../domaine/boutique.dart';
+import '../domaine/tableau.dart';
 import '../domaine/utilisateurs.dart';
 import '../theme/couleurs.dart';
 import 'bouton_action.dart';
@@ -158,7 +162,7 @@ List<EntreeMenu> menuPrincipal(EtatApplication etat) => [
     ),
     EntreeMenu(
       cle: 'fournisseurs',
-      icone: Icons.store_rounded,
+      icone: Icons.handshake_rounded,
       titre: 'Fournisseurs',
       couleur: const Color(0xFF4FB3E8),
       surTelephone: false,
@@ -242,6 +246,19 @@ class AccueilVendeur extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: bas ? 10 : 14),
+                  // Le patron voit tout de suite ce que la boutique a fait
+                  // aujourd'hui (c'est l'intérêt de l'application).
+                  // Pas sur les très petits écrans : les gros boutons d'abord.
+                  if (etat.voitTout && !bas) ...[
+                    MediaQuery.withClampedTextScaling(
+                      maxScaleFactor: 1.2,
+                      child: ResumeDuJour(
+                        etat: etat,
+                        onTap: () => _ouvrir(context, PageTableau(etat: etat)),
+                      ),
+                    ),
+                    SizedBox(height: bas ? 8 : 12),
+                  ],
                   Expanded(
                     child: GrilleAccueil(
                       entrees: [
@@ -262,6 +279,150 @@ class AccueilVendeur extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Résumé du jour pour le patron sur téléphone : ventes, bénéfice estimé et
+/// ce que les clients doivent ; un toucher ouvre le tableau.
+class ResumeDuJour extends StatefulWidget {
+  const ResumeDuJour({
+    super.key,
+    required this.etat,
+    required this.onTap,
+    this.compact = false,
+  });
+
+  final EtatApplication etat;
+  final VoidCallback onTap;
+
+  /// Petit écran : marges plus serrées.
+  final bool compact;
+
+  @override
+  State<ResumeDuJour> createState() => _ResumeDuJourState();
+}
+
+class _ResumeDuJourState extends State<ResumeDuJour> {
+  late Future<TableauPatron?> _tableau = _charger();
+  Timer? _attente;
+
+  /// Nul si la lecture échoue (l'accueil reste utilisable).
+  Future<TableauPatron?> _charger() => widget.etat
+      .tableau(Periode.jour)
+      .then<TableauPatron?>((t) => t, onError: (Object _) => null);
+
+  /// Recharge au plus toutes les 0,4 s (plusieurs changements d'affilée
+  /// après une vente).
+  void _recharger() {
+    _attente?.cancel();
+    _attente = Timer(const Duration(milliseconds: 400), () {
+      if (mounted) {
+        setState(() {
+          _tableau = _charger();
+        });
+      }
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    widget.etat.addListener(_recharger);
+  }
+
+  @override
+  void dispose() {
+    _attente?.cancel();
+    widget.etat.removeListener(_recharger);
+    super.dispose();
+  }
+
+  Widget _chiffre(String titre, int montant, Color couleur, String cle) =>
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              titre,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 13, color: CouleursZp.texteDoux),
+            ),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                formatFrancs(montant),
+                key: Key(cle),
+                style: TextStyle(
+                  fontSize: 21,
+                  fontWeight: FontWeight.w800,
+                  color: couleur,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<TableauPatron?>(
+      future: _tableau,
+      builder: (context, s) {
+        final t = s.data;
+        final contenu = t == null
+            ? const SizedBox(height: 44)
+            : Row(
+                children: [
+                  _chiffre(
+                    'Ventes du jour',
+                    t.ventes,
+                    CouleursZp.argentEntreClair,
+                    'resume-ventes',
+                  ),
+                  _chiffre(
+                    'Bénéfice estimé',
+                    t.benefice.benefice,
+                    t.benefice.benefice >= 0
+                        ? CouleursZp.argentEntreClair
+                        : CouleursZp.argentSortClair,
+                    'resume-benefice',
+                  ),
+                  _chiffre(
+                    'Crédits clients',
+                    t.credits,
+                    CouleursZp.creditClair,
+                    'resume-credits',
+                  ),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: CouleursZp.texteDoux,
+                  ),
+                ],
+              );
+        return Material(
+          color: CouleursZp.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+            side: const BorderSide(color: CouleursZp.ligne, width: 1.5),
+          ),
+          child: InkWell(
+            key: const Key('resume-du-jour'),
+            borderRadius: BorderRadius.circular(18),
+            onTap: widget.onTap,
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: widget.compact ? 8 : 10,
+              ),
+              child: contenu,
+            ),
+          ),
+        );
+      },
     );
   }
 }

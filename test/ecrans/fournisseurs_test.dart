@@ -20,7 +20,7 @@ void main() {
       );
       await afficherApp(tester, env.etat);
       await ouvrirEspacePatron(tester);
-      await toucher(tester, find.byKey(const Key('patron-fournisseurs')));
+      await ouvrirPagePatron(tester, 'fournisseurs');
       await attendre(tester, tours: 6);
       await toucher(
         tester,
@@ -111,7 +111,7 @@ void main() {
       );
       await afficherApp(tester, env.etat, taille: taille, densite: densite);
       await ouvrirEspacePatron(tester);
-      await toucher(tester, find.byKey(const Key('patron-fournisseurs')));
+      await ouvrirPagePatron(tester, 'fournisseurs');
       await attendre(tester, tours: 6);
       expect(tester.takeException(), isNull);
       await toucher(

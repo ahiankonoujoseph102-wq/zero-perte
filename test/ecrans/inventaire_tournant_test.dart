@@ -83,7 +83,7 @@ void main() {
       );
       await attendre(tester);
       await ouvrirEspacePatron(tester);
-      await toucher(tester, find.byKey(const Key('patron-inventaire')));
+      await ouvrirPagePatron(tester, 'inventaire');
       await attendre(tester, tours: 8);
       expect(
         tester.widget<Text>(find.byKey(const Key('ecart-Kossi'))).data,
@@ -103,7 +103,7 @@ void main() {
       );
       await afficherApp(tester, env.etat, taille: taille, densite: densite);
       await ouvrirEspacePatron(tester);
-      await toucher(tester, find.byKey(const Key('patron-inventaire')));
+      await ouvrirPagePatron(tester, 'inventaire');
       await attendre(tester, tours: 6);
       expect(tester.takeException(), isNull);
       await toucher(tester, find.byKey(const Key('bouton-inventaire-du-jour')));
