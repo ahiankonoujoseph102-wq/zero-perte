@@ -1501,7 +1501,7 @@ class JournalLocal implements ReglagesLocaux {
     final op = await _db.transaction((t) async {
       final stocks = {
         for (final l in await t.rawQuery(
-          'SELECT produit_id AS p, SUM(quantite_milliemes) AS s FROM mouvements_stock GROUP BY produit_id',
+          'SELECT produit_id AS p, quantite_milliemes AS s FROM stocks_courants',
         ))
           l['p'] as String: (l['s'] as int?) ?? 0,
       };
@@ -1562,8 +1562,9 @@ class JournalLocal implements ReglagesLocaux {
 
   /// Stock de tous les produits (millièmes d'unité de base), en une requête.
   Future<Map<String, int>> stocks() async {
+    // Tenu à jour par un déclencheur (schéma 6).
     final r = await _db.rawQuery(
-      'SELECT produit_id AS p, SUM(quantite_milliemes) AS s FROM mouvements_stock GROUP BY produit_id',
+      'SELECT produit_id AS p, quantite_milliemes AS s FROM stocks_courants',
     );
     return {for (final l in r) l['p'] as String: (l['s'] as int?) ?? 0};
   }

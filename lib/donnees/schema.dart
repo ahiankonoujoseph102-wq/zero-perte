@@ -13,7 +13,7 @@
 /// n'utilise donc ni UPSERT, ni RETURNING, ni fonctions JSON, ni fonctions de fenêtre.
 library;
 
-const int versionSchema = 5;
+const int versionSchema = 6;
 
 /// Migrations : pour passer de la version N-1 à la version N.
 /// Uniquement des AJOUTS (ALTER TABLE … ADD COLUMN), compatibles SQLite 3.18.
@@ -80,6 +80,29 @@ CREATE TABLE mouvements_fournisseur (
 )''',
     ...declencheursPour('fournisseurs_versions'),
     ...declencheursPour('mouvements_fournisseur'),
+  ],
+  // Stock courant tenu à jour par la base (au lieu d'additionner tous les
+  // mouvements à chaque fois : 180 000 lignes après un an). Les mouvements
+  // ne sont jamais modifiés ni effacés : un déclencheur « après ajout »
+  // suffit. Sans UPSERT (SQLite 3.18 d'Android 8).
+  6: [
+    '''
+CREATE TABLE stocks_courants (
+  produit_id TEXT PRIMARY KEY NOT NULL,
+  quantite_milliemes INTEGER NOT NULL
+)''',
+    'INSERT INTO stocks_courants (produit_id, quantite_milliemes) '
+        'SELECT produit_id, SUM(quantite_milliemes) FROM mouvements_stock '
+        'GROUP BY produit_id',
+    '''
+CREATE TRIGGER stocks_courants_ajout AFTER INSERT ON mouvements_stock
+BEGIN
+  INSERT OR IGNORE INTO stocks_courants (produit_id, quantite_milliemes)
+    VALUES (NEW.produit_id, 0);
+  UPDATE stocks_courants
+    SET quantite_milliemes = quantite_milliemes + NEW.quantite_milliemes
+    WHERE produit_id = NEW.produit_id;
+END''',
   ],
 };
 
