@@ -2,11 +2,15 @@
 """Fabrique la voix d'Afi (démonstration guidée) avec un service d'IA.
 
 Lit docs/demo/texte-voix.md, demande chaque phrase au service (Gemini en
-premier choix, OpenAI en secours), convertit en Opus mono ~24 kbit/s dans un
-conteneur WebM (lisible par Android 8), calcule le mouvement de la bouche
-(volume toutes les 50 ms, chiffre de 0 à 9) et écrit :
-  assets/demo/voix/<numéro>.webm
+premier choix, OpenAI en secours), convertit en MP3 mono 24 kbit/s (lu par
+Android 8 et par Windows sans bibliothèque), calcule le mouvement de la
+bouche (volume toutes les 50 ms, chiffre de 0 à 9) et la forme de la bouche
+(e / a / o, d'après le timbre), et écrit :
+  assets/demo/voix/<numéro>.mp3
   assets/demo/voix/bouches.json
+
+Mode `--extraits` : la même phrase d'accueil avec 3 voix différentes, pour
+choisir à l'écoute (docs/site/voix/, publié sur le site).
 
 Clés (jamais affichées, jamais écrites) : variables d'environnement
   ZP_CLE_VOIX          clé Gemini (ou OpenAI si elle commence par « sk- »)
@@ -143,24 +147,124 @@ def bouche(pcm):
     return "".join(valeurs)
 
 
+def formes(pcm):
+    """Forme de la bouche toutes les 50 ms d'après le timbre (passages par
+    zéro) : « e » (son clair, aigu), « a » (ouvert), « o » (son sourd, rond),
+    « m » (silence)."""
+    echantillons = struct.unpack(f"<{len(pcm) // 2}h", pcm[: len(pcm) // 2 * 2])
+    pas = TAUX * PAS_BOUCHE_MS // 1000
+    res = []
+    for i in range(0, len(echantillons), pas):
+        bloc = echantillons[i : i + pas]
+        if not bloc:
+            break
+        rms = math.sqrt(sum(x * x for x in bloc) / len(bloc))
+        if rms < 400:
+            res.append("m")
+            continue
+        zc = sum(1 for a, b in zip(bloc, bloc[1:]) if (a < 0) != (b < 0)) / len(bloc)
+        res.append("e" if zc > 0.12 else ("a" if zc > 0.05 else "o"))
+    return "".join(res)
+
+
 def encoder(pcm, sortie):
-    """PCM → Opus mono 24 kbit/s dans un conteneur WebM (Android 5+)."""
+    """PCM → MP3 mono 24 kbit/s (Android 8 et Windows le lisent sans
+    bibliothèque)."""
     with tempfile.NamedTemporaryFile(suffix=".pcm", delete=False) as f:
         f.write(pcm)
         brut = f.name
     try:
         subprocess.run(
             ["ffmpeg", "-y", "-loglevel", "error", "-f", "s16le", "-ar", str(TAUX), "-ac", "1",
-             "-i", brut, "-c:a", "libopus", "-b:a", "24k", "-ac", "1", "-application", "voip",
-             "-f", "webm", sortie],
+             "-i", brut, "-c:a", "libmp3lame", "-b:a", "24k", "-ac", "1", "-ar", str(TAUX),
+             sortie],
             check=True,
         )
     finally:
         os.unlink(brut)
 
 
+EXTRAIT = (
+    "Bonjour ! Je m'appelle Afi. Bienvenue dans la démonstration de Zéro Perte. "
+    "Ensemble, nous allons visiter une boutique pour de faux. "
+    "Rien n'est gardé : vous pouvez tout essayer."
+)
+GEMINI_EXTRAITS = ["Sulafat", "Aoede", "Achernar"]
+OPENAI_EXTRAITS = ["coral", "nova", "shimmer"]
+
+
+def extraits(cle, secours, modele, essai):
+    """Même phrase d'accueil avec 3 voix → docs/site/voix/ (+ page d'écoute)."""
+    dossier = os.path.join(RACINE, "docs", "site", "voix")
+    os.makedirs(dossier, exist_ok=True)
+    faits = []
+    for service, k, voix_liste in (
+        [("essai", None, GEMINI_EXTRAITS)] if essai else
+        ([("openai", cle, OPENAI_EXTRAITS)] if cle.startswith("sk-") else
+         [("gemini", cle, GEMINI_EXTRAITS)] + ([("openai", secours, OPENAI_EXTRAITS)] if secours else []))
+    ):
+        try:
+            for i, voix in enumerate(voix_liste, 1):
+                if service == "gemini":
+                    pcm = None
+                    for m in ([modele] if modele else GEMINI_MODELES):
+                        try:
+                            pcm = gemini(EXTRAIT, k, m, voix)
+                            break
+                        except Exception as e:  # modèle suivant
+                            print(f"  {m} : {e}")
+                    if pcm is None:
+                        raise RuntimeError("aucun modèle Gemini")
+                elif service == "openai":
+                    pcm = openai(EXTRAIT, k, OPENAI_MODELE, voix)
+                else:
+                    pcm = bip(EXTRAIT)
+                nom = f"extrait-{i}-{voix.lower()}.mp3"
+                encoder(pcm, os.path.join(dossier, nom))
+                faits.append((i, voix, nom, round(len(pcm) / 2 / TAUX, 1), service))
+                print(f"  voix {i} ({voix}) : {faits[-1][3]} s")
+            break
+        except Exception as e:
+            print(f"  échec avec {service} : {e}")
+            faits = []
+    if not faits:
+        sys.exit("Aucun extrait n'a pu être fabriqué.")
+    lignes = "\n".join(
+        f'<section><h2>Voix {i}</h2><p>{voix} · {duree} s</p>'
+        f'<audio controls preload="none" src="{nom}"></audio>'
+        f'<p><a href="{nom}">Télécharger</a></p></section>'
+        for i, voix, nom, duree, _ in faits
+    )
+    page = f"""<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voix d'Afi — 3 extraits</title>
+<link rel="icon" href="../logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../style.css">
+<style>section{{background:var(--surface);border:1px solid var(--ligne);border-radius:16px;padding:16px;margin:12px 0}}audio{{width:100%}}</style>
+</head><body><main>
+<h1>Voix d'Afi : 3 extraits</h1>
+<p class="chapeau">Même phrase d'accueil, trois voix différentes. Écoutez-les et dites laquelle choisir
+(Voix 1, 2 ou 3).</p>
+<p>« {EXTRAIT} »</p>
+{lignes}
+<p class="date">Voix générée par intelligence artificielle ({faits[0][4]}).</p>
+</main></body></html>
+"""
+    open(os.path.join(dossier, "index.html"), "w", encoding="utf-8").write(page)
+    print(f"Extraits prêts : {len(faits)} voix ({faits[0][4]}).")
+
+
 def main():
     essai = "--essai" in sys.argv
+    if "--extraits" in sys.argv:
+        extraits(
+            os.environ.get("ZP_CLE_VOIX", "").strip(),
+            os.environ.get("ZP_CLE_VOIX_SECOURS", "").strip(),
+            os.environ.get("ZP_VOIX_MODELE", "").strip(),
+            essai,
+        )
+        return
     cle = os.environ.get("ZP_CLE_VOIX", "").strip()
     secours = os.environ.get("ZP_CLE_VOIX_SECOURS", "").strip()
     if not cle and not essai:
@@ -196,6 +300,7 @@ def main():
                     "fichier": fichier,
                     "duree_ms": round(len(pcm) / 2 / TAUX * 1000),
                     "bouche": bouche(pcm),
+                    "forme": formes(pcm),
                 }
                 print(f"  {n} : {resultat[n]['duree_ms']} ms")
         except Exception as e:  # le message ne contient jamais la clé

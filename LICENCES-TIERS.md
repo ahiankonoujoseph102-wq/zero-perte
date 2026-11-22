@@ -2,7 +2,7 @@
 
 ## Voix de la démonstration guidée (voix générée par intelligence artificielle)
 
-La voix d'Afi (fichiers `assets/demo/voix/*.webm`) est fabriquée **une seule fois** par l'action
+La voix d'Afi (fichiers `assets/demo/voix/*.mp3`) est fabriquée **une seule fois** par l'action
 « 6 - Fabriquer la voix de la démonstration », avec un service d'intelligence artificielle :
 
 | Service | Utilisation | Conditions (vérifiées le 21 novembre 2026) |

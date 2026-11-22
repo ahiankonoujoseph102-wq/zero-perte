@@ -4,15 +4,23 @@ name: "6 - Fabriquer la voix de la démonstration"
 # d'intelligence artificielle, à partir de docs/demo/texte-voix.md :
 #  - Gemini en premier choix (secret ZP_CLE_VOIX), OpenAI en secours
 #    (secret facultatif ZP_CLE_VOIX_SECOURS, ou ZP_CLE_VOIX commençant par sk-) ;
-#  - fichiers Opus mono ~24 kbit/s (WebM, lisibles par Android 8) et mouvement
-#    de la bouche calculé d'avance (assets/demo/voix/bouches.json).
-# Le résultat est poussé sur la branche « voix-demonstration » (jamais sur main
-# directement) : la fabrication de l'APK la teste, puis Claude la fusionne.
+#  - fichiers MP3 mono 24 kbit/s (lus par Android 8 et Windows sans
+#    bibliothèque), mouvement et forme de la bouche calculés d'avance
+#    (assets/demo/voix/bouches.json) ;
+#  - mode « extraits » : la phrase d'accueil avec 3 voix, publiée sur le site
+#    (…/zero-perte/voix/) pour choisir à l'écoute.
+# La voix complète est poussée sur la branche « voix-demonstration » (jamais
+# sur main directement) : Claude la vérifie, puis la fusionne.
 # Les clés ne sont jamais affichées ni écrites.
 
 on:
   workflow_dispatch:
     inputs:
+      mode:
+        description: "extraits = 3 voix à écouter (site) ; voix = toute la démonstration"
+        type: choice
+        options: ["extraits", "voix"]
+        default: "extraits"
       essai:
         description: "oui = sons de test sans service d'IA (pour vérifier la chaîne)"
         type: choice
@@ -21,6 +29,7 @@ on:
 
 permissions:
   contents: write
+  actions: write # relancer la publication du site (extraits)
 
 concurrency:
   group: fabriquer-voix
@@ -34,7 +43,7 @@ jobs:
       - name: Récupérer le code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: main
+          fetch-depth: 0
 
       - name: Contrôler la clé (sans l'afficher)
         env:
@@ -50,10 +59,10 @@ jobs:
             echo "ZP_CLE_VOIX : présent. Secours OpenAI : $SECOURS_PRESENT."
           fi
 
-      - name: Installer ffmpeg (Opus)
+      - name: Installer ffmpeg (MP3)
         run: |
           command -v ffmpeg >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg; }
-          ffmpeg -hide_banner -encoders 2>/dev/null | grep -q libopus
+          ffmpeg -hide_banner -encoders 2>/dev/null | grep -q libmp3lame
 
       - name: Fabriquer la voix
         env:
@@ -62,14 +71,40 @@ jobs:
           ZP_VOIX_MODELE: ${{ vars.ZP_VOIX_MODELE }}
           ZP_VOIX_NOM: ${{ vars.ZP_VOIX_NOM }}
         run: |
-          if [ "${{ github.event.inputs.essai }}" = "oui" ]; then
-            python3 outils/voix/fabriquer_voix.py --essai | tee "$RUNNER_TEMP/voix.txt"
-          else
-            python3 outils/voix/fabriquer_voix.py | tee "$RUNNER_TEMP/voix.txt"
-          fi
-          du -sh assets/demo/voix
+          set -o pipefail
+          ARGS=()
+          [ "${{ github.event.inputs.essai }}" = "oui" ] && ARGS+=(--essai)
+          [ "${{ github.event.inputs.mode }}" = "extraits" ] && ARGS+=(--extraits)
+          python3 outils/voix/fabriquer_voix.py "${ARGS[@]}" | tee "$RUNNER_TEMP/voix.txt"
+          du -sh assets/demo/voix docs/site/voix 2>/dev/null || true
+
+      - name: "Extraits : publier sur le site"
+        if: github.event.inputs.mode == 'extraits'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "zero-perte-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Seulement les extraits (docs/site/voix) vont sur main : rien
+          # d'autre de la branche lancée.
+          cp -r docs/site/voix "$RUNNER_TEMP/voix"
+          git stash --include-untracked -q || true
+          git checkout -q -B extraits origin/main
+          rm -rf docs/site/voix && cp -r "$RUNNER_TEMP/voix" docs/site/voix
+          git add docs/site/voix
+          git commit -m "Extraits de voix pour choisir la voix d'Afi (action 6) [skip ci]" || { echo "Rien de nouveau."; exit 0; }
+          git push origin HEAD:main
+          gh workflow run publier-site.yml --ref main
+          {
+            echo "## Extraits de voix"
+            echo ""
+            tail -n 1 "$RUNNER_TEMP/voix.txt"
+            echo ""
+            echo "À écouter dans quelques minutes : https://ahiankonoujoseph102-wq.github.io/zero-perte/voix/"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Pousser sur la branche voix-demonstration
+        if: github.event.inputs.mode == 'voix'
         run: |
           git config user.name "zero-perte-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -79,6 +114,7 @@ jobs:
           git push --force-with-lease origin voix-demonstration
 
       - name: Résumé
+        if: github.event.inputs.mode == 'voix'
         run: |
           {
             echo "## Voix de la démonstration"

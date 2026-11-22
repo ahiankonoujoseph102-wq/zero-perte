@@ -873,3 +873,22 @@ qui débordait sur 4", bandeau de la démo trop haut avec deux boutons, visite b
 Images : `docs/demo/afi-expressions.png`, `docs/demo/visite-telephone.png`, `docs/demo/visite-pc.png`.
 **Reste** : la clé `ZP_CLE_VOIX` (partie H), puis action 6 → branche `voix-demonstration` → vérification et
 publication par Claude.
+
+## Décisions du propriétaire sur le rapport 0.30.0
+Q1 (b) même voix d'IA sur PC ; Q2 (a) la visite démarre seule ; Q3 (b) 3 extraits de voix à écouter avant de
+choisir. **Refonte d'Afi demandée** (dessin jugé non professionnel) : planche à valider AVANT intégration.
+
+### En cours (branche de travail, NON publié, en attente d'accord)
+- **Afi v2** (`lib/demo_guidee/afi_v2.dart`, pas encore utilisée par l'application) : illustration plate
+  soignée, cou, épaules, bras en deux parties attachés à l'épaule (coude qui plie, manche à revers or et vert),
+  main avec index tendu et pouce / main ouverte pour saluer, robe à bande de pagne régulière (losanges or sur bleu
+  nuit, liserés verts), foulard noué avec plis et deux pans en éventail, boucles d'oreilles or, sourcils, yeux
+  avec paupière et cils, nez avec narines, lèvres (arc de Cupidon), 5 formes de bouche (fermée, a, o, é, m),
+  respiration, tête qui bouge, clignements. Planche : `docs/demo/afi-v2-planche.png`, gros plan :
+  `docs/demo/afi-v2-gros-plan.png` (corrigés après relecture : bras au repos qui dépassaient, bras raide en
+  « L », mains trop petites, cou trop long, taches au coude, doigt coupé par le cadre).
+- **Voix sur PC (Q1)** : format **MP3 mono 24 kbit/s** (au lieu d'Opus/WebM) lu par Android (MediaPlayer) et par
+  Windows (MCI de winmm.dll via `dart:ffi`, paquet `ffi` déjà présent : 0 octet de plus). Essai bips :
+  50 fichiers = **693 Ko**. Le script calcule aussi la forme de la bouche (e/a/o/m) pour Afi v2.
+- **Extraits (Q3)** : action 6, mode « extraits » → même phrase d'accueil (~14 s) avec Sulafat, Aoede, Achernar
+  (Gemini) ou coral, nova, shimmer (OpenAI) → `docs/site/voix/` + page d'écoute publiée sur le site.

@@ -97,7 +97,7 @@ void main() {
       ).allMatches(md).toList();
       expect(lignes, hasLength(phrasesVisite.length));
       for (final l in lignes) {
-        expect(l.group(2), '${l.group(1)}.webm');
+        expect(l.group(2), '${l.group(1)}.mp3');
         expect(
           phrasesVisite[l.group(1)],
           l.group(4)!.trim(),
@@ -136,7 +136,7 @@ void main() {
 
   test('voix enregistrée : bouches.json lu, bouche calculée d\'avance', () {
     final v = VoixEnregistree.depuisJson(
-      '{"version":1,"service":"gemini","phrases":{"003":{"fichier":"003.webm",'
+      '{"version":1,"service":"gemini","phrases":{"003":{"fichier":"003.mp3",'
       '"duree_ms":150,"bouche":"095"}}}',
     );
     expect(v.mentionIA, isTrue);
@@ -282,8 +282,8 @@ void main() {
             voixEnregistree: Future.value(
               VoixEnregistree.depuisJson(
                 '{"service":"gemini","phrases":{'
-                '"001":{"fichier":"001.webm","duree_ms":400,"bouche":"0594"},'
-                '"003":{"fichier":"003.webm","duree_ms":400,"bouche":"0594"}}}',
+                '"001":{"fichier":"001.mp3","duree_ms":400,"bouche":"0594"},'
+                '"003":{"fichier":"003.mp3","duree_ms":400,"bouche":"0594"}}}',
               ),
             ),
             dureeParole: (_) => const Duration(milliseconds: 30),
@@ -298,7 +298,7 @@ void main() {
         tester,
         () => env.voix.phrases.contains(phrasesVisite['004']),
       );
-      expect(joues.take(2), ['001.webm', '003.webm']);
+      expect(joues.take(2), ['001.mp3', '003.mp3']);
       // Les phrases sans fichier passent par la voix de synthèse.
       expect(env.voix.phrases, isNot(contains('Bonjour !')));
       expect(env.voix.phrases, contains(phrasesVisite['004']));

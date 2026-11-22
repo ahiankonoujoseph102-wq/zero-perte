@@ -30,6 +30,8 @@ environment:
 dependencies:
   crypto: 3.0.8
   cryptography: 2.8.1
+  # Déjà présent (par sqflite_common_ffi) : lecture de la voix sur Windows (MCI).
+  ffi: 2.2.0
   file_selector: 1.0.3
   flutter:
     sdk: flutter

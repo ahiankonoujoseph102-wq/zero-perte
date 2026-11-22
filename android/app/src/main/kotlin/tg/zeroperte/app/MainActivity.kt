@@ -56,7 +56,7 @@ class MainActivity : FlutterActivity() {
                             appel.argument<String>("sujet"),
                         )
                     )
-                    // Démonstration guidée : voix d'Afi (fichier Opus/WebM).
+                    // Démonstration guidée : voix d'Afi (fichier MP3).
                     "jouerSon" -> jouerSon(appel.argument<String>("chemin"), resultat)
                     "arreterSon" -> {
                         arreterSon()

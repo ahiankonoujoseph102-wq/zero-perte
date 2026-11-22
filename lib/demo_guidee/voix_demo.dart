@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:ffi' as ffi;
 import 'dart:io';
 import 'dart:math' as math;
 
+import 'package:ffi/ffi.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
@@ -111,12 +113,7 @@ class LecteurAndroid implements LecteurVoixDemo {
   @override
   Future<bool> jouer(String fichier) async {
     try {
-      final octets = await rootBundle.load('assets/demo/voix/$fichier');
-      final dossier = await getTemporaryDirectory();
-      final f = File('${dossier.path}/voix-demo-$fichier');
-      if (!f.existsSync() || f.lengthSync() != octets.lengthInBytes) {
-        await f.writeAsBytes(octets.buffer.asUint8List(), flush: true);
-      }
+      final f = await _fichierTemporaire(fichier);
       return await _canal.invokeMethod<bool>('jouerSon', {'chemin': f.path}) ??
           false;
     } catch (_) {
@@ -132,9 +129,97 @@ class LecteurAndroid implements LecteurVoixDemo {
   }
 }
 
+/// Écrit le fichier de voix (pris dans l'application) dans un dossier
+/// temporaire, une seule fois.
+Future<File> _fichierTemporaire(String fichier) async {
+  final octets = await rootBundle.load('assets/demo/voix/$fichier');
+  final dossier = await getTemporaryDirectory();
+  final f = File('${dossier.path}${Platform.pathSeparator}voix-demo-$fichier');
+  if (!f.existsSync() || f.lengthSync() != octets.lengthInBytes) {
+    await f.writeAsBytes(octets.buffer.asUint8List(), flush: true);
+  }
+  return f;
+}
+
+typedef _MciC = ffi.Uint32 Function(
+  ffi.Pointer<Utf16> commande,
+  ffi.Pointer<Utf16> retour,
+  ffi.Uint32 taille,
+  ffi.IntPtr fenetre,
+);
+typedef _MciDart = int Function(
+  ffi.Pointer<Utf16> commande,
+  ffi.Pointer<Utf16> retour,
+  int taille,
+  int fenetre,
+);
+
+/// Windows : lecteur du système (MCI de winmm.dll, lit le MP3), sans
+/// bibliothèque en plus. Même voix que sur le téléphone.
+class LecteurWindows implements LecteurVoixDemo {
+  _MciDart? _mci;
+  bool _arrete = false;
+
+  _MciDart get _f =>
+      _mci ??= ffi.DynamicLibrary.open('winmm.dll')
+          .lookupFunction<_MciC, _MciDart>('mciSendStringW');
+
+  /// Envoie une commande MCI ; renvoie (code, réponse). Code 0 = succès.
+  (int, String) _commande(String texte) {
+    final c = texte.toNativeUtf16();
+    final r = calloc<ffi.Uint16>(128).cast<Utf16>();
+    try {
+      final code = _f(c, r, 128, 0);
+      return (code, r.toDartString());
+    } finally {
+      calloc.free(c);
+      calloc.free(r);
+    }
+  }
+
+  @override
+  Future<bool> jouer(String fichier) async {
+    try {
+      final f = await _fichierTemporaire(fichier);
+      _commande('close zpvoix');
+      _arrete = false;
+      if (_commande('open "${f.path}" type mpegvideo alias zpvoix').$1 != 0) {
+        return false;
+      }
+      if (_commande('play zpvoix').$1 != 0) {
+        _commande('close zpvoix');
+        return false;
+      }
+      // Attend la fin de la lecture (au plus 60 s).
+      for (var i = 0; i < 600 && !_arrete; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        final (code, mode) = _commande('status zpvoix mode');
+        if (code != 0 || mode != 'playing') break;
+      }
+      _commande('close zpvoix');
+      return !_arrete;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  @override
+  Future<void> arreter() async {
+    _arrete = true;
+    try {
+      _commande('stop zpvoix');
+      _commande('close zpvoix');
+    } catch (_) {}
+  }
+}
+
 /// Le lecteur adapté à l'appareil.
-LecteurVoixDemo lecteurParDefaut() =>
-    !kIsWeb && Platform.isAndroid ? LecteurAndroid() : const SansLecteur();
+LecteurVoixDemo lecteurParDefaut() {
+  if (kIsWeb) return const SansLecteur();
+  if (Platform.isAndroid) return LecteurAndroid();
+  if (Platform.isWindows) return LecteurWindows();
+  return const SansLecteur();
+}
 
 /// Durée estimée d'une phrase dite par la voix de synthèse (rythme posé).
 Duration dureeEstimee(String texte) =>

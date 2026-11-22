@@ -284,9 +284,15 @@ d'intelligence artificielle plus naturelle, fabriquée **une seule fois** par l'
 2. **New repository secret** → nom : **`ZP_CLE_VOIX`** → valeur : collez la clé → **Add secret**.
 3. Copiez ensuite n'importe quel autre texte, pour que la clé ne reste pas dans le presse-papiers.
 
-### H3. Fabriquer la voix
+### H3. Écouter 3 voix et choisir
 1. Dépôt **zero-perte** → **Actions** → à gauche **« 6 - Fabriquer la voix de la démonstration »** →
-   **Run workflow** → branche **main**, essai **non** → **Run workflow**. (Ou dites à Claude de la lancer.)
+   **Run workflow** → mode **extraits**, essai **non** → **Run workflow**. (Ou dites à Claude de la lancer.)
+2. Quelques minutes plus tard, écoutez sur le téléphone :
+   **https://ahiankonoujoseph102-wq.github.io/zero-perte/voix/** (Voix 1, 2 et 3, même phrase d'accueil).
+3. Dites à Claude la voix choisie (1, 2 ou 3).
+
+### H4. Fabriquer la voix de toute la démonstration
+1. Claude règle la voix choisie, puis lance l'action « 6 » en mode **voix** (ou vous : mode **voix**, essai **non**).
 2. Attendez la coche verte (quelques minutes). La voix est poussée sur la branche `voix-demonstration`.
 3. Dites à Claude **« la voix est prête »** : il l'écoute (durées, taille), la teste dans l'application, puis
    publie la nouvelle version.
