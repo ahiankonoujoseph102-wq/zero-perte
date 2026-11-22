@@ -11,9 +11,10 @@ name: "7 - Remettre la clé de signature depuis le coffre"
 #     temporaire et son empreinte SHA-1 doit être EXACTEMENT celle des versions
 #     publiées ; sinon arrêt, rien n'est modifié.
 #  3. Seulement ensuite, le secret ZP_CLE_SIGNATURE est remis.
-#  4. Les autres secrets sont contrôlés sans être affichés : ZP_CLE_VOIX est
-#     une clé Gemini qui répond, ZP_CLE_LICENCES correspond à la clé publique de
-#     l'application, ZP_SIGNATURE_MOT_DE_PASSE déchiffre la clé.
+#  4. Les autres secrets sont contrôlés sans être affichés (avertissements
+#     seulement, jamais bloquant) : Google accepte ZP_CLE_VOIX,
+#     ZP_CLE_LICENCES correspond à la clé publique de l'application,
+#     ZP_SIGNATURE_MOT_DE_PASSE déchiffre la clé.
 #  5. La fabrication de la 0.31.0 est relancée sur sa branche de travail.
 # Aucune valeur secrète n'est jamais affichée.
 
@@ -109,21 +110,24 @@ jobs:
           shred -u "$T/cle.b64"
           echo "Secret ZP_CLE_SIGNATURE remis depuis la copie de secours."
 
-      - name: "4. Contrôle des autres secrets (sans les afficher)"
+      - name: "4. Contrôle des autres secrets (sans les afficher, avertissements seulement)"
+        # Ne bloque JAMAIS : la clé de signature est déjà remise à ce stade.
+        continue-on-error: true
         env:
           ZP_CLE_VOIX: ${{ secrets.ZP_CLE_VOIX }}
           ZP_CLE_LICENCES: ${{ secrets.ZP_CLE_LICENCES }}
         run: |
-          T="$RUNNER_TEMP/zpr"; PROBLEME=0
-          # ZP_CLE_VOIX : forme d'une clé Gemini, et Google l'accepte (liste des
-          # modèles : ne consomme pas le quota de voix).
-          if [[ "$ZP_CLE_VOIX" =~ ^AIza[0-9A-Za-z_-]{35}$ ]]; then
-            CODE=$(curl -s -o /dev/null -w '%{http_code}' -H "x-goog-api-key: $ZP_CLE_VOIX" \
-              https://generativelanguage.googleapis.com/v1beta/models)
-            if [ "$CODE" = "200" ]; then echo "ZP_CLE_VOIX : clé Gemini acceptée par Google : OK."
-            else echo "::error::ZP_CLE_VOIX a la forme d'une clé Gemini mais Google répond $CODE."; PROBLEME=1; fi
+          T="$RUNNER_TEMP/zpr"
+          # ZP_CLE_VOIX : aucune forme imposée (Google a plusieurs formats de
+          # clés) ; on demande seulement la liste des modèles, ce qui ne
+          # consomme pas le quota de voix.
+          if [ -z "$ZP_CLE_VOIX" ]; then
+            echo "::warning::ZP_CLE_VOIX est vide."
           else
-            echo "::error::ZP_CLE_VOIX n'a pas la forme d'une clé Gemini (AIza… 39 caractères)."; PROBLEME=1
+            CODE=$(curl -s -o /dev/null -w '%{http_code}' -H "x-goog-api-key: $ZP_CLE_VOIX" \
+              https://generativelanguage.googleapis.com/v1beta/models || echo "réseau")
+            if [ "$CODE" = "200" ]; then echo "ZP_CLE_VOIX : acceptée par Google : OK."
+            else echo "::warning::ZP_CLE_VOIX : Google répond $CODE (avertissement seulement)."; fi
           fi
           # ZP_CLE_LICENCES : sa clé publique doit être celle de l'application.
           umask 077
@@ -132,11 +136,10 @@ jobs:
              && [ "$PUB" = "$(tr -d '\n' < assets/licence/cle_publique.txt)" ]; then
             echo "ZP_CLE_LICENCES : correspond à la clé publique de l'application : OK."
           else
-            echo "::error::ZP_CLE_LICENCES ne correspond plus à la clé publique de l'application."; PROBLEME=1
+            echo "::warning::ZP_CLE_LICENCES ne correspond plus à la clé publique de l'application."
           fi
           shred -u "$T/lic.pem" 2>/dev/null || true
           echo "ZP_SIGNATURE_MOT_DE_PASSE : vérifié à l'étape 2 (il déchiffre la clé) : OK."
-          exit $PROBLEME
 
       - name: Effacer les fichiers temporaires
         if: always()
