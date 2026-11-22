@@ -172,6 +172,7 @@ Future<Environnement> environnementDeTest(
   Future<void> Function(EtatApplication etat)? preparer,
   StockageMemoire? drive,
   int Function()? horloge,
+  String? chemin,
 }) async {
   // Pas d'Internet dans les tests : aucune recherche de mise à jour.
   verifierMisesAJour = false;
@@ -189,7 +190,7 @@ Future<Environnement> environnementDeTest(
     // simulés dans le même test ne partagent pas leur base).
     final journal = await JournalLocal.ouvrir(
       fabrique: databaseFactoryFfi,
-      chemin: 'file:zp${_compteurBases++}?mode=memory&cache=private',
+      chemin: chemin ?? 'file:zp${_compteurBases++}?mode=memory&cache=private',
       horloge: horloge,
     );
     if (etape != null) {
