@@ -22,6 +22,9 @@ Relu : `docs/journal-avancement.md` et `docs/etapes-proprietaire.md`. Ordre = pr
 | 14 | Fichiers d'Afi v1 et extraits de voix du site : plus utiles après la 0.31.0 | Ménage après publication |
 | 15 | ✅ (0.35.0) Ajout d'un vendeur par QR code ; (0.35.2) lecteur de QR préparé à l'avance, réessai, code d'erreur affiché | **Essai sur 2 vrais téléphones à faire** |
 | 16 | ✅ (23/11) Action « 8 - Mettre à jour le relais » (exécution #2 verte, « Relais en ligne : OK ») | Fait |
+| 18 | ✅ (0.36.0) Refonte commerçant : démarrage 3 étapes sans inventaire, gros/détail, mots du marché, accueil (bénéfice, caisse, vendeurs), WhatsApp à la fermeture, « Voir un exemple », argumentaire | **Essai réel à faire** |
+| 19 | Réserve séparée (« magasin ») : plan dans `docs/refonte-commercant.md` | Prochaine version, après essai réel |
+| 20 | Voix d'Afi : quelques phrases disent encore « Clients » et le riz « au kilo » (enregistrées avant la 0.36) ; à refaire avec les nouveaux mots (quota Gemini : 10 par jour) | Plus tard |
 | 17 | Supprimer l'ancien passage de l'action « test minimal (temporaire) » (le fichier n'existe plus ; seul son passage du 21/11 la garde dans la liste) | Propriétaire : 3 touchers |
 
 ## Propriétaire

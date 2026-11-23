@@ -425,7 +425,7 @@ void main() {
       );
       await attendre(tester, tours: 10);
       expect(find.textContaining('Caisse : il manque'), findsOneWidget);
-      expect(find.textContaining('❌'), findsOneWidget);
+      expect(find.byIcon(Icons.cancel_rounded), findsOneWidget);
       expect(find.text('Vendu aujourd\'hui'), findsOneWidget);
     },
   );

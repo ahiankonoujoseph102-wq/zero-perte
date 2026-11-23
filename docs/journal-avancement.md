@@ -1208,3 +1208,43 @@ Conception validée par le propriétaire (questions A taille et B secret réglé
   liste à cause de son seul passage (21/11), à supprimer par le propriétaire (pas d'outil pour le faire ici).
 - **Publiée** le 23/11 : Release **`v0.35.2-n109`**. Signature vérifiée (SHA-1 49:27:0C:…:B1:A3), 50 voix,
   méta-donnée `barcode_ui` présente dans l'APK, APK universel 18,88 Mo. Tests : 512 (Flutter) + relais.
+
+### Version 0.36.0 — refonte « commerçant » (chantier de nuit, 23-24/11)
+Plan et état des lieux : `docs/refonte-commercant.md`. Argumentaire : `docs/mise-en-service/argumentaire-recruteurs.md`.
+- **Lot 1 — démarrage en 3 étapes, sans inventaire** : bienvenue → vérification → activation (inchangée) →
+  1. nom ; 2. « Vous vendez : détail / gros / les deux » + « Qui vend : moi / un vendeur / plusieurs » (nouvelle
+  étape `profil`, réglages `vente` et `qui_vend` dans la configuration, synchronisés, ignorés par les anciennes
+  versions) ; 3. code du patron → « Vous pouvez vendre ! ». Types, contact, couleur, reçu, produits connus :
+  Gestion → **Ma boutique** (mêmes écrans, mode « réglage »). **Nouveau produit** pendant la vente (nom + prix,
+  carton facultatif) ; un vendeur peut le faire, le patron reçoit une alerte. Stock **« pas encore compté »**
+  (ni reçu ni compté) : pas de chiffre, aucune alerte de stock. **Compter mon stock** : 5 produits à la fois,
+  les plus vendus (30 jours) puis les plus chers, barre de progression ; le **premier comptage** d'un produit
+  n'est pas un écart (ligne d'inventaire `premier`). Carte **« À faire quand vous avez le temps »** (compter,
+  vendeur, Google, prix d'achat, numéro sur les reçus). « Ajouter mon vendeur » caché si « Moi ».
+- **Lot 2 — gros et détail** : « Emballages » → **Vente en gros** (nom libre, nombre d'unités, prix de gros,
+  **prix revendeur** facultatif = un conditionnement « … (revendeur) » de même contenance : aucune nouvelle
+  donnée) ; Vendre : gros boutons **Détail / Gros / Gros revendeur** ; stock **« 3 cartons de 24 et 5 boîtes »**
+  (liste, arrivage) ; arrivage en cartons ; unités de gros (carton, sac, casier, bidon) pour qui vend seulement
+  en gros.
+- **Lot 3 — les mots** (avant → après) : Clients → **Ce qu'on me doit** ; Fournisseurs → **Ce que je dois** ;
+  Chiffres → **Mon bénéfice** ; Arrivages → **Arrivage** ; Appareils et Drive → **Compte Google** ; Emballages →
+  **Vente en gros** ; Bénéfice estimé → **Bénéfice** ; Ventes du jour (accueil) → **Vendu aujourd'hui** ;
+  Crédits clients (tableau) → **Ce qu'on me doit** ; Mixx (T-Money) → **Mixx by Yas** ; Prix de vente → **Prix au
+  détail** ; « Ajouter un emballage » → **Ajouter une vente en gros** ; « Le patron doit d'abord ajouter ses
+  produits » → **« Ajoutez celui que vous vendez maintenant : son nom et son prix suffisent »** ; « Votre boutique
+  est prête » → **« Vous pouvez vendre ! »**.
+- **Lot 4 — valeur visible** : accueil du patron (téléphone et grand écran) : **Vendu aujourd'hui**,
+  **Bénéfice** (ou « Ajoutez le prix d'achat »), **Caisse : juste / il manque … / ouverte** (espèces ; un manque
+  du jour reste affiché si la caisse est rouverte), ventes **par vendeur** s'il y en a plusieurs. Fermeture :
+  **Envoyer sur WhatsApp** (texte ; sans l'écart pour le vendeur). **Voir un exemple** dès le premier écran ;
+  boutique d'exemple enrichie (Lait au carton de 24, Boisson au casier de 12, sac de riz à 27 500 F, bidon
+  d'huile à 30 000 F, vendeur Kossi, caisse fermée avec 2 000 F de moins, Yawa à crédit), toujours dans une base
+  à part.
+- **Lot 5** : crédit déjà complet (renommé) ; paiements Espèces / Flooz / Mixx by Yas / Crédit ; **réserve
+  (« magasin ») non faite** : plan dans `docs/refonte-commercant.md`.
+- **Lot 6** : `argumentaire-recruteurs.md` ; guides agents, aide-mémoire, « ce qu'il faut dire » mis à jour.
+- **Données** : aucun changement de schéma. Test de mise à jour sur une base fabriquée par le VRAI code de la
+  0.35.2 (`test/fixtures/mise_a_jour/v0.35.2.db`, généré par `test_perf/fabriquer_base_0352_test.dart`) : mêmes
+  stocks, ventes, crédits, vendeurs, chaîne ; les anciens emballages sont la vente en gros ; pas de démarrage.
+- Tests : `test/ecrans/refonte_036_test.dart` (10) ; captures 4 tailles :
+  `test_captures/refonte_036_captures_test.dart` (60 images).

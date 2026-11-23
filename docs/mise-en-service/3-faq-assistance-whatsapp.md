@@ -18,7 +18,7 @@ Demander une **capture d'écran** quand la question n'est pas claire.
 | « Je me suis trompé dans une vente » | Ventes du jour → la vente → **Annuler** (motif obligatoire). Le patron est prévenu au-delà de 5 000 F. |
 | « Il manque de l'argent à la fermeture » | L'écart est enregistré. Le patron le voit dans Ma caisse → Sessions de caisse. Vérifiez les dépenses et l'argent pris du jour. |
 | « Le reçu ne part pas sur WhatsApp » | WhatsApp doit être installé. Sinon, le menu de partage s'ouvre : choisissez une autre application. |
-| « Mes ventes n'apparaissent pas sur l'autre téléphone » | Les deux appareils doivent être connectés au même compte Google de la boutique (Gestion → Appareils et Drive) et avoir eu Internet une fois. |
+| « Mes ventes n'apparaissent pas sur l'autre téléphone » | Les deux appareils doivent être connectés au même compte Google de la boutique (Gestion → Compte Google) et avoir eu Internet une fois. |
 | « J'ai changé de téléphone » | Nouveau téléphone : installez, puis « J'ai déjà une boutique : la retrouver » avec le compte Google de la boutique. |
 | « Nouvelle version disponible » | Touchez le message sur l'accueil, installez le fichier. Vos données restent. |
 | « L'application est lente » | Fermez-la et rouvrez-la. Toujours lente : envoyez le modèle du téléphone et une capture. |

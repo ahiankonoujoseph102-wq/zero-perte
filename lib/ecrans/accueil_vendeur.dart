@@ -519,33 +519,48 @@ class LigneCaisse extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (texte, couleur) = switch (resume.caisse) {
+    // Icône (pas d'émoji : toujours lisible, quelle que soit la police).
+    final (texte, couleur, icone) = switch (resume.caisse) {
       EtatCaisseResume.pasOuverte => (
         'Caisse : pas encore ouverte',
         CouleursZp.texteDoux,
+        null,
       ),
-      EtatCaisseResume.ouverte => ('Caisse : ouverte', CouleursZp.texte),
+      EtatCaisseResume.ouverte => ('Caisse : ouverte', CouleursZp.texte, null),
       EtatCaisseResume.juste => (
-        'Caisse : juste ✅',
+        'Caisse : juste',
         CouleursZp.argentEntreClair,
+        Icons.check_circle_rounded,
       ),
       EtatCaisseResume.manque => (
-        'Caisse : il manque ${formatFrancs(-resume.ecartEspeces)} ❌',
+        'Caisse : il manque ${formatFrancs(-resume.ecartEspeces)}',
         CouleursZp.argentSortClair,
+        Icons.cancel_rounded,
       ),
       EtatCaisseResume.enTrop => (
         'Caisse : ${formatFrancs(resume.ecartEspeces)} en trop',
         CouleursZp.creditTexte,
+        Icons.info_rounded,
       ),
     };
-    return Text(
-      texte,
+    return Row(
       key: const Key('resume-caisse'),
-      style: TextStyle(
-        fontSize: taille,
-        fontWeight: FontWeight.w700,
-        color: couleur,
-      ),
+      children: [
+        Flexible(
+          child: Text(
+            texte,
+            style: TextStyle(
+              fontSize: taille,
+              fontWeight: FontWeight.w700,
+              color: couleur,
+            ),
+          ),
+        ),
+        if (icone != null) ...[
+          const SizedBox(width: 6),
+          Icon(icone, color: couleur, size: taille + 4),
+        ],
+      ],
     );
   }
 }

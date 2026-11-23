@@ -27,30 +27,40 @@ chaque vendeur a son code. Ce guide sert **sur place** et **à distance** (appel
 2. Ouvrir `zero_perte.exe`. Si « Windows a protégé votre ordinateur » : **Informations complémentaires →
    Exécuter quand même** (voir partie D de `etapes-proprietaire.md`).
 
-## 2. L'assistant (le patron tient le téléphone, l'agent guide)
-L'application avance d'elle-même, étape par étape (bouton **Écouter** pour entendre l'explication) :
-1. **Bienvenue** → **Commencer**.
+## 2. Le démarrage (0.36 : 3 étapes, sans inventaire — 10 minutes)
+Le patron tient le téléphone, l'agent guide (bouton **Écouter** pour entendre l'explication) :
+1. **Bienvenue** → **Commencer**. *(Pour montrer d'abord l'intérêt : **Voir un exemple**, voir
+   `argumentaire-recruteurs.md`.)*
 2. **Vérification du téléphone** : n'apparaît que s'il y a un problème bloquant (pas de services Google,
    moins de 100 Mo libres). → voir FAQ.
 3. **Activation** : le patron ouvre WhatsApp, appuie longtemps sur le message du code → **Copier** →
    revient dans Zéro Perte → **Coller le code**. « Code accepté » → suite.
-4. **Type de boutique** (alimentation, boissons…) → **Nom** → **Contact** (WhatsApp, ville, quartier) →
-   **Couleur**.
-5. **Produits** : cocher les produits que la boutique vend le plus. Les autres s'ajoutent ensuite par
-   **Gestion → Produits et prix → Ajouter un produit** (le patron peut le faire seul).
-6. **Prix** : saisir le prix de chaque produit (et des cartons / sacs). Relire 3 prix avec le patron ;
-   un prix faux se corrige ensuite dans **Gestion → Produits et prix**.
-7. **Reçu** : nom et téléphone qui s'affichent sur le reçu.
-8. **Code du patron** : le patron choisit **seul** 6 chiffres, les tape deux fois. L'agent regarde ailleurs.
-9. **Fin**.
+4. **Étape 1 sur 3 — le nom** de la boutique (photo facultative).
+5. **Étape 2 sur 3 — deux questions** à gros boutons : « Vous vendez : **au détail / en gros / les deux** » et
+   « Qui vend : **moi / un vendeur / plusieurs vendeurs** ». Ça règle l'application (boutons « Gros », vendeur
+   mis en avant) ; modifiable ensuite dans **Gestion → Ma boutique**.
+6. **Étape 3 sur 3 — le code du patron** : il choisit **seul** 6 chiffres, les tape deux fois. L'agent regarde
+   ailleurs.
+7. **« Vous pouvez vendre ! »** → **Commencer**.
+
+**Pas d'inventaire au démarrage.** Faites tout de suite une vraie vente : **Vendre** → **Nouveau produit** →
+nom + prix (et « Vendu aussi en gros » : carton de 24 à 12 000 F, par exemple) → **Ajouter et vendre** →
+**Encaisser**. Un produit jamais compté affiche « pas encore compté » : aucune fausse alerte.
+
+Le reste se fait **quand le patron a le temps**, depuis la carte **« À faire quand vous avez le temps »** de
+l'accueil : compter le stock petit à petit (les produits les plus vendus d'abord), ajouter le vendeur, relier
+le compte Google (sauvegarde), ajouter les prix d'achat (pour voir le bénéfice), le numéro sur les reçus.
+Ce qui était avant dans l'installation (type de boutique, contact, couleur, reçu, produits connus) est dans
+**Gestion → Ma boutique**.
 
 ## 3. Montrer « Produits et prix » au patron
-Gestion → **Produits et prix** : ajouter un produit qui manque (nom, prix de vente, prix d'achat, stock de
-départ), puis changer un prix. Le patron le fait lui-même une fois devant vous.
+Gestion → **Produits et prix** : ajouter un produit (nom, prix au détail, prix d'achat), et sa **vente en
+gros** (nom libre : carton, sac, casier, bidon… ; combien d'unités dedans ; prix de gros ; prix **revendeur**
+facultatif). Un commerçant qui vend **seulement en gros** choisit « carton » (ou sac…) comme unité.
 
 ## 3 bis. Ajouter les vendeurs (QR code, comme WhatsApp Web) — version 0.35 et plus
 Il faut **Internet sur les 2 téléphones** et le compte Google de la boutique déjà relié sur le téléphone du
-patron (Gestion → **Appareils et Drive**). **Aucun compte Google ni mot de passe** sur le téléphone du vendeur.
+patron (Gestion → **Compte Google**). **Aucun compte Google ni mot de passe** sur le téléphone du vendeur.
 
 **Sur le téléphone du patron**
 1. Accueil → gros bouton **Ajouter mon vendeur** (ou Gestion → **Ajouter mon vendeur**).

@@ -72,7 +72,8 @@ class _PageCompterStockState extends State<PageCompterStock> {
                     Text(
                       total == 0
                           ? 'Pas encore de produit.'
-                          : '$faits produits comptés sur $total',
+                          : '$faits produit${faits > 1 ? 's' : ''} '
+                                'compté${faits > 1 ? 's' : ''} sur $total',
                       key: const Key('progression-comptage'),
                       style: const TextStyle(
                         fontSize: 22,
