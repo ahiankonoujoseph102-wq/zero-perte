@@ -29,8 +29,7 @@
 - **Sur PC Windows**, au premier lancement, Windows affiche « Windows a protégé votre ordinateur » : il faut
   toucher « Informations complémentaires → Exécuter quand même » (l'application sera bientôt sur le
   Microsoft Store).
-- **La démonstration** (Afi) : voix générée par intelligence artificielle ; les 2 dernières phrases sont
-  dites par la voix du téléphone (corrigé dans la prochaine mise à jour).
+- **La démonstration** (Afi) : voix générée par intelligence artificielle (toutes les phrases).
 - **Les mises à jour** ne s'installent pas toutes seules : un message « Nouvelle version disponible »
   apparaît sur l'accueil, il suffit de le toucher.
 - **Sauvegarde** : à faire régulièrement (ou garder la synchronisation Google active) ; sans elle, un

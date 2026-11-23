@@ -1173,3 +1173,10 @@ Conception validée par le propriétaire (questions A taille et B secret réglé
   Workers KV Storage : Read) + variable `ZP_CLOUDFLARE_COMPTE` : partie **J** des étapes du propriétaire.
   Essai à blanc de wrangler (configuration et paquet de 12,8 Ko) : OK.
 - Tâche programmée à 8 h 12 (Lomé) dans cette session : voix 020, 037, 049, 050, puis la 0.35.1.
+
+### Version 0.35.1 — voix d'Afi complète (23/11)
+- Tâche de 8 h 12 : action 6 lancée sur `main` (mode voix, phrases 020, 037, 049, 050, sans sons de test),
+  réussie → branche `voix-demonstration` « Voix complète : 50/50 ». Vérifié : 4 vrais MP3, durées en accord
+  avec le texte (020 : 1,7 s ; 037 : 4,2 s ; 049 : 5,8 s ; 050 : 5,1 s). Dossier `assets/demo/voix` repris
+  de cette branche (50 phrases + `bouches.json`). Tests de la démonstration : OK.
+- « Ce qu'il faut dire au client » : la limite « 2 dernières phrases par la voix du téléphone » est retirée.

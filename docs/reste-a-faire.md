@@ -6,7 +6,7 @@ Relu : `docs/journal-avancement.md` et `docs/etapes-proprietaire.md`. Ordre = pr
 
 | # | Quoi | État |
 |---|---|---|
-| 1 | ✅ 0.31.0 publiée avec 48 phrases. **Reste B4** : 020, 037, 049, 050 le 23/11 après 8 h 12 (action 6, mode voix, refaire=020,037) → petite version suivante | Relance programmée le 23/11 à 8 h 12 |
+| 1 | ✅ Voix d'Afi complète (50/50) dans la 0.35.1 (020, 037, 049, 050 refaites le 23/11) | Fait |
 | 2 | ✅ (0.32.0) **PRIORITÉ 1 — Produits et prix après l'installation**, depuis Gestion, patron seul : ajouter un produit (nom, image, unités, prix de vente, prix d'achat, stock de départ, seuil de stock bas), modifier un prix, modifier un produit, masquer un produit qui ne se vend plus (historique gardé). Chaque changement de prix au journal (ancien prix, nouveau prix, date), ventes passées inchangées. Téléphone, tablette, PC. Inclut l'écran du **seuil de stock bas** (ouvert depuis le bloc B). | Après la 0.31.0 |
 | 3 | ✅ (0.33.0, sauf « < 1 Ko par vente stockée » : question (a)/(b) posée) **PRIORITÉ 2 — Alléger les données** sans casser la chaîne de sécurité du journal ni la synchronisation : format plus compact des nouvelles opérations, synchronisation de ce qui est nouveau seulement, compression, « point de départ » résumé pour un nouvel appareil. **Objectifs mesurés sur la boutique d'essai d'un an : < 1 Ko par vente stockée, < 5 Mo à télécharger pour un nouvel appareil.** Avant : 127 Mo par an (≈ 1,7 Ko par vente), 74 Mo de première synchronisation. | Après la priorité 1 |
 | 4 | ✅ (0.34.0) résumé du soir à la fermeture (synchronisation, notification Firebase plus tard, bouton « Envoyer sur WhatsApp ») | Décidé (Q1 audit) |
