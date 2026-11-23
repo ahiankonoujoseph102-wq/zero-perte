@@ -109,8 +109,8 @@ Le programme est déjà écrit : `relais/worker.js` dans le dépôt.
 4. Notez l'adresse du Worker (onglet **Settings** → **Domains & Routes**, ligne `workers.dev`), du type
    `https://zero-perte-relais.<votre-nom>.workers.dev`. *Ce n'est pas un secret.*
 
-**Mise à jour du relais** (quand le fichier `relais/worker.js` change, par exemple la version de
-novembre 2026 qui économise les lectures) : refaites seulement B3.2 (Edit Code → coller → Deploy).
+**Mise à jour du relais** : depuis le 23 novembre 2026, c'est l'action **« 8 - Mettre à jour le relais »**
+qui s'en charge (partie J). Plus besoin de coller `worker.js` à la main.
 
 **À savoir :** les limites gratuites de Cloudflare valent pour TOUT le compte (toutes les boutiques
 ensemble : 100 000 lectures, 1 000 écritures et 1 000 listes par jour). Avec la case « dernière alerte »,
@@ -381,3 +381,40 @@ dans GitHub.
 - Dites « Partie I faite » : Claude Code vérifie que le relais répond « prêt » **sans afficher** le code
   secret (l'adresse `/google/id` montre seulement l'ID client, qui n'est pas un secret).
 - Essai sur 2 vrais téléphones : `docs/mise-en-service/1-guide-installation-agents.md`, partie 3 bis.
+
+---
+
+## J. Action « 8 - Mettre à jour le relais » (une seule fois, environ 10 minutes)
+
+Ensuite, chaque changement de `relais/worker.js` sur `main` est déployé tout seul (tests d'abord,
+vérification après, retour automatique à la version précédente si le relais ne répond pas bien). On peut
+aussi la lancer à la main : **Actions → « 8 - Mettre à jour le relais » → Run workflow**.
+
+### J1. Cloudflare : l'identifiant du compte (pas un secret)
+1. **dash.cloudflare.com** → **Compute (Workers)** → **Workers & Pages**.
+2. À droite (ou en bas sur téléphone) : **Account ID** → icône **copier**. (C'est aussi la suite de lettres
+   et de chiffres dans l'adresse `dash.cloudflare.com/<identifiant>/…`.)
+
+### J2. Cloudflare : le jeton à droits minimum
+1. En haut à droite : icône du **profil** → **Profile** → **API Tokens** → **Create Token**.
+2. En bas : **Create Custom Token** → **Get started**.
+3. **Token name** : `zero-perte-github`.
+4. **Permissions** (2 lignes, rien d'autre) :
+   - `Account` · `Workers Scripts` · `Edit`
+   - **+ Add more** → `Account` · `Workers KV Storage` · `Read`
+5. **Account Resources** : `Include` · votre compte. **Zone Resources** : rien (laissez vide).
+6. **Client IP Address Filtering** : rien. **TTL** : rien.
+7. **Continue to summary** → vérifiez qu'il y a seulement ces 2 droits → **Create Token**.
+8. **Copiez le jeton** : Cloudflare ne le montre **qu'une fois**.
+   *(Ce jeton ne peut ni lire les secrets du Worker, ni toucher au DNS ou au reste du compte.)*
+
+### J3. GitHub : ranger les 2 valeurs
+Lien direct : https://github.com/ahiankonoujoseph102-wq/zero-perte/settings/secrets/actions
+1. Onglet **Secrets** → **New repository secret** → nom **`ZP_JETON_CLOUDFLARE`** → valeur : le jeton →
+   **Add secret**. ⚠️ Un **nouveau** secret : ne touchez à aucun autre crayon.
+2. Onglet **Variables** → **New repository variable** → nom **`ZP_CLOUDFLARE_COMPTE`** → valeur :
+   l'Account ID → **Add variable**.
+
+### J4. Essayer
+**Actions** → **« 8 - Mettre à jour le relais »** → **Run workflow** → branche `main` → **Run workflow**.
+En 1 à 2 minutes : coche verte et « Relais en ligne : OK ». Dites-le à Claude Code.

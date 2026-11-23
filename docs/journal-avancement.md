@@ -1159,3 +1159,17 @@ Conception validée par le propriétaire (questions A taille et B secret réglé
   universel **18,84 Mo** (0.34 : 18,65 Mo → **+0,19 Mo** pour le lecteur de QR et le module `qr`) ; arm64
   10,55 Mo ; armv7 10,05 Mo. Aucun code secret Google (`GOCSPX…`) dans l'APK. Tests : 498 (Flutter) + relais.
 - Le relais en ligne est encore l'ancien (`/google/id` → 404) : partie **I** à faire par le propriétaire.
+
+### 23/11 — relais vérifié, action « 8 - Mettre à jour le relais »
+- Partie I faite par le propriétaire (identifiant « Application Web » sans adresse, secrets Cloudflare
+  `GOOGLE_WEB_ID` et `GOOGLE_WEB_SECRET`, nouveau `worker.js`, version 22580f67). Vérifié sans rien écrire :
+  `/google/id` → 200 (ID présent), boîte au hasard → 404 / `present:false`, demande pour un code inconnu →
+  404 (rien écrit), échange sans jeton → 401, accès avec un faux jeton → 403 « refusé par Google » (Google
+  accepte donc l'ID et le code secret : sinon « invalid_client » → 502), alertes sans jeton → 401.
+- Nouvelle action **« 8 - Mettre à jour le relais »** (`.github/workflows/mettre-a-jour-relais.yml`) :
+  à la main ou à chaque changement de `relais/worker.js` sur `main` ; tests du relais, KV retrouvé par son
+  nom, `wrangler@4.158.0 deploy` (secrets du Worker gardés, `keep_vars`), vérification en ligne, retour
+  automatique à la version précédente si elle échoue. Jeton `ZP_JETON_CLOUDFLARE` (Workers Scripts : Edit,
+  Workers KV Storage : Read) + variable `ZP_CLOUDFLARE_COMPTE` : partie **J** des étapes du propriétaire.
+  Essai à blanc de wrangler (configuration et paquet de 12,8 Ko) : OK.
+- Tâche programmée à 8 h 12 (Lomé) dans cette session : voix 020, 037, 049, 050, puis la 0.35.1.

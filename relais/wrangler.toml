@@ -2,8 +2,13 @@
 name = "zero-perte-relais"
 main = "worker.js"
 compatibility_date = "2026-11-01"
+# Adresse en …workers.dev (celle de ZP_RELAIS_URL).
+workers_dev = true
+# Garder les réglages faits dans le tableau de bord ; les secrets
+# (FCM_COMPTE, GOOGLE_WEB_ID, GOOGLE_WEB_SECRET) sont toujours gardés.
+keep_vars = true
 
 [[kv_namespaces]]
 binding = "ALERTES"
-# Remplacer par l'identifiant de l'espace KV créé dans le tableau de bord Cloudflare.
+# Rempli tout seul par l'action « 8 - Mettre à jour le relais » (recherche par nom).
 id = "A_REMPLACER"

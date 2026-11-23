@@ -1,0 +1,130 @@
+name: "8 - Mettre à jour le relais"
+
+# Déploie relais/worker.js sur le Worker Cloudflare « zero-perte-relais » :
+# plus besoin de coller le code à la main dans Cloudflare.
+#
+# Quand :
+#  - à la main : Actions → « 8 - Mettre à jour le relais » → Run workflow ;
+#  - tout seul : quand relais/worker.js (ou wrangler.toml) change sur main.
+#
+# Sécurité :
+#  1. Les tests du relais passent AVANT tout déploiement.
+#  2. Jeton Cloudflare à droits minimum (secret ZP_JETON_CLOUDFLARE) :
+#     « Workers Scripts : Edit » et « Workers KV Storage : Read », sur ce seul
+#     compte. Il ne peut ni lire les secrets du Worker, ni toucher au reste.
+#  3. Les secrets du Worker (FCM_COMPTE, GOOGLE_WEB_ID, GOOGLE_WEB_SECRET) ne
+#     sont jamais lus ni changés : Cloudflare les garde à chaque déploiement.
+#     La liaison KV « ALERTES » est retrouvée par son nom.
+#  4. Après le déploiement, le relais en ligne est vérifié ; s'il ne répond pas
+#     comme prévu, la version précédente est remise automatiquement.
+# Aucune valeur secrète n'est jamais affichée.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "relais/worker.js"
+      - "relais/wrangler.toml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mettre-a-jour-relais
+  cancel-in-progress: false
+
+env:
+  WRANGLER: "wrangler@4.158.0"
+  WRANGLER_SEND_METRICS: "false"
+
+jobs:
+  deployer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Vérifier les réglages (sans rien afficher)
+        id: reglages
+        env:
+          JETON: ${{ secrets.ZP_JETON_CLOUDFLARE }}
+          COMPTE: ${{ vars.ZP_CLOUDFLARE_COMPTE }}
+          ADRESSE: ${{ vars.ZP_RELAIS_URL }}
+        run: |
+          manque=""
+          [ -n "$JETON" ] || manque="$manque secret ZP_JETON_CLOUDFLARE ;"
+          [ -n "$COMPTE" ] || manque="$manque variable ZP_CLOUDFLARE_COMPTE ;"
+          [ -n "$ADRESSE" ] || manque="$manque variable ZP_RELAIS_URL ;"
+          if [ -n "$manque" ]; then
+            if [ "${{ github.event_name }}" = "push" ]; then
+              echo "::notice::Relais non mis à jour : il manque$manque (voir docs/etapes-proprietaire.md, partie J)."
+              echo "pret=non" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "::error::Il manque :$manque Voir docs/etapes-proprietaire.md, partie J."
+            exit 1
+          fi
+          echo "pret=oui" >> "$GITHUB_OUTPUT"
+
+      - name: Tester le relais
+        if: steps.reglages.outputs.pret == 'oui'
+        run: node relais/worker.test.mjs
+
+      - name: Retrouver l'espace KV « ALERTES »
+        if: steps.reglages.outputs.pret == 'oui'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.ZP_JETON_CLOUDFLARE }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.ZP_CLOUDFLARE_COMPTE }}
+        run: |
+          set -o pipefail
+          ID=$(curl -sf -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/storage/kv/namespaces?per_page=100" \
+            | jq -r '.result[] | select(.title == "ALERTES" or (.title | endswith("-ALERTES"))) | .id' | head -1) || {
+            echo "::error::Cloudflare refuse le jeton (droit « Workers KV Storage : Read » ou identifiant du compte à vérifier)."
+            exit 1
+          }
+          if [ -z "$ID" ]; then
+            echo "::error::Espace KV « ALERTES » introuvable sur ce compte Cloudflare."
+            exit 1
+          fi
+          sed -i "s/^id = \".*\"/id = \"$ID\"/" relais/wrangler.toml
+          echo "Espace KV ALERTES trouvé."
+
+      - name: Déployer
+        if: steps.reglages.outputs.pret == 'oui'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.ZP_JETON_CLOUDFLARE }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.ZP_CLOUDFLARE_COMPTE }}
+        run: npx --yes "$WRANGLER" deploy --config relais/wrangler.toml --message "GitHub ${GITHUB_SHA::7}"
+
+      - name: Vérifier le relais en ligne
+        id: verification
+        if: steps.reglages.outputs.pret == 'oui'
+        env:
+          ADRESSE: ${{ vars.ZP_RELAIS_URL }}
+        run: |
+          sleep 10
+          ok=1
+          a=$(curl -s -o /dev/null -w '%{http_code}' "$ADRESSE/alertes")
+          g=$(curl -s -o /dev/null -w '%{http_code}' "$ADRESSE/google/id")
+          b=$(curl -s -o /dev/null -w '%{http_code}' "$ADRESSE/boite/00000000000000000000000000000000?etat=1")
+          echo "alertes sans jeton : $a (attendu 401) ; google/id : $g (attendu 200) ; boîte : $b (attendu 200)"
+          [ "$a" = "401" ] || ok=0
+          [ "$g" = "200" ] || ok=0
+          [ "$b" = "200" ] || ok=0
+          if [ "$ok" != "1" ]; then
+            echo "::error::Le relais en ligne ne répond pas comme prévu."
+            exit 1
+          fi
+          echo "Relais en ligne : OK." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remettre la version précédente si la vérification échoue
+        if: failure() && steps.verification.outcome == 'failure'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.ZP_JETON_CLOUDFLARE }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.ZP_CLOUDFLARE_COMPTE }}
+        run: |
+          npx --yes "$WRANGLER" rollback --config relais/wrangler.toml --message "Retour automatique" -y
+          echo "⚠️ Version précédente du relais remise." >> "$GITHUB_STEP_SUMMARY"
