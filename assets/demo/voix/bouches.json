@@ -144,9 +144,9 @@
   "020": {
    "fichier": "020.mp3",
    "texte": "Je passe au client suivant.",
-   "duree_ms": 1850,
-   "bouche": "0001345731553345741226787542564552100",
-   "forme": "mmmaeeeoomaaeeeeoomeeooooeeeaooooammm"
+   "duree_ms": 1650,
+   "bouche": "000444752674353125776544644642100",
+   "forme": "mmmaeeooeaaeeaaeeoooeeeeoooooommm"
   },
   "021": {
    "fichier": "021.mp3",
@@ -263,9 +263,9 @@
   "037": {
    "fichier": "037.mp3",
    "texte": "Le vendeur compte l'argent sans voir combien il devrait y avoir.",
-   "duree_ms": 4300,
-   "bouche": "00025687335666763100156313664433444100000232664257521027853788975374343225763355310000",
-   "forme": "mmmaooooaaoooooaaeamaooaeeoaooeeoaoommmmmeeeooaeoaaemmeoooaooooooooaoooeeoooaooaaeemmm"
+   "duree_ms": 4200,
+   "bouche": "000578853666576632102673146654556541000256689546853116876788644533543445533554210000",
+   "forme": "mmmaooooeooooaaoeemmeaoeeeoaooeeooommmmeeeeaoaeoaaemeoooaoooooooeeaoeeeooaeoaaaeemmm"
   },
   "038": {
    "fichier": "038.mp3",
