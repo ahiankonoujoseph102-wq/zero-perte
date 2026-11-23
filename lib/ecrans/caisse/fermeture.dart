@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../app/etat_application.dart';
+import '../../domaine/messages_whatsapp.dart';
 import '../../domaine/argent.dart';
 import '../../domaine/calculs.dart';
 import '../../donnees/journal_local.dart';
@@ -57,7 +58,7 @@ class _PageFermerCaisseState extends State<PageFermerCaisse> {
         MaterialPageRoute(
           builder: (_) => widget.etat.estPatron
               ? PageResultatFermeture(etat: widget.etat, fermeture: f)
-              : PageCaisseFermee(etat: widget.etat),
+              : PageCaisseFermee(etat: widget.etat, fermeture: f),
         ),
       );
     } catch (e) {
@@ -144,10 +145,13 @@ class _PageFermerCaisseState extends State<PageFermerCaisse> {
 
 /// Fin de fermeture pour un vendeur : aucun chiffre (le patron verra l'écart).
 class PageCaisseFermee extends StatelessWidget {
-  const PageCaisseFermee({super.key, this.etat});
+  const PageCaisseFermee({super.key, this.etat, this.fermeture});
 
   /// Pour proposer le petit inventaire du jour (3 produits).
   final EtatApplication? etat;
+
+  /// La fermeture faite (pour l'envoyer sur WhatsApp, sans l'écart).
+  final FermetureCaisse? fermeture;
 
   @override
   Widget build(BuildContext context) {
@@ -165,6 +169,10 @@ class PageCaisseFermee extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (fermeture != null) ...[
+                  BoutonEnvoyerFermeture(etat: etat!, fermeture: fermeture!),
+                  const SizedBox(height: 8),
+                ],
                 // Inventaire tournant : quelques produits chaque soir.
                 GrosBouton(
                   key: const Key('bouton-compter-du-jour'),
@@ -227,6 +235,45 @@ class PageCaisseFermee extends StatelessWidget {
       ),
     );
   }
+}
+
+/// « Envoyer sur WhatsApp » : le récapitulatif de la fermeture (texte), que
+/// la personne relit et envoie elle-même (au patron, à un parent…).
+class BoutonEnvoyerFermeture extends StatelessWidget {
+  const BoutonEnvoyerFermeture({
+    super.key,
+    required this.etat,
+    required this.fermeture,
+  });
+
+  final EtatApplication etat;
+  final FermetureCaisse fermeture;
+
+  @override
+  Widget build(BuildContext context) => OutlinedButton.icon(
+    key: const Key('bouton-envoyer-fermeture'),
+    onPressed: () async {
+      final texte = await etat.texteFermeture(fermeture);
+      final ok = await etat.services.ouvrirLien(lienWhatsApp(texte));
+      if (!ok && context.mounted) {
+        annoncer(
+          context,
+          'WhatsApp introuvable sur ce téléphone.',
+          erreur: true,
+        );
+      }
+    },
+    icon: const Icon(Icons.send_rounded),
+    label: const Text(
+      'Envoyer sur WhatsApp',
+      style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700),
+    ),
+    style: OutlinedButton.styleFrom(
+      minimumSize: const Size(0, 58),
+      foregroundColor: CouleursZp.argentEntreClair,
+      side: const BorderSide(color: CouleursZp.argentEntre, width: 2),
+    ),
+  );
 }
 
 /// Phrase courte décrivant un écart.
@@ -294,6 +341,7 @@ class PageResultatFermeture extends StatelessWidget {
     return PageZp(
       titre: 'Écart de caisse',
       icone: Icons.fact_check_rounded,
+      bas: BoutonEnvoyerFermeture(etat: etat, fermeture: f),
       corps: ListView(
         padding: const EdgeInsets.all(16),
         children: [

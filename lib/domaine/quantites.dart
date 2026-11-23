@@ -145,19 +145,31 @@ String decrireUnites(int milliemes, String unite) {
   return '$texte ${pluriel(unite, dixiemes / 10)}';
 }
 
-/// Stock lisible avec les conditionnements : « 2 sacs de 50 kg + 5 kg ».
+/// Prix « revendeur » d'une vente en gros (0.36) : un conditionnement de
+/// même contenance, nommé « carton de 24 (revendeur) ». Les anciennes
+/// versions le voient comme une vente en gros de plus : rien ne se perd.
+const String suffixeRevendeur = ' (revendeur)';
+
+bool estPrixRevendeur(Conditionnement c) => c.nom.endsWith(suffixeRevendeur);
+
+String nomRevendeur(String nomGros) => '$nomGros$suffixeRevendeur';
+
+/// Stock lisible avec la vente en gros : « 3 cartons de 24 et 5 boîtes ».
 String decrireStock(
   int milliemes,
   String unite,
   List<Conditionnement> conditionnements,
 ) {
   if (milliemes <= 0) return decrireUnites(milliemes, unite);
-  final r = repartirStock(milliemes, conditionnements);
+  final r = repartirStock(milliemes, [
+    for (final c in conditionnements)
+      if (!estPrixRevendeur(c)) c,
+  ]);
   final parts = [
     for (final p in r.parts)
       '${p.nombre} ${pluriel(p.conditionnement.nom, p.nombre)}',
     if (r.resteMilliemes > 0 || r.parts.isEmpty)
       decrireUnites(r.resteMilliemes, unite),
   ];
-  return parts.join(' + ');
+  return parts.join(' et ');
 }

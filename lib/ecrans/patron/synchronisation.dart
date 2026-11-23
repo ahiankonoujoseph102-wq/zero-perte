@@ -73,7 +73,7 @@ class _PageSynchronisationState extends State<PageSynchronisation> {
           final e = s.data;
           final connecte = e?.compte != null;
           return PageZp(
-            titre: 'Appareils et Drive',
+            titre: 'Compte Google',
             icone: Icons.cloud_sync_rounded,
             bas: GrosBouton(
               key: Key(

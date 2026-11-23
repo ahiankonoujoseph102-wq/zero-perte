@@ -11,6 +11,7 @@ import '../clavier_montant.dart';
 import '../communs.dart';
 import '../credit/clients.dart';
 import 'devis.dart';
+import 'nouveau_produit.dart';
 import 'page_encaisser.dart';
 import 'ventes_du_jour.dart';
 
@@ -112,6 +113,18 @@ class _PageVendreState extends State<PageVendre> {
     if (ligne == null) return;
     HapticFeedback.selectionClick();
     setState(() => _panier.ajouter(ligne!));
+  }
+
+  /// Produit qui manque : créé ici (nom + prix), puis vendu tout de suite.
+  Future<void> _nouveauProduit() async {
+    final p = await demanderNouveauProduit(
+      context,
+      etat,
+      nom: _recherche.text.trim(),
+    );
+    if (p == null || !mounted) return;
+    setState(_recherche.clear);
+    await _toucherProduit(p);
   }
 
   LignePanier _ligne(Produit p, Conditionnement? c, int nombre) => LignePanier(
@@ -235,29 +248,62 @@ class _PageVendreState extends State<PageVendre> {
                 ),
               )
             : null;
+        // On peut vendre sans avoir tout saisi : un produit qui manque se
+        // crée ici (pas en démonstration).
+        final peutCreer = !etat.estDemo;
+        Widget boutonNouveau(String texte) => GrosBouton(
+          key: const Key('bouton-nouveau-produit'),
+          texte: texte,
+          icone: Icons.add_rounded,
+          couleur: CouleursZp.argentEntre,
+          onPressed: _nouveauProduit,
+        );
         final grille = tous.isEmpty
-            ? const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Text(
-                    'Aucun produit. Le patron doit d\'abord ajouter ses produits.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 20),
+            ? Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        peutCreer
+                            ? 'Pas encore de produit. Ajoutez celui que vous '
+                                  'vendez maintenant : son nom et son prix suffisent.'
+                            : 'Aucun produit.',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 20),
+                      ),
+                      if (peutCreer) ...[
+                        const SizedBox(height: 16),
+                        boutonNouveau('Nouveau produit'),
+                      ],
+                    ],
                   ),
                 ),
               )
             : produits.isEmpty
             ? Center(
-                child: Padding(
+                child: SingleChildScrollView(
                   padding: const EdgeInsets.all(24),
-                  child: Text(
-                    'Aucun produit ne s\'appelle « ${_recherche.text.trim()} ».',
-                    key: const Key('recherche-vide'),
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      color: CouleursZp.texteDoux,
-                    ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Aucun produit ne s\'appelle « ${_recherche.text.trim()} ».',
+                        key: const Key('recherche-vide'),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          color: CouleursZp.texteDoux,
+                        ),
+                      ),
+                      if (peutCreer) ...[
+                        const SizedBox(height: 16),
+                        boutonNouveau('Ajouter « ${_recherche.text.trim()} »'),
+                      ],
+                    ],
                   ),
                 ),
               )
@@ -269,11 +315,14 @@ class _PageVendreState extends State<PageVendre> {
                   crossAxisSpacing: 8,
                   mainAxisSpacing: 8,
                 ),
-                itemCount: produits.length,
-                itemBuilder: (context, i) => _TuileVente(
-                  produit: produits[i],
-                  onTap: () => _toucherProduit(produits[i]),
-                ),
+                // Dernière case : « + Nouveau produit ».
+                itemCount: produits.length + (peutCreer ? 1 : 0),
+                itemBuilder: (context, i) => i == produits.length
+                    ? _TuileNouveauProduit(onTap: _nouveauProduit)
+                    : _TuileVente(
+                        produit: produits[i],
+                        onTap: () => _toucherProduit(produits[i]),
+                      ),
               );
         final client = Padding(
           padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
@@ -554,6 +603,45 @@ class _TuileVente extends StatelessWidget {
   }
 }
 
+/// Case « + Nouveau produit » (vendre sans avoir tout saisi avant).
+class _TuileNouveauProduit extends StatelessWidget {
+  const _TuileNouveauProduit({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: CouleursZp.fond,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(18),
+      side: const BorderSide(color: CouleursZp.argentEntre, width: 2),
+    ),
+    child: InkWell(
+      key: const Key('vendre-nouveau-produit'),
+      borderRadius: BorderRadius.circular(18),
+      onTap: onTap,
+      child: const Padding(
+        padding: EdgeInsets.all(8),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.add_circle_rounded,
+              size: 44,
+              color: CouleursZp.argentEntre,
+            ),
+            SizedBox(height: 4),
+            Text(
+              'Nouveau produit',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
 /// Choix de l'unité vendue : unité de base, conditionnement, ou « au montant ».
 class _ChoixUnite extends StatelessWidget {
   const _ChoixUnite({
@@ -569,42 +657,81 @@ class _ChoixUnite extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = produit;
-    Widget option(String cle, String texte, int prix, VoidCallback onTap) =>
-        Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: OutlinedButton(
-            key: Key(cle),
-            onPressed: onTap,
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(0, 64),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
+    Widget option(
+      String cle,
+      String texte,
+      int prix,
+      VoidCallback onTap, {
+      String? titre,
+      Color? couleur,
+    }) => Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: OutlinedButton(
+        key: Key(cle),
+        onPressed: onTap,
+        style: OutlinedButton.styleFrom(
+          minimumSize: Size(0, titre == null ? 64 : 76),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          side: BorderSide(color: couleur ?? CouleursZp.ligne, width: 2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (titre != null)
+                    Text(
+                      titre,
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        color: couleur ?? CouleursZp.texte,
+                      ),
+                    ),
+                  Text(
+                    texte,
+                    style: TextStyle(
+                      fontSize: titre == null ? 20 : 17,
+                      fontWeight: titre == null
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                      color: CouleursZp.texte,
+                    ),
+                  ),
+                ],
               ),
             ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    texte,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+            if (prix > 0)
+              Text(
+                formatFrancs(prix),
+                style: const TextStyle(
+                  fontSize: 21,
+                  fontWeight: FontWeight.w700,
+                  color: CouleursZp.argentEntre,
                 ),
-                if (prix > 0)
-                  Text(
-                    formatFrancs(prix),
-                    style: const TextStyle(
-                      fontSize: 20,
-                      color: CouleursZp.argentEntre,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        );
+              ),
+          ],
+        ),
+      ),
+    );
+    // Vente en gros (0.36) : « Détail » et « Gros » bien séparés.
+    final gros = [
+      for (final c in conditionnements)
+        if (!estPrixRevendeur(c)) c,
+    ];
+    final revendeurs = [
+      for (final c in conditionnements)
+        if (estPrixRevendeur(c)) c,
+    ];
+    final avecGros = gros.isNotEmpty || revendeurs.isNotEmpty;
+    String contenu(Conditionnement c) =>
+        '1 ${c.nom.replaceAll(suffixeRevendeur, '')} '
+        '(${decrireUnites(c.facteurMilliemes, p.uniteBase)})';
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -633,13 +760,25 @@ class _ChoixUnite extends StatelessWidget {
                 '1 ${p.uniteBase}',
                 p.prixUnitaire,
                 () => Navigator.of(context).pop(ligne(p, null, 1)),
+                titre: avecGros ? 'Détail' : null,
               ),
-            for (final c in conditionnements)
+            for (final c in gros)
               option(
                 'choix-${c.nom}',
-                '1 ${c.nom}',
+                contenu(c),
                 c.prixVente,
                 () => Navigator.of(context).pop(ligne(p, c, 1)),
+                titre: 'Gros',
+                couleur: CouleursZp.marque,
+              ),
+            for (final c in revendeurs)
+              option(
+                'choix-${c.nom}',
+                contenu(c),
+                c.prixVente,
+                () => Navigator.of(context).pop(ligne(p, c, 1)),
+                titre: 'Gros revendeur',
+                couleur: CouleursZp.creditTexte,
               ),
             if (p.auMontant && p.aUnPrix)
               option(

@@ -43,6 +43,34 @@ const List<String> villesTogo = [
 /// Message par défaut en bas des reçus (modifiable par le patron).
 const String messageRecuParDefaut = 'Merci, à bientôt !';
 
+/// Comment la boutique vend.
+enum FaconDeVendre {
+  detail('detail', 'Au détail'),
+  gros('gros', 'En gros'),
+  lesDeux('les_deux', 'Les deux');
+
+  const FaconDeVendre(this.code, this.libelle);
+  final String code;
+  final String libelle;
+
+  static FaconDeVendre? depuisCode(String? c) =>
+      values.where((v) => v.code == c).firstOrNull;
+}
+
+/// Qui vend dans la boutique.
+enum QuiVend {
+  moi('moi', 'Moi'),
+  unVendeur('un', 'Un vendeur'),
+  plusieurs('plusieurs', 'Plusieurs vendeurs');
+
+  const QuiVend(this.code, this.libelle);
+  final String code;
+  final String libelle;
+
+  static QuiVend? depuisCode(String? c) =>
+      values.where((v) => v.code == c).firstOrNull;
+}
+
 /// Configuration de la boutique.
 class ConfigBoutique {
   const ConfigBoutique({
@@ -55,6 +83,8 @@ class ConfigBoutique {
     this.couleur = 0xFF1D3557,
     this.messageRecu = messageRecuParDefaut,
     this.logo,
+    this.vente,
+    this.quiVend,
   });
 
   final String nom;
@@ -72,6 +102,13 @@ class ConfigBoutique {
 
   /// Photo ou logo (JPEG réduit), ou nul : on affiche alors les initiales.
   final List<int>? logo;
+
+  /// Comment la boutique vend (réponse du démarrage, modifiable dans Gestion).
+  /// Nul : boutique installée avant la 0.36 (on montre tout, comme avant).
+  final FaconDeVendre? vente;
+
+  /// Qui vend dans la boutique. Nul : boutique installée avant la 0.36.
+  final QuiVend? quiVend;
 
   /// Initiales pour le logo par défaut : « Boutique Mama Ama » → « MA ».
   String get initiales {
@@ -115,6 +152,8 @@ class ConfigBoutique {
     String? messageRecu,
     List<int>? logo,
     bool effacerLogo = false,
+    FaconDeVendre? vente,
+    QuiVend? quiVend,
   }) => ConfigBoutique(
     nom: nom ?? this.nom,
     types: types ?? this.types,
@@ -125,6 +164,8 @@ class ConfigBoutique {
     couleur: couleur ?? this.couleur,
     messageRecu: messageRecu ?? this.messageRecu,
     logo: effacerLogo ? null : (logo ?? this.logo),
+    vente: vente ?? this.vente,
+    quiVend: quiVend ?? this.quiVend,
   );
 
   Map<String, Object?> versDonnees() => {
@@ -137,6 +178,9 @@ class ConfigBoutique {
     'couleur': couleur,
     'message_recu': messageRecu,
     'logo': logo == null ? null : base64.encode(logo!),
+    // Clés ajoutées en 0.36 : les anciennes versions les ignorent.
+    if (vente != null) 'vente': vente!.code,
+    if (quiVend != null) 'qui_vend': quiVend!.code,
   };
 
   factory ConfigBoutique.depuisDonnees(Map<String, Object?> d) =>
@@ -150,6 +194,8 @@ class ConfigBoutique {
         couleur: (d['couleur'] as int?) ?? 0xFF1D3557,
         messageRecu: (d['message_recu'] as String?) ?? messageRecuParDefaut,
         logo: d['logo'] == null ? null : base64.decode(d['logo'] as String),
+        vente: FaconDeVendre.depuisCode(d['vente'] as String?),
+        quiVend: QuiVend.depuisCode(d['qui_vend'] as String?),
       );
 }
 

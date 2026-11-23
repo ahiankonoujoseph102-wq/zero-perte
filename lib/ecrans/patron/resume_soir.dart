@@ -143,7 +143,7 @@ class DialogueResumeSoir extends StatelessWidget {
               cle: const Key('resume-soir-ventes'),
             ),
             _ligne(
-              'Bénéfice estimé',
+              'Bénéfice',
               formatFrancs(r.benefice),
               couleur: r.benefice >= 0
                   ? CouleursZp.argentEntre

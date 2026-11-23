@@ -22,6 +22,12 @@ const List<String> unitesCourantes = [
   'bouteille',
   'tas',
   'mètre',
+  'bol',
+  // Pour qui vend seulement en gros (0.36) : le carton est l'unité.
+  'carton',
+  'sac',
+  'casier',
+  'bidon',
 ];
 
 String _quantite(int milliemes) {
@@ -145,7 +151,7 @@ class _PageProduitsState extends State<PageProduits> {
                         separatorBuilder: (_, _) => const SizedBox(height: 8),
                         itemBuilder: (context, i) => _LigneProduit(
                           produit: liste[i],
-                          stock: widget.etat.stock(liste[i].id),
+                          stock: widget.etat.stockLisible(liste[i]),
                           onTap: () => _ouvrir(liste[i]),
                         ),
                       ),
@@ -166,7 +172,9 @@ class _LigneProduit extends StatelessWidget {
   });
 
   final Produit produit;
-  final int stock;
+
+  /// Stock lisible (« 3 cartons de 24 et 5 boîtes », « pas encore compté »).
+  final String stock;
   final VoidCallback onTap;
 
   @override
@@ -192,8 +200,8 @@ class _LigneProduit extends StatelessWidget {
         ),
         subtitle: Text(
           p.aUnPrix
-              ? '${formatFrancs(p.prixUnitaire)} / ${p.uniteBase} · stock ${_quantite(stock)}'
-              : 'Pas de prix · stock ${_quantite(stock)}',
+              ? '${formatFrancs(p.prixUnitaire)} / ${p.uniteBase} · stock : $stock'
+              : 'Vendu en gros seulement · stock : $stock',
           style: const TextStyle(fontSize: 15),
         ),
         trailing: p.actif
@@ -218,10 +226,14 @@ class PageFicheProduit extends StatefulWidget {
   State<PageFicheProduit> createState() => _PageFicheProduitState();
 }
 
+/// Une nouvelle vente en gros (carton, sac…) saisie dans la fiche.
 class _NouvelEmballage {
   final nom = TextEditingController();
   final unites = TextEditingController();
   final prix = TextEditingController();
+
+  /// Prix « revendeur » (facultatif) : un peu moins cher pour les revendeurs.
+  final revendeur = TextEditingController();
 }
 
 class _PageFicheProduitState extends State<PageFicheProduit> {
@@ -245,6 +257,8 @@ class _PageFicheProduitState extends State<PageFicheProduit> {
   final List<_NouvelEmballage> _nouveaux = [];
   final Map<String, TextEditingController> _prixEmballages = {};
   List<Conditionnement> _emballages = const [];
+  Map<String, Conditionnement> _revendeurs = const {};
+  final Map<String, TextEditingController> _prixRevendeurs = {};
   List<(DateTime, int)> _historique = const [];
   bool _occupe = false;
 
@@ -261,10 +275,22 @@ class _PageFicheProduitState extends State<PageFicheProduit> {
     final h = await widget.etat.journal.historiquePrix(p.id);
     if (!mounted) return;
     setState(() {
-      _emballages = e;
+      // Les prix « revendeur » sont montrés à côté de leur vente en gros.
+      _emballages = [
+        for (final c in e)
+          if (!estPrixRevendeur(c)) c,
+      ];
+      _revendeurs = {
+        for (final c in e)
+          if (estPrixRevendeur(c)) c.nom: c,
+      };
       _historique = h;
-      for (final c in e) {
+      for (final c in _emballages) {
         _prixEmballages[c.id] = TextEditingController(text: '${c.prixVente}');
+        final r = _revendeurs[nomRevendeur(c.nom)];
+        _prixRevendeurs[c.id] = TextEditingController(
+          text: r == null || r.prixVente == 0 ? '' : '${r.prixVente}',
+        );
       }
     });
   }
@@ -274,13 +300,14 @@ class _PageFicheProduitState extends State<PageFicheProduit> {
     for (final c in [_nom, _unite, _prix, _achat, _seuil, _stock]) {
       c.dispose();
     }
-    for (final c in _prixEmballages.values) {
+    for (final c in [..._prixEmballages.values, ..._prixRevendeurs.values]) {
       c.dispose();
     }
     for (final n in _nouveaux) {
       n.nom.dispose();
       n.unites.dispose();
       n.prix.dispose();
+      n.revendeur.dispose();
     }
     super.dispose();
   }
@@ -318,8 +345,16 @@ class _PageFicheProduitState extends State<PageFicheProduit> {
           seuilAlerteMilliemes: seuilMilliemes,
           photo: _photo,
           conditionnements: [
-            for (final n in _nouveaux)
+            for (final n in _nouveaux) ...[
               (n.nom.text, _entier(n.unites) ?? 0, _entier(n.prix) ?? 0),
+              if ((_entier(n.revendeur) ?? 0) > 0 &&
+                  n.nom.text.trim().isNotEmpty)
+                (
+                  nomRevendeur(n.nom.text.trim()),
+                  _entier(n.unites) ?? 0,
+                  _entier(n.revendeur)!,
+                ),
+            ],
           ],
           stockDepart: _entier(_stock) ?? 0,
         );
@@ -339,6 +374,21 @@ class _PageFicheProduitState extends State<PageFicheProduit> {
           if (prix != null && prix != c.prixVente) {
             await etat.changerPrixConditionnement(p, c, prix);
           }
+          // Prix revendeur : ajouté, changé, ou retiré (0 = plus proposé).
+          final rev = _entier(_prixRevendeurs[c.id]!) ?? 0;
+          final existant = _revendeurs[nomRevendeur(c.nom)];
+          if (existant != null) {
+            if (rev != existant.prixVente) {
+              await etat.changerPrixConditionnement(p, existant, rev);
+            }
+          } else if (rev > 0 && c.facteurMilliemes % milliemesParUnite == 0) {
+            await etat.ajouterConditionnement(
+              p,
+              nom: nomRevendeur(c.nom),
+              unites: c.facteurMilliemes ~/ milliemesParUnite,
+              prix: rev,
+            );
+          }
         }
         for (final n in _nouveaux) {
           if (n.nom.text.trim().isEmpty) continue;
@@ -348,6 +398,15 @@ class _PageFicheProduitState extends State<PageFicheProduit> {
             unites: _entier(n.unites) ?? 0,
             prix: _entier(n.prix) ?? 0,
           );
+          final rev = _entier(n.revendeur) ?? 0;
+          if (rev > 0) {
+            await etat.ajouterConditionnement(
+              p,
+              nom: nomRevendeur(n.nom.text.trim()),
+              unites: _entier(n.unites) ?? 0,
+              prix: rev,
+            );
+          }
         }
       }
       if (!mounted) return;
@@ -481,7 +540,7 @@ class _PageFicheProduitState extends State<PageFicheProduit> {
           _champNombre(
             'champ-prix-vente',
             _prix,
-            'Prix de vente (F par ${_unite.text.trim().isEmpty ? 'unité' : _unite.text.trim()})',
+            'Prix au détail (F pour 1 ${_unite.text.trim().isEmpty ? 'unité' : _unite.text.trim()})',
           ),
           espace,
           _champNombre(
@@ -509,48 +568,99 @@ class _PageFicheProduitState extends State<PageFicheProduit> {
           ],
           const SizedBox(height: 18),
           const Text(
-            'Emballages (carton, sac, casier…)',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+            'Vente en gros (carton, sac, casier…)',
+            key: Key('titre-vente-en-gros'),
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+          ),
+          const Text(
+            'Facultatif. Le stock se calcule tout seul : vendre 1 carton enlève '
+            'tout ce qu\'il contient.',
+            style: TextStyle(fontSize: 15, color: CouleursZp.texteDoux),
           ),
           for (final c in _emballages)
             Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: _champNombre(
-                'prix-emballage-${c.id}',
-                _prixEmballages[c.id]!,
-                'Prix du ${c.nom} (F)',
+              padding: const EdgeInsets.only(top: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    '1 ${c.nom} = ${decrireUnites(c.facteurMilliemes, _unite.text.trim().isEmpty ? 'unité' : _unite.text.trim())}',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _champNombre(
+                          'prix-emballage-${c.id}',
+                          _prixEmballages[c.id]!,
+                          'Prix de gros (F)',
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: _champNombre(
+                          'prix-revendeur-${c.id}',
+                          _prixRevendeurs[c.id]!,
+                          'Revendeur (F)',
+                          aide: 'facultatif',
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           for (final (i, n) in _nouveaux.indexed)
             Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: Row(
+              padding: const EdgeInsets.only(top: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    flex: 3,
-                    child: TextField(
-                      key: Key('nouvel-emballage-nom-$i'),
-                      controller: n.nom,
-                      decoration: decorationChamp('Nom (carton…)'),
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: TextField(
+                          key: Key('nouvel-emballage-nom-$i'),
+                          controller: n.nom,
+                          decoration: decorationChamp('Nom (carton, sac…)'),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        flex: 2,
+                        child: _champNombre(
+                          'nouvel-emballage-unites-$i',
+                          n.unites,
+                          'Combien de ${(_unite.text.trim().isEmpty ? 'unités' : pluriel(_unite.text.trim(), 2))} dedans',
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    flex: 2,
-                    child: _champNombre(
-                      'nouvel-emballage-unites-$i',
-                      n.unites,
-                      'Contient',
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    flex: 2,
-                    child: _champNombre(
-                      'nouvel-emballage-prix-$i',
-                      n.prix,
-                      'Prix (F)',
-                    ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _champNombre(
+                          'nouvel-emballage-prix-$i',
+                          n.prix,
+                          'Prix de gros (F)',
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: _champNombre(
+                          'nouvel-emballage-revendeur-$i',
+                          n.revendeur,
+                          'Revendeur (F)',
+                          aide: 'facultatif',
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -562,7 +672,10 @@ class _PageFicheProduitState extends State<PageFicheProduit> {
               onPressed: () =>
                   setState(() => _nouveaux.add(_NouvelEmballage())),
               icon: const Icon(Icons.add_rounded),
-              label: const Text('Ajouter un emballage'),
+              label: const Text(
+                'Ajouter une vente en gros',
+                style: TextStyle(fontSize: 18),
+              ),
             ),
           ),
           if (p != null && _historique.length > 1) ...[

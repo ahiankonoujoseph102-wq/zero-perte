@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../app/etat_application.dart';
-import '../../domaine/argent.dart';
 import '../../domaine/boutique.dart';
 import '../../domaine/quantites.dart';
 import '../../domaine/utilisateurs.dart';
@@ -12,6 +11,7 @@ import '../../theme/couleurs.dart';
 import '../clavier_pin.dart';
 import '../logo_boutique.dart';
 import '../recu/apercu_recu.dart';
+import 'etape_profil.dart';
 
 /// Textes lus à voix haute pour les étapes de personnalisation.
 String texteEtapeBoutique(EtapeAssistant e) => switch (e) {
@@ -22,10 +22,39 @@ String texteEtapeBoutique(EtapeAssistant e) => switch (e) {
   EtapeAssistant.produits => 'Touchez les produits que vous vendez. Vous pourrez en ajouter d\'autres plus tard.',
   EtapeAssistant.prix => 'Écrivez le prix de vente de chaque produit. Si vous ne savez pas encore, vous pourrez le faire plus tard.',
   EtapeAssistant.recu => 'Voici le reçu que recevront vos clients. Vous pouvez changer le message du bas.',
-  EtapeAssistant.codePatron => 'Votre code secret de patron : quatre chiffres. Ne le donnez à personne, même pas à votre vendeur.',
-  EtapeAssistant.fin => 'Votre boutique est prête. Touchez Commencer.',
+  EtapeAssistant.profil => 'Deux questions. Vous vendez au détail, en gros, ou les deux ? Et qui vend dans la boutique ? Touchez votre réponse.',
+  EtapeAssistant.codePatron => 'Votre code secret de patron : six chiffres. Ne le donnez à personne, même pas à votre vendeur.',
+  EtapeAssistant.fin => 'Vous pouvez vendre ! Les produits s\'ajoutent pendant la vente. Touchez Commencer.',
   _ => '',
 };
+
+/// Une étape de l'installation ouverte plus tard depuis Gestion → « Ma
+/// boutique » : « Enregistrer » revient à la page d'avant au lieu de passer à
+/// l'étape suivante.
+class ModeReglage extends InheritedWidget {
+  const ModeReglage({super.key, required this.etape, required super.child});
+
+  /// Étape montrée (pour le bouton « Écouter »).
+  final EtapeAssistant etape;
+
+  static ModeReglage? de(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<ModeReglage>();
+
+  @override
+  bool updateShouldNotify(ModeReglage ancien) => ancien.etape != etape;
+}
+
+/// Après « Continuer » : étape suivante (installation) ou retour (réglage).
+Future<void> suivanteOuRetour(
+  BuildContext context,
+  EtatApplication etat,
+) async {
+  if (ModeReglage.de(context) != null) {
+    if (context.mounted) Navigator.of(context).pop();
+    return;
+  }
+  await etat.suivante();
+}
 
 /// Page d'une étape de personnalisation : contenu + barre du bas (haut-parleur et bouton principal).
 class PageEtapeBoutique extends StatelessWidget {
@@ -60,8 +89,11 @@ class PageEtapeBoutique extends StatelessWidget {
                 label: 'Écouter',
                 child: OutlinedButton(
                   key: const Key('bouton-ecouter'),
-                  onPressed: () =>
-                      etat.services.voix.dire(texteEtapeBoutique(etat.etape)),
+                  onPressed: () => etat.services.voix.dire(
+                    texteEtapeBoutique(
+                      ModeReglage.de(context)?.etape ?? etat.etape,
+                    ),
+                  ),
                   style: OutlinedButton.styleFrom(
                     fixedSize: const Size(64, 64),
                     minimumSize: const Size(64, 64),
@@ -89,7 +121,7 @@ class PageEtapeBoutique extends StatelessWidget {
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Text(
-                      libelle,
+                      ModeReglage.de(context) != null ? 'Enregistrer' : libelle,
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
@@ -138,6 +170,7 @@ Text _titre(String t) => Text(
 Widget pageEtapeBoutique(EtatApplication etat, EtapeAssistant e) => switch (e) {
   EtapeAssistant.typeBoutique => EtapeTypes(etat: etat),
   EtapeAssistant.identite => EtapeIdentite(etat: etat),
+  EtapeAssistant.profil => EtapeProfil(etat: etat),
   EtapeAssistant.contact => EtapeContact(etat: etat),
   EtapeAssistant.couleur => EtapeCouleur(etat: etat),
   EtapeAssistant.produits => EtapeProduits(etat: etat),
@@ -174,7 +207,7 @@ class _EtapeTypesState extends State<EtapeTypes> {
               await widget.etat.enregistrerConfig(
                 widget.etat.config.copie(types: _choix.toList()),
               );
-              await widget.etat.suivante();
+              if (mounted) await suivanteOuRetour(this.context, widget.etat);
             },
       contenu: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -339,7 +372,7 @@ class _EtapeIdentiteState extends State<EtapeIdentite> {
               await widget.etat.enregistrerConfig(
                 apercu.copie(nom: _nom.text.trim()),
               );
-              await widget.etat.suivante();
+              if (mounted) await suivanteOuRetour(this.context, widget.etat);
             },
       contenu: ListView(
         children: [
@@ -488,7 +521,7 @@ class _EtapeContactState extends State<EtapeContact> {
                   repere: _repere.text.trim(),
                 ),
               );
-              await widget.etat.suivante();
+              if (mounted) await suivanteOuRetour(this.context, widget.etat);
             },
       contenu: ListView(
         children: [
@@ -587,7 +620,7 @@ class _EtapeCouleurState extends State<EtapeCouleur> {
       libelle: 'Continuer',
       onPrincipal: () async {
         await widget.etat.enregistrerConfig(apercu);
-        await widget.etat.suivante();
+        if (mounted) await suivanteOuRetour(this.context, widget.etat);
       },
       contenu: ListView(
         children: [
@@ -748,7 +781,7 @@ class _EtapeProduitsState extends State<EtapeProduits> {
               await etat.ajouterDuCatalogue(
                 produits.where((p) => _choix.contains(p.id)),
               );
-              await etat.suivante();
+              if (context.mounted) await suivanteOuRetour(context, etat);
             },
       contenu: CustomScrollView(
         slivers: [
@@ -867,7 +900,7 @@ class _EtapePrixState extends State<EtapePrix> {
           c: _lire(champ),
       });
     }
-    await widget.etat.suivante();
+    if (mounted) await suivanteOuRetour(context, widget.etat);
   }
 
   @override
@@ -1041,7 +1074,7 @@ class _EtapeRecuState extends State<EtapeRecu> {
                 : _message.text.trim(),
           ),
         );
-        await widget.etat.suivante();
+        if (mounted) await suivanteOuRetour(this.context, widget.etat);
       },
       contenu: ListView(
         children: [
@@ -1117,7 +1150,7 @@ class _EtapeCodePatronState extends State<EtapeCodePatron> {
     }
     try {
       await widget.etat.definirPatron(nom: _nom.text, pin: pin);
-      await widget.etat.suivante();
+      if (mounted) await suivanteOuRetour(context, widget.etat);
     } on ErreurZeroPerte catch (e) {
       setState(() {
         _premier = null;
@@ -1209,15 +1242,21 @@ class _EtapeFinState extends State<EtapeFin> {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Votre boutique est prête !',
+            'Vous pouvez vendre !',
+            key: Key('vous-pouvez-vendre'),
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 22, color: CouleursZp.argentEntre),
+            style: TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
+              color: CouleursZp.argentEntre,
+            ),
           ),
           const SizedBox(height: 8),
-          Text(
-            '${widget.etat.produits.length} produits · ${formatFrancs(0)} vendus pour l\'instant',
+          const Text(
+            'Pas besoin de tout saisir avant. Un produit qui manque ? '
+            'Ajoutez-le pendant la vente : son nom et son prix suffisent.',
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 17, color: CouleursZp.texteDoux),
+            style: TextStyle(fontSize: 18, color: CouleursZp.texteDoux),
           ),
           const SizedBox(height: 24),
           OutlinedButton(

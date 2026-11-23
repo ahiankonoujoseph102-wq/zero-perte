@@ -103,7 +103,7 @@ class _Contenu extends StatelessWidget {
       _Chiffre(
         cle: 'chiffre-benefice',
         icone: Icons.trending_up_rounded,
-        titre: 'Bénéfice estimé',
+        titre: 'Bénéfice',
         montant: b.benefice,
         couleur: b.benefice >= 0
             ? CouleursZp.argentEntre

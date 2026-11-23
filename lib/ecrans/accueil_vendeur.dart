@@ -9,7 +9,6 @@ export '../domaine/dates.dart' show dateCourte, dateEnFrancais;
 import '../app/etat_application.dart';
 import '../domaine/argent.dart';
 import '../domaine/boutique.dart';
-import '../domaine/tableau.dart';
 import '../domaine/utilisateurs.dart';
 import '../theme/couleurs.dart';
 import 'bouton_action.dart';
@@ -30,6 +29,7 @@ import 'vente/devis.dart';
 import 'vente/page_vendre.dart';
 import 'vente/retour.dart';
 import 'vendeur_qr.dart';
+import 'patron/a_faire.dart';
 import '../domaine/panier.dart';
 import '../donnees/journal_local.dart' show OperationLue;
 
@@ -114,7 +114,7 @@ List<EntreeMenu> menuPrincipal(EtatApplication etat) => [
   EntreeMenu(
     cle: 'credit',
     icone: Icons.groups_rounded,
-    titre: 'Clients',
+    titre: 'Ce qu\'on me doit',
     couleur: CouleursZp.creditTexte,
     principale: true,
     ouvrir: (c) => _ouvrir(c, PageClients(etat: etat)),
@@ -123,14 +123,14 @@ List<EntreeMenu> menuPrincipal(EtatApplication etat) => [
     EntreeMenu(
       cle: 'chiffres',
       icone: Icons.insights_rounded,
-      titre: 'Chiffres',
+      titre: 'Mon bénéfice',
       couleur: CouleursZp.argentEntreClair,
       ouvrir: (c) => _ouvrir(c, PageChiffres(etat: etat)),
     ),
     EntreeMenu(
       cle: 'arrivages',
       icone: Icons.local_shipping_rounded,
-      titre: 'Arrivages',
+      titre: 'Arrivage',
       couleur: const Color(0xFF4FB3E8),
       ouvrir: (c) => _ouvrir(c, PageArrivages(etat: etat)),
     ),
@@ -160,7 +160,7 @@ List<EntreeMenu> menuPrincipal(EtatApplication etat) => [
     EntreeMenu(
       cle: 'fournisseurs',
       icone: Icons.handshake_rounded,
-      titre: 'Fournisseurs',
+      titre: 'Ce que je dois',
       couleur: const Color(0xFF4FB3E8),
       surTelephone: false,
       ouvrir: (c) => _ouvrir(c, PageFournisseurs(etat: etat)),
@@ -265,6 +265,15 @@ class AccueilVendeur extends StatelessWidget {
                     ),
                     SizedBox(height: bas ? 8 : 12),
                   ],
+                  if (etat.voitTout &&
+                      !bas &&
+                      etat.tachesAFaire.isNotEmpty) ...[
+                    MediaQuery.withClampedTextScaling(
+                      maxScaleFactor: 1.2,
+                      child: CarteAFaire(etat: etat),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
                   if (etat.accesCoupe) ...[
                     MediaQuery.withClampedTextScaling(
                       maxScaleFactor: 1.2,
@@ -347,13 +356,14 @@ class ResumeDuJour extends StatefulWidget {
 }
 
 class _ResumeDuJourState extends State<ResumeDuJour> {
-  late Future<TableauPatron?> _tableau = _charger();
+  late Future<ResumeJour?> _resume = _charger();
   Timer? _attente;
 
   /// Nul si la lecture échoue (l'accueil reste utilisable).
-  Future<TableauPatron?> _charger() => widget.etat
-      .tableau(Periode.jour)
-      .then<TableauPatron?>((t) => t, onError: (Object _) => null);
+  Future<ResumeJour?> _charger() => widget.etat.resumeJour().then<ResumeJour?>(
+    (t) => t,
+    onError: (Object _) => null,
+  );
 
   /// Recharge au plus toutes les 0,4 s (plusieurs changements d'affilée
   /// après une vente).
@@ -362,7 +372,7 @@ class _ResumeDuJourState extends State<ResumeDuJour> {
     _attente = Timer(const Duration(milliseconds: 400), () {
       if (mounted) {
         setState(() {
-          _tableau = _charger();
+          _resume = _charger();
         });
       }
     });
@@ -381,69 +391,100 @@ class _ResumeDuJourState extends State<ResumeDuJour> {
     super.dispose();
   }
 
-  Widget _chiffre(String titre, int montant, Color couleur, String cle) =>
-      Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              titre,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 13, color: CouleursZp.texteDoux),
-            ),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                formatFrancs(montant),
-                key: Key(cle),
-                style: TextStyle(
-                  fontSize: 21,
-                  fontWeight: FontWeight.w800,
-                  color: couleur,
-                ),
-              ),
-            ),
-          ],
+  Widget _chiffre(String titre, Widget valeur) => Expanded(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          titre,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 14, color: CouleursZp.texteDoux),
         ),
-      );
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: valeur,
+        ),
+      ],
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<TableauPatron?>(
-      future: _tableau,
+    return FutureBuilder<ResumeJour?>(
+      future: _resume,
       builder: (context, s) {
         final t = s.data;
         final contenu = t == null
-            ? const SizedBox(height: 44)
-            : Row(
+            ? const SizedBox(height: 64)
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  _chiffre(
-                    'Ventes du jour',
-                    t.ventes,
-                    CouleursZp.argentEntreClair,
-                    'resume-ventes',
+                  Row(
+                    children: [
+                      _chiffre(
+                        'Vendu aujourd\'hui',
+                        Text(
+                          formatFrancs(t.vendu),
+                          key: const Key('resume-ventes'),
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                            color: CouleursZp.argentEntreClair,
+                          ),
+                        ),
+                      ),
+                      _chiffre(
+                        'Bénéfice',
+                        t.beneficeInconnu
+                            ? const Text(
+                                'Ajoutez le prix d\'achat',
+                                key: Key('resume-benefice'),
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: CouleursZp.creditTexte,
+                                ),
+                              )
+                            : Text(
+                                formatFrancs(t.benefice.benefice),
+                                key: const Key('resume-benefice'),
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w800,
+                                  color: t.benefice.benefice >= 0
+                                      ? CouleursZp.argentEntreClair
+                                      : CouleursZp.argentSortClair,
+                                ),
+                              ),
+                      ),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        color: CouleursZp.texteDoux,
+                      ),
+                    ],
                   ),
-                  _chiffre(
-                    'Bénéfice estimé',
-                    t.benefice.benefice,
-                    t.benefice.benefice >= 0
-                        ? CouleursZp.argentEntreClair
-                        : CouleursZp.argentSortClair,
-                    'resume-benefice',
-                  ),
-                  _chiffre(
-                    'Crédits clients',
-                    t.credits,
-                    CouleursZp.creditClair,
-                    'resume-credits',
-                  ),
-                  const Icon(
-                    Icons.chevron_right_rounded,
-                    color: CouleursZp.texteDoux,
-                  ),
+                  const SizedBox(height: 4),
+                  LigneCaisse(resume: t),
+                  if (t.parVendeur.length > 1) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      [
+                        for (final e in t.parVendeur.entries)
+                          '${e.key} ${formatFrancs(e.value)}',
+                      ].join(' · '),
+                      key: const Key('resume-vendeurs'),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: CouleursZp.texteDoux,
+                      ),
+                    ),
+                  ],
                 ],
               );
         return Material(
@@ -466,6 +507,45 @@ class _ResumeDuJourState extends State<ResumeDuJour> {
           ),
         );
       },
+    );
+  }
+}
+
+/// « Caisse : juste ✅ », « Caisse : il manque 2 000 F ❌ »… (espèces).
+class LigneCaisse extends StatelessWidget {
+  const LigneCaisse({super.key, required this.resume, this.taille = 17});
+  final ResumeJour resume;
+  final double taille;
+
+  @override
+  Widget build(BuildContext context) {
+    final (texte, couleur) = switch (resume.caisse) {
+      EtatCaisseResume.pasOuverte => (
+        'Caisse : pas encore ouverte',
+        CouleursZp.texteDoux,
+      ),
+      EtatCaisseResume.ouverte => ('Caisse : ouverte', CouleursZp.texte),
+      EtatCaisseResume.juste => (
+        'Caisse : juste ✅',
+        CouleursZp.argentEntreClair,
+      ),
+      EtatCaisseResume.manque => (
+        'Caisse : il manque ${formatFrancs(-resume.ecartEspeces)} ❌',
+        CouleursZp.argentSortClair,
+      ),
+      EtatCaisseResume.enTrop => (
+        'Caisse : ${formatFrancs(resume.ecartEspeces)} en trop',
+        CouleursZp.creditTexte,
+      ),
+    };
+    return Text(
+      texte,
+      key: const Key('resume-caisse'),
+      style: TextStyle(
+        fontSize: taille,
+        fontWeight: FontWeight.w700,
+        color: couleur,
+      ),
     );
   }
 }

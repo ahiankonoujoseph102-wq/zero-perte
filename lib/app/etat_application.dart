@@ -114,6 +114,9 @@ enum EtapeAssistant {
   activation,
   typeBoutique,
   identite,
+
+  /// 0.36 : « Vous vendez : détail / gros / les deux » et « Qui vend ».
+  profil,
   contact,
   couleur,
   produits,
@@ -165,6 +168,11 @@ class EtatApplication extends ChangeNotifier {
       await journal.produits(),
     );
     etat._stocks = await journal.stocks();
+    etat._comptes = await journal.produitsComptes();
+    etat._recus = await journal.produitsDejaRecus();
+    etat._compteEnregistre =
+        (await journal.lireParametre('sync.compte') ?? '').isNotEmpty;
+    etat._gros = await journal.tousLesConditionnements();
     etat._appareilRetire = await journal.lireParametre(_cleRetire) == '1';
     etat._nbAppareils = int.tryParse(
       await journal.lireParametre('sync.appareils') ?? '',
@@ -225,21 +233,46 @@ class EtatApplication extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Étape suivante de l'assistant.
-  Future<void> suivante() => allerA(
-    EtapeAssistant.values[(_etape.index + 1).clamp(
-      0,
-      EtapeAssistant.values.length - 1,
-    )],
-  );
+  /// Démarrage 0.36 : bienvenue, vérification, activation, puis 3 étapes
+  /// (nom, profil, code du patron) et « Vous pouvez vendre ! ». Les anciennes
+  /// étapes (types, contact, couleur, produits, prix, reçu) se font plus tard
+  /// dans Gestion → « Ma boutique » et « Produits et prix ».
+  static const List<EtapeAssistant> parcours = [
+    EtapeAssistant.bienvenue,
+    EtapeAssistant.verification,
+    EtapeAssistant.activation,
+    EtapeAssistant.identite,
+    EtapeAssistant.profil,
+    EtapeAssistant.codePatron,
+    EtapeAssistant.fin,
+    EtapeAssistant.termine,
+  ];
 
-  /// Étape précédente de l'assistant.
-  Future<void> precedente() => allerA(
-    EtapeAssistant.values[(_etape.index - 1).clamp(
-      0,
-      EtapeAssistant.values.length - 1,
-    )],
-  );
+  /// Les 3 étapes numérotées du démarrage (« Étape 1 sur 3 »).
+  static const List<EtapeAssistant> etapesNumerotees = [
+    EtapeAssistant.identite,
+    EtapeAssistant.profil,
+    EtapeAssistant.codePatron,
+  ];
+
+  /// Étape suivante du démarrage (une ancienne étape mène à la suivante du
+  /// nouveau parcours).
+  Future<void> suivante() {
+    final i = parcours.indexOf(_etape);
+    final prochaine = i >= 0
+        ? parcours[(i + 1).clamp(0, parcours.length - 1)]
+        : parcours.firstWhere((e) => e.index > _etape.index);
+    return allerA(prochaine);
+  }
+
+  /// Étape précédente du démarrage.
+  Future<void> precedente() {
+    final i = parcours.indexOf(_etape);
+    final avant = i >= 0
+        ? parcours[(i - 1).clamp(0, parcours.length - 1)]
+        : parcours.lastWhere((e) => e.index < _etape.index);
+    return allerA(avant);
+  }
 
   // ---------------------------------------------------------------------------
   // Licence
@@ -291,6 +324,15 @@ class EtatApplication extends ChangeNotifier {
   /// Auteur des opérations faites pendant l'installation (le patron, s'il existe).
   String get auteurActuel =>
       _utilisateurActuel?.id ?? patron?.id ?? 'installation';
+
+  /// Démonstration seulement : change de personne sans taper son code (la
+  /// boutique d'exemple est préparée en un instant).
+  void changerPersonneEnDemo(Utilisateur u) {
+    if (!estDemo) {
+      throw const ErreurZeroPerte('Réservé à la démonstration.');
+    }
+    _utilisateurActuel = u;
+  }
 
   /// Crée le patron avec son code secret (ou le remplace).
   Future<Utilisateur> definirPatron({
@@ -594,8 +636,21 @@ class EtatApplication extends ChangeNotifier {
   Future<void> rechargerProduits() async {
     _produits = await journal.produits();
     _stocks = await journal.stocks();
+    _gros = await journal.tousLesConditionnements();
     notifyListeners();
   }
+
+  Map<String, List<Conditionnement>> _gros = const {};
+
+  /// Ventes en gros d'un produit (carton, sac…), prix revendeur compris.
+  List<Conditionnement> grosDe(String produitId) =>
+      _gros[produitId] ?? const [];
+
+  /// Stock lisible : « 3 cartons de 24 et 5 boîtes », ou « pas encore
+  /// compté » si le produit n'a jamais été reçu ni compté.
+  String stockLisible(Produit p) => estCompte(p.id)
+      ? decrireStock(stock(p.id), p.uniteBase, grosDe(p.id))
+      : 'pas encore compté';
 
   /// Enregistre une vente (le panier n'est pas vidé ici). Lève [ErreurZeroPerte]
   /// si l'argent reçu ne suffit pas.
@@ -708,6 +763,77 @@ class EtatApplication extends ChangeNotifier {
           : const {},
       sessions: await journal.fermetures(limite: 15),
     );
+  }
+
+  /// Résumé du jour pour l'accueil du patron (0.36) : vendu, bénéfice, état
+  /// de la caisse en ESPÈCES (Flooz et Mixx ont leur propre solde), et les
+  /// ventes de chaque vendeur s'il y en a plusieurs.
+  Future<ResumeJour> resumeJour() async {
+    final depuis = debutDuJour;
+    final r = await journal.resumeVentes(depuis: depuis);
+    final b = await journal.beneficeEstime(depuis: depuis);
+    final ouverte = await caisseOuverte();
+    final fermetures = [
+      for (final f in await journal.fermetures(limite: 15))
+        if (f.heure >= depuis) f,
+    ];
+    final parVendeur = <String, int>{};
+    for (final v in await journal.ventesDepuis(depuis)) {
+      if (v.annulee) continue;
+      parVendeur[nomDe(v.auteurId)] =
+          (parVendeur[nomDe(v.auteurId)] ?? 0) + v.total;
+    }
+    final ecart = fermetures.fold(
+      0,
+      (s, f) => s + f.resultat(ModePaiement.especes).ecart,
+    );
+    return ResumeJour(
+      vendu: r.total,
+      nombreVentes: r.nombre,
+      benefice: b,
+      // Un manque d'une caisse fermée aujourd'hui reste visible, même si
+      // la caisse a été rouverte ensuite.
+      caisse: ecart < 0
+          ? EtatCaisseResume.manque
+          : ecart > 0
+          ? EtatCaisseResume.enTrop
+          : ouverte
+          ? EtatCaisseResume.ouverte
+          : fermetures.isEmpty
+          ? EtatCaisseResume.pasOuverte
+          : EtatCaisseResume.juste,
+      ecartEspeces: ecart,
+      parVendeur: parVendeur,
+    );
+  }
+
+  /// Récapitulatif d'une fermeture de caisse, à envoyer sur WhatsApp (0.36).
+  /// Le vendeur n'y voit PAS l'écart (le comptage reste à l'aveugle) ; le
+  /// patron le voit.
+  Future<String> texteFermeture(FermetureCaisse f) async {
+    final d = DateTime.fromMillisecondsSinceEpoch(f.heure);
+    String n2(int v) => v.toString().padLeft(2, '0');
+    final debut = DateTime(d.year, d.month, d.day).millisecondsSinceEpoch;
+    final r = await journal.resumeVentes(depuis: debut, jusqua: f.heure);
+    final lignes = <String>[
+      'Caisse fermée – ${config.nom.isEmpty ? 'Ma boutique' : config.nom}',
+      'Le ${n2(d.day)}/${n2(d.month)} à ${n2(d.hour)}:${n2(d.minute)}, par ${nomDe(f.auteurId)}',
+      'Ventes : ${formatFrancs(r.total)} (${r.nombre} ${r.nombre > 1 ? 'ventes' : 'vente'})',
+      for (final m in ModePaiement.caisses)
+        if (m == ModePaiement.especes || (f.comptes[m] ?? 0) != 0)
+          'Compté ${nomModePaiement(m)} : ${formatFrancs(f.comptes[m] ?? 0)}',
+      if (voitTout) ...[
+        for (final m in ModePaiement.caisses)
+          if (m == ModePaiement.especes || f.resultat(m).ecart != 0)
+            '${nomModePaiement(m)} : ${switch (f.resultat(m).ecart) {
+              0 => 'juste ✅',
+              < 0 && final e => 'il manque ${formatFrancs(-e)} ❌',
+              final e => '${formatFrancs(e)} en trop',
+            }}',
+      ],
+      'Envoyé par Zéro Perte',
+    ];
+    return lignes.join('\n');
   }
 
   /// Ouvre la caisse avec l'argent laissé pour rendre la monnaie (0 accepté).
@@ -1035,7 +1161,7 @@ class EtatApplication extends ChangeNotifier {
     final depenses = await journal.totalDepenses(depuis: depuis);
     final parProduit = await journal.ventesParProduit(depuis: depuis);
     final semaine = await journal.ventesParProduit(depuis: ilYa7Jours);
-    final recus = await journal.produitsDejaRecus();
+    final recus = _comptes;
     final stocks = await journal.stocks();
 
     final ilYa30Jours = DateTime(
@@ -1183,6 +1309,9 @@ class EtatApplication extends ChangeNotifier {
     }
     _produits = await journal.produits();
     _stocks = await journal.stocks();
+    _comptes = await journal.produitsComptes();
+    _recus = await journal.produitsDejaRecus();
+    _gros = await journal.tousLesConditionnements();
     notifyListeners();
   }
 
@@ -1262,10 +1391,98 @@ class EtatApplication extends ChangeNotifier {
     final inv = await journal.enregistrerInventaire(
       comptes,
       auteurId: auteurActuel,
+      // Premier comptage d'un produit : pas un écart (0.36).
+      premiers: {
+        for (final id in comptes.keys)
+          if (!_comptes.contains(id)) id,
+      },
     );
+    _comptes = {..._comptes, ...comptes.keys};
     await rechargerProduits();
     return inv;
   }
+
+  // --- Stock « pas encore compté » (0.36) -------------------------------------
+
+  Set<String> _comptes = const {};
+
+  /// Le stock de ce produit est-il connu (reçu ou compté au moins une fois) ?
+  /// Sinon : « pas encore compté » (pas de chiffre, pas d'alerte).
+  bool estCompte(String produitId) => _comptes.contains(produitId);
+
+  /// Produits actifs pas encore comptés, les plus importants d'abord (les plus
+  /// vendus sur 30 jours, puis les plus chers) : ceux à compter en premier.
+  Future<List<Produit>> produitsACompter() async {
+    final m = maintenant();
+    final ventes = await journal.ventesParProduit(
+      depuis: DateTime(m.year, m.month, m.day - 29).millisecondsSinceEpoch,
+    );
+    final l = [
+      for (final p in _produits)
+        if (!_comptes.contains(p.id)) p,
+    ];
+    int prix(Produit p) => p.prixUnitaire;
+    l.sort((a, b) {
+      final va = ventes[a.id]?.montant ?? 0;
+      final vb = ventes[b.id]?.montant ?? 0;
+      if (va != vb) return vb.compareTo(va);
+      return prix(b).compareTo(prix(a));
+    });
+    return l;
+  }
+
+  /// « À faire quand vous avez le temps » (accueil du patron, 0.36) : ce qui
+  /// n'est plus demandé au démarrage. Une tâche faite disparaît.
+  List<TacheAFaire> get tachesAFaire {
+    if (!voitTout || estDemo) return const [];
+    final c = config;
+    final total = _produits.length;
+    final faits = nombreProduitsComptes;
+    // Coût inconnu : pas de prix d'achat et jamais reçu par un arrivage.
+    final sansAchat = _produits
+        .where((p) => p.prixAchat == null && !_recus.contains(p.id))
+        .length;
+    return [
+      if (total > 0 && faits < total)
+        TacheAFaire(
+          TypeTache.compterStock,
+          'Compter mon stock',
+          '$faits sur $total produits comptés',
+        ),
+      if ((c.quiVend == QuiVend.unVendeur || c.quiVend == QuiVend.plusieurs) &&
+          vendeurs.isEmpty)
+        const TacheAFaire(
+          TypeTache.vendeur,
+          'Ajouter mon vendeur',
+          'Il a son code : vous savez ce qu\'il vend',
+        ),
+      if (_compteSynchro == null && !_compteEnregistre)
+        const TacheAFaire(
+          TypeTache.google,
+          'Relier le compte Google',
+          'Sauvegarde automatique, et vos chiffres sur 2 appareils',
+        ),
+      if (sansAchat > 0)
+        TacheAFaire(
+          TypeTache.prixAchat,
+          'Ajouter les prix d\'achat',
+          '$sansAchat produit${sansAchat > 1 ? 's' : ''} : pour voir votre bénéfice',
+        ),
+      if (c.telephone.trim().isEmpty)
+        const TacheAFaire(
+          TypeTache.telephone,
+          'Votre numéro sur les reçus',
+          'Vos clients savent comment vous joindre',
+        ),
+    ];
+  }
+
+  bool _compteEnregistre = false;
+  Set<String> _recus = const {};
+
+  /// Nombre de produits actifs déjà comptés (barre de progression).
+  int get nombreProduitsComptes =>
+      _produits.where((p) => _comptes.contains(p.id)).length;
 
   /// Produits à compter aujourd'hui (inventaire tournant) : 3, ou 5 si la
   /// boutique a plus de 30 produits.
@@ -1474,6 +1691,7 @@ class EtatApplication extends ChangeNotifier {
     _synchro = Synchroniseur(journal: journal, stockage: c.stockage);
     _compteSynchro = c.compte;
     await journal.ecrireParametre('sync.compte', c.compte);
+    _compteEnregistre = true;
     notifyListeners();
     return true;
   }
@@ -1782,6 +2000,7 @@ class EtatApplication extends ChangeNotifier {
     final lic = licence;
     return voitTout &&
         ajoutParQrPossible &&
+        config.quiVend != QuiVend.moi &&
         lic != null &&
         (_nbAppareils ?? 1) < lic.telephones;
   }
@@ -1896,7 +2115,7 @@ class EtatApplication extends ChangeNotifier {
     if (_synchro == null && !await connecterSynchro()) {
       throw const ErreurZeroPerte(
         'Reliez d\'abord le compte Google de la boutique : '
-        'Gestion, « Appareils et Drive ».',
+        'Gestion, « Compte Google ».',
       );
     }
     final r = await synchroniser();
@@ -2187,6 +2406,8 @@ class EtatApplication extends ChangeNotifier {
       coutTotal: coutTotal,
       auteurId: auteurActuel,
     );
+    _comptes = {..._comptes, produit.id};
+    _recus = {..._recus, produit.id};
     await rechargerProduits();
   }
 
@@ -2212,14 +2433,15 @@ class EtatApplication extends ChangeNotifier {
     String? photo,
     List<(String, int, int)> conditionnements = const [],
     int stockDepart = 0,
+    bool pendantLaVente = false,
   }) async {
-    _patronSeul();
+    // Pendant la vente (0.36), le vendeur peut aussi ajouter un produit qui
+    // manque : le patron est prévenu (nom et prix).
+    if (!pendantLaVente) _patronSeul();
     final n = nom.trim();
-    if (n.isEmpty) throw const ErreurZeroPerte('Donnez un nom au produit.');
+    if (n.isEmpty) throw const ErreurZeroPerte('Écrivez le nom du produit.');
     if (prixVente <= 0) {
-      throw const ErreurZeroPerte(
-        'Le prix de vente doit être plus grand que 0.',
-      );
+      throw const ErreurZeroPerte('Écrivez le prix.');
     }
     final existe = _produits.any(
       (p) => p.nom.trim().toLowerCase() == n.toLowerCase(),
@@ -2254,8 +2476,18 @@ class EtatApplication extends ChangeNotifier {
         coutTotal: (prixAchat ?? 0) * stockDepart,
         auteurId: auteurActuel,
       );
+      _comptes = {..._comptes, id};
     }
     await rechargerProduits();
+    if (pendantLaVente && !voitTout) {
+      unawaited(
+        alerter(
+          'nouveau_produit',
+          '${utilisateurActuel?.nom ?? 'Le vendeur'} a ajouté un produit : '
+              '$n à ${formatFrancs(prixVente)} / ${uniteBase.trim().isEmpty ? 'pièce' : uniteBase.trim()}.',
+        ),
+      );
+    }
     return journal.produit(id);
   }
 
@@ -2577,3 +2809,51 @@ class PanierDevis {
   /// produit disparu).
   final bool totalChange;
 }
+
+/// Une chose à faire « quand vous avez le temps ».
+enum TypeTache { compterStock, vendeur, google, prixAchat, telephone }
+
+class TacheAFaire {
+  const TacheAFaire(this.type, this.titre, this.detail);
+  final TypeTache type;
+  final String titre;
+  final String detail;
+}
+
+/// État de la caisse (espèces) pour l'accueil.
+enum EtatCaisseResume { pasOuverte, ouverte, juste, manque, enTrop }
+
+/// Ce que le patron voit en ouvrant l'application (0.36).
+class ResumeJour {
+  const ResumeJour({
+    required this.vendu,
+    required this.nombreVentes,
+    required this.benefice,
+    required this.caisse,
+    required this.ecartEspeces,
+    required this.parVendeur,
+  });
+
+  final int vendu;
+  final int nombreVentes;
+  final ResumeBenefice benefice;
+  final EtatCaisseResume caisse;
+
+  /// Écart des caisses fermées aujourd'hui (espèces) : négatif = il manque.
+  final int ecartEspeces;
+
+  /// Vendu par personne aujourd'hui (nom → F).
+  final Map<String, int> parVendeur;
+
+  /// On ne connaît le coût d'aucune vente : pas de bénéfice à montrer.
+  bool get beneficeInconnu =>
+      benefice.lignesSansCout > 0 && benefice.couts == 0;
+}
+
+/// Nom d'un moyen de paiement, tel qu'on le dit au Togo (0.36).
+String nomModePaiement(ModePaiement m) => switch (m) {
+  ModePaiement.especes => 'Espèces',
+  ModePaiement.flooz => 'Flooz',
+  ModePaiement.mixx => 'Mixx by Yas',
+  ModePaiement.credit => 'Crédit',
+};

@@ -46,7 +46,7 @@ class _PageFournisseursState extends State<PageFournisseurs> {
   @override
   Widget build(BuildContext context) {
     return PageZp(
-      titre: 'Fournisseurs',
+      titre: 'Ce que je dois',
       icone: Icons.handshake_rounded,
       bas: GrosBouton(
         key: const Key('bouton-nouveau-fournisseur'),

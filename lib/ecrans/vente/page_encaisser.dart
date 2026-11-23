@@ -12,13 +12,9 @@ import '../recu/recu_vente.dart';
 import '../communs.dart';
 import '../credit/clients.dart';
 
-/// Nom affiché d'un moyen de paiement (« Mixx » = l'ancien T-Money).
-String nomPaiement(ModePaiement m) => switch (m) {
-  ModePaiement.especes => 'Espèces',
-  ModePaiement.flooz => 'Flooz',
-  ModePaiement.mixx => 'Mixx (T-Money)',
-  ModePaiement.credit => 'Crédit',
-};
+/// Nom affiché d'un moyen de paiement (« Mixx by Yas » = l'ancien T-Money ;
+/// « Flooz » = Moov Africa).
+String nomPaiement(ModePaiement m) => nomModePaiement(m);
 
 IconData iconePaiement(ModePaiement m) => switch (m) {
   ModePaiement.especes => Icons.payments_rounded,

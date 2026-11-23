@@ -138,7 +138,7 @@ class _PageClientsState extends State<PageClients> {
   @override
   Widget build(BuildContext context) {
     return PageZp(
-      titre: widget.choisir ? 'Quel client ?' : 'Clients',
+      titre: widget.choisir ? 'Quel client ?' : 'Ce qu\'on me doit',
       icone: Icons.menu_book_rounded,
       bas: GrosBouton(
         key: const Key('bouton-nouveau-client'),

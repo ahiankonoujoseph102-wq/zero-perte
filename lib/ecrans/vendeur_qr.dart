@@ -1106,7 +1106,7 @@ class _PageMesAppareilsState extends State<PageMesAppareils> {
             return const EtatVide(
               icone: Icons.cloud_off_rounded,
               titre: 'Le compte Google de la boutique n\'est pas relié.',
-              explication: 'Reliez-le dans Gestion, « Appareils et Drive », puis revenez ici.',
+              explication: 'Reliez-le dans Gestion, « Compte Google », puis revenez ici.',
             );
           }
           final max = etat.licence?.telephones;

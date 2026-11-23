@@ -51,7 +51,10 @@ class _PageInventaireState extends State<PageInventaire> {
 
   Future<void> _chargerUnites() async {
     if (_produits.isEmpty) return;
-    final c = await widget.etat.journal.conditionnements(_p.id);
+    final c = [
+      for (final x in await widget.etat.journal.conditionnements(_p.id))
+        if (!estPrixRevendeur(x)) x,
+    ];
     if (!mounted) return;
     setState(() {
       _conds = c;

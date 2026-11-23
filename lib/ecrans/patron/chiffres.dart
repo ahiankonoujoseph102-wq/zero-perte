@@ -28,7 +28,7 @@ class _PageChiffresState extends State<PageChiffres> {
   @override
   Widget build(BuildContext context) {
     return PageZp(
-      titre: 'Chiffres',
+      titre: 'Mon bénéfice',
       icone: Icons.insights_rounded,
       pleineLargeur: !_rapport,
       corps: Column(

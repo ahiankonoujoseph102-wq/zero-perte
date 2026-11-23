@@ -59,7 +59,7 @@ class ResumeSoir {
       'Résumé du soir – $boutique, $date',
       'Ventes : ${formatFrancs(ventes)} ($nombreVentes '
           '${nombreVentes > 1 ? 'ventes' : 'vente'})',
-      'Bénéfice estimé : ${formatFrancs(benefice)}',
+      'Bénéfice : ${formatFrancs(benefice)}',
       'Dépenses : ${formatFrancs(depenses)}',
       'Caisse fermée par $fermePar : $texteEcart',
       if (stockBas.isEmpty)

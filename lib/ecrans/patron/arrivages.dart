@@ -22,7 +22,7 @@ class PageArrivages extends StatelessWidget {
       builder: (context, _) {
         final produits = etat.produits;
         return PageZp(
-          titre: 'Arrivages',
+          titre: 'Arrivage',
           icone: Icons.local_shipping_rounded,
           corps: produits.isEmpty
               ? const Center(
@@ -101,7 +101,7 @@ class _LigneStock extends StatelessWidget {
                     FutureBuilder<List<Conditionnement>>(
                       future: etat.journal.conditionnements(produit.id),
                       builder: (context, c) => Text(
-                        'En stock : ${decrireStock(etat.stock(produit.id), produit.uniteBase, c.data ?? const [])}',
+                        'En stock : ${etat.stockLisible(produit)}',
                         style: TextStyle(
                           fontSize: 17,
                           color: etat.stock(produit.id) <= 0
@@ -138,8 +138,16 @@ class FormulaireArrivage extends StatefulWidget {
 }
 
 class _FormulaireArrivageState extends State<FormulaireArrivage> {
+  // « 10 cartons » met le stock à jour (le prix revendeur n'est pas une
+  // autre façon de recevoir : il n'est pas proposé ici).
   late final Future<List<Conditionnement>> _conds = widget.etat.journal
-      .conditionnements(widget.produit.id);
+      .conditionnements(widget.produit.id)
+      .then(
+        (l) => [
+          for (final c in l)
+            if (!estPrixRevendeur(c)) c,
+        ],
+      );
   Conditionnement? _unite; // nul = unité de base
   bool _uniteChoisie = false;
   int _nombre = 1;
@@ -210,7 +218,7 @@ class _FormulaireArrivageState extends State<FormulaireArrivage> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'En stock : ${decrireStock(widget.etat.stock(p.id), p.uniteBase, conds)}',
+                      'En stock : ${widget.etat.stockLisible(p)}',
                       style: const TextStyle(
                         fontSize: 18,
                         color: CouleursZp.texteDoux,

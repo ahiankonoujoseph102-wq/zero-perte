@@ -1448,6 +1448,35 @@ class JournalLocal implements ReglagesLocaux {
   Future<List<Conditionnement>> conditionnements(String produitId) =>
       _conditionnements(_db, produitId);
 
+  /// Ventes en gros (conditionnements actifs) de TOUS les produits, en une
+  /// lecture : produit → liste.
+  Future<Map<String, List<Conditionnement>>> tousLesConditionnements() async {
+    final r = await _db.rawQuery(
+      'SELECT cv.*, o.heure_telephone AS h, o.numero AS n FROM conditionnements_versions cv '
+      'JOIN operations o ON o.id = cv.operation_id ORDER BY h, n',
+    );
+    final parId = <String, Map<String, Object?>>{};
+    for (final l in r) {
+      parId[l['conditionnement_id'] as String] = l;
+    }
+    final res = <String, List<Conditionnement>>{};
+    for (final l in parId.values) {
+      if (l['actif'] != 1) continue;
+      res
+          .putIfAbsent(l['produit_id'] as String, () => [])
+          .add(
+            Conditionnement(
+              id: l['conditionnement_id'] as String,
+              nom: l['nom'] as String,
+              facteurMilliemes: l['facteur_milliemes'] as int,
+              prixVente: l['prix_vente'] as int,
+              aVerifier: l['a_verifier'] == 1,
+            ),
+          );
+    }
+    return res;
+  }
+
   static Future<List<Conditionnement>> _conditionnements(
     DatabaseExecutor t,
     String produitId,
@@ -1553,6 +1582,7 @@ class JournalLocal implements ReglagesLocaux {
   Future<Inventaire> enregistrerInventaire(
     Map<String, int> comptes, {
     required String auteurId,
+    Set<String> premiers = const {},
   }) async {
     if (comptes.isEmpty) {
       throw const ErreurZeroPerte('Aucun produit compté.');
@@ -1577,6 +1607,7 @@ class JournalLocal implements ReglagesLocaux {
           'attendu': stocks[id] ?? 0,
           'compte': compte,
           'prix_unitaire': p.prixUnitaire,
+          if (premiers.contains(id)) 'premier': true,
         });
       }
       return _ajouter(
@@ -2131,6 +2162,19 @@ class JournalLocal implements ReglagesLocaux {
   }
 
   /// Produits ayant déjà reçu au moins un arrivage.
+  /// Produits dont le stock est connu : reçus (arrivage) ou déjà comptés
+  /// (inventaire). Les autres sont « pas encore comptés » (0.36) : leur stock
+  /// n'est pas affiché et ne déclenche aucune alerte.
+  Future<Set<String>> produitsComptes() async {
+    final r = await produitsDejaRecus();
+    for (final inv in await inventaires(limite: 1000000)) {
+      for (final l in inv.lignes) {
+        r.add(l.produitId);
+      }
+    }
+    return r;
+  }
+
   Future<Set<String>> produitsDejaRecus() async {
     final r = await _db.rawQuery(
       "SELECT DISTINCT produit_id AS p FROM mouvements_stock WHERE nature = 'arrivage'",
@@ -2771,6 +2815,7 @@ class LigneInventaire {
     required this.attendu,
     required this.compte,
     required this.prixUnitaire,
+    this.premier = false,
   });
 
   final String produitId;
@@ -2778,8 +2823,13 @@ class LigneInventaire {
   final int compte;
   final int prixUnitaire;
 
-  /// > 0 : en trop ; < 0 : il manque.
-  int get ecart => compte - attendu;
+  /// Premier comptage d'un produit jamais compté (démarrage sans
+  /// inventaire, 0.36) : le stock prend la valeur comptée, mais ce n'est PAS
+  /// un écart (rien n'a disparu : on ne savait pas encore ce qu'il y avait).
+  final bool premier;
+
+  /// > 0 : en trop ; < 0 : il manque. Toujours 0 pour un premier comptage.
+  int get ecart => premier ? 0 : compte - attendu;
 
   /// Écart en francs (au prix de vente de l'unité de base).
   int get ecartFrancs =>
@@ -2811,6 +2861,7 @@ class Inventaire {
           attendu: l['attendu'] as int,
           compte: l['compte'] as int,
           prixUnitaire: (l['prix_unitaire'] as int?) ?? 0,
+          premier: l['premier'] == true,
         ),
     ],
   );

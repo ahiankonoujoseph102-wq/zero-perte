@@ -24,8 +24,9 @@ enum Periode {
 /// Raison pour laquelle un produit apparaît dans « Stock bas ».
 enum RaisonStockBas { epuise, sousLeSeuil, moinsDUneSemaine }
 
-/// Un produit est en stock bas :
-/// - épuisé (stock nul ou négatif) alors qu'il se vend ou a déjà été reçu ;
+/// Un produit est en stock bas (seulement s'il a déjà été reçu ou compté :
+/// un produit « pas encore compté » ne donne jamais d'alerte, 0.36) :
+/// - épuisé (stock nul ou négatif) ;
 /// - sous le seuil d'alerte fixé par le patron (s'il y en a un) ;
 /// - sinon, s'il reste moins que ce qui a été vendu ces 7 derniers jours.
 /// Toutes les quantités sont en millièmes de l'unité de base.
@@ -35,9 +36,8 @@ RaisonStockBas? stockBas({
   required int venduSur7Jours,
   required bool dejaRecu,
 }) {
-  if (stock <= 0) {
-    return (venduSur7Jours > 0 || dejaRecu) ? RaisonStockBas.epuise : null;
-  }
+  if (!dejaRecu) return null;
+  if (stock <= 0) return RaisonStockBas.epuise;
   if (seuil > 0) return stock <= seuil ? RaisonStockBas.sousLeSeuil : null;
   if (venduSur7Jours > 0 && stock < venduSur7Jours) {
     return RaisonStockBas.moinsDUneSemaine;

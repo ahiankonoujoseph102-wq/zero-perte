@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../app/etat_application.dart';
 import '../../theme/couleurs.dart';
 import '../vendeur_qr.dart';
+import 'ma_boutique.dart';
+import 'compter_stock.dart';
 import '../caisse/fermeture.dart';
 import '../caisse/saisie_montant.dart';
 import '../communs.dart';
@@ -38,11 +40,25 @@ class EntreePatron {
 /// Entrées du menu (les étapes suivantes en ajoutent).
 final List<EntreePatron> entreesPatron = [
   EntreePatron(
+    'ma-boutique',
+    Icons.storefront_rounded,
+    'Ma boutique',
+    CouleursZp.marque,
+    (etat) => PageMaBoutique(etat: etat),
+  ),
+  EntreePatron(
     'ajouter-vendeur',
     Icons.qr_code_2_rounded,
     'Ajouter mon vendeur',
     CouleursZp.argentEntre,
     (etat) => PageAjouterMonVendeur(etat: etat),
+  ),
+  EntreePatron(
+    'compter-stock',
+    Icons.inventory_rounded,
+    'Compter mon stock',
+    CouleursZp.argentEntre,
+    (etat) => PageCompterStock(etat: etat),
   ),
   EntreePatron(
     'appareils',
@@ -75,14 +91,14 @@ final List<EntreePatron> entreesPatron = [
   EntreePatron(
     'chiffres',
     Icons.insights_rounded,
-    'Chiffres',
+    'Mon bénéfice',
     CouleursZp.argentEntre,
     (etat) => PageChiffres(etat: etat),
   ),
   EntreePatron(
     'arrivages',
     Icons.local_shipping_rounded,
-    'Arrivages',
+    'Arrivage',
     CouleursZp.marque,
     (etat) => PageArrivages(etat: etat),
   ),
@@ -110,7 +126,7 @@ final List<EntreePatron> entreesPatron = [
   EntreePatron(
     'fournisseurs',
     Icons.handshake_rounded,
-    'Fournisseurs',
+    'Ce que je dois',
     CouleursZp.marque,
     (etat) => PageFournisseurs(etat: etat),
   ),
@@ -124,7 +140,7 @@ final List<EntreePatron> entreesPatron = [
   EntreePatron(
     'synchro',
     Icons.cloud_sync_rounded,
-    'Appareils et Drive',
+    'Compte Google',
     CouleursZp.marque,
     (etat) => PageSynchronisation(etat: etat),
   ),

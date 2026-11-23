@@ -37,10 +37,8 @@ class _AssistantInstallationState extends State<AssistantInstallation> {
   EtatApplication get etat => widget.etat;
 
   /// Étapes visibles (sans « terminé ») pour la barre de progression.
-  /// Étapes comptées dans la barre de progression (« fin » et « terminé » exclues).
-  static final _etapes = EtapeAssistant.values
-      .where((e) => e.index <= EtapeAssistant.codePatron.index)
-      .toList();
+  /// Étapes comptées dans la barre de progression : les 3 du démarrage.
+  static const _etapes = EtatApplication.etapesNumerotees;
 
   String? _erreurActivation;
   bool _activationEnCours = false;
@@ -245,25 +243,31 @@ class _AssistantInstallationState extends State<AssistantInstallation> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 14),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: LinearProgressIndicator(
-                          value: numero / _etapes.length,
-                          minHeight: 10,
-                          backgroundColor: CouleursZp.ligne,
-                          color: Theme.of(context).colorScheme.primary,
+                      // Barre « Étape 1 sur 3 » : seulement pour le nom,
+                      // le profil et le code (pas pour l'accueil, la
+                      // vérification ni l'activation).
+                      if (_etapes.contains(e)) ...[
+                        const SizedBox(height: 14),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: LinearProgressIndicator(
+                            value: numero / _etapes.length,
+                            minHeight: 10,
+                            backgroundColor: CouleursZp.ligne,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Étape $numero sur ${_etapes.length}',
-                        textScaler: TextScaler.noScaling,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: CouleursZp.texteDoux,
+                        const SizedBox(height: 6),
+                        Text(
+                          'Étape $numero sur ${_etapes.length}',
+                          key: const Key('numero-etape'),
+                          textScaler: TextScaler.noScaling,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: CouleursZp.texteDoux,
+                          ),
                         ),
-                      ),
+                      ],
                       const SizedBox(height: 12),
                       if (e.index >= EtapeAssistant.typeBoutique.index)
                         Expanded(child: pageEtapeBoutique(etat, e))
@@ -293,15 +297,13 @@ class _AssistantInstallationState extends State<AssistantInstallation> {
   Future<void> _revenir() async {
     final e = etat.etape;
     if (e == EtapeAssistant.bienvenue) return;
-    final avant = EtapeAssistant.values[e.index - 1];
-    if (avant.index <= EtapeAssistant.verification.index) {
+    await etat.precedente();
+    if (etat.etape == EtapeAssistant.verification) {
       // Au prochain « Commencer », la vérification se refait (et repasse
       // toute seule si le téléphone convient).
       setState(() => _verification = null);
+      await etat.allerA(EtapeAssistant.bienvenue);
     }
-    await etat.allerA(
-      avant == EtapeAssistant.verification ? EtapeAssistant.bienvenue : avant,
-    );
   }
 
   /// Anciens parcours (compte Google de la boutique, fichier de sauvegarde).
@@ -386,6 +388,28 @@ class _AssistantInstallationState extends State<AssistantInstallation> {
               ),
             ),
           ),
+        // Démonstration : une boutique d'exemple, à part (les vraies données
+        // ne sont jamais touchées), pour voir l'intérêt en une minute.
+        if (widget.onDemonstration != null) ...[
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            key: const Key('bouton-voir-exemple'),
+            onPressed: widget.onDemonstration,
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(0, 56),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+            ),
+            icon: const Icon(Icons.play_circle_rounded, size: 28),
+            label: const FittedBox(
+              child: Text(
+                'Voir un exemple',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+        ],
         TextButton(
           key: const Key('bouton-autres-facons'),
           onPressed: _autresFacons,

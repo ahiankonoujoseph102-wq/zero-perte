@@ -259,7 +259,7 @@ class _ContenuRapport extends StatelessWidget {
               ),
               _ligne(
                 'rapport-benefice',
-                'Bénéfice estimé',
+                'Bénéfice',
                 r.benefice,
                 r.benefice >= 0
                     ? CouleursZp.argentEntreClair

@@ -7,6 +7,8 @@ import '../../theme/couleurs.dart';
 import '../communs.dart';
 import 'graphiques.dart';
 import 'tableau.dart' show texteRaison;
+import '../accueil_vendeur.dart' show LigneCaisse;
+import 'a_faire.dart';
 
 /// Tableau de bord du patron (accueil sur tablette et PC) : les chiffres du
 /// jour, la courbe des 7 derniers jours et les produits qui rapportent le plus
@@ -21,12 +23,15 @@ class TableauDeBord extends StatefulWidget {
 }
 
 class _TableauDeBordState extends State<TableauDeBord> {
-  late Future<TableauPatron> _tableau = widget.etat.tableau(Periode.jour);
+  late Future<(TableauPatron, ResumeJour)> _tableau = _charger();
+
+  Future<(TableauPatron, ResumeJour)> _charger() async =>
+      (await widget.etat.tableau(Periode.jour), await widget.etat.resumeJour());
 
   void _recharger() {
     if (mounted) {
       setState(() {
-        _tableau = widget.etat.tableau(Periode.jour);
+        _tableau = _charger();
       });
     }
   }
@@ -47,13 +52,13 @@ class _TableauDeBordState extends State<TableauDeBord> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: FutureBuilder<TableauPatron>(
+        child: FutureBuilder<(TableauPatron, ResumeJour)>(
           future: _tableau,
           builder: (context, s) {
             if (!s.hasData) {
               return const Center(child: CircularProgressIndicator());
             }
-            final t = s.data!;
+            final (t, jour) = s.data!;
             return LayoutBuilder(
               builder: (context, c) {
                 final colonnes = c.maxWidth >= 1000 ? 4 : 2;
@@ -61,7 +66,7 @@ class _TableauDeBordState extends State<TableauDeBord> {
                   _Chiffre(
                     cle: 'bord-ventes',
                     icone: Icons.shopping_basket_rounded,
-                    titre: 'Ventes du jour',
+                    titre: 'Vendu aujourd\'hui',
                     montant: t.ventes,
                     couleur: CouleursZp.argentEntreClair,
                     detail:
@@ -70,11 +75,14 @@ class _TableauDeBordState extends State<TableauDeBord> {
                   _Chiffre(
                     cle: 'bord-benefice',
                     icone: Icons.trending_up_rounded,
-                    titre: 'Bénéfice estimé',
+                    titre: 'Bénéfice',
                     montant: t.benefice.benefice,
                     couleur: t.benefice.benefice >= 0
                         ? CouleursZp.argentEntreClair
                         : CouleursZp.argentSortClair,
+                    detail: jour.beneficeInconnu
+                        ? 'Ajoutez le prix d\'achat pour le voir'
+                        : null,
                   ),
                   _Chiffre(
                     cle: 'bord-depenses',
@@ -86,7 +94,7 @@ class _TableauDeBordState extends State<TableauDeBord> {
                   _Chiffre(
                     cle: 'bord-credits',
                     icone: Icons.menu_book_rounded,
-                    titre: 'Crédits clients',
+                    titre: 'Ce qu\'on me doit',
                     montant: t.credits,
                     couleur: CouleursZp.creditTexte,
                   ),
@@ -168,6 +176,24 @@ class _TableauDeBordState extends State<TableauDeBord> {
                         color: CouleursZp.texteDoux,
                       ),
                     ),
+                    const SizedBox(height: 8),
+                    LigneCaisse(resume: jour, taille: 20),
+                    if (jour.parVendeur.length > 1)
+                      Text(
+                        [
+                          for (final e in jour.parVendeur.entries)
+                            '${e.key} : ${formatFrancs(e.value)}',
+                        ].join('   ·   '),
+                        key: const Key('bord-vendeurs'),
+                        style: const TextStyle(
+                          fontSize: 17,
+                          color: CouleursZp.texteDoux,
+                        ),
+                      ),
+                    if (widget.etat.tachesAFaire.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      CarteAFaire(etat: widget.etat),
+                    ],
                     const SizedBox(height: 16),
                     GridView.count(
                       crossAxisCount: colonnes,
