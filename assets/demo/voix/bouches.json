@@ -4,8 +4,8 @@
  "modele": "gemini-3.1-flash-tts-preview",
  "voix": "Sulafat",
  "pas_bouche_ms": 50,
- "fabrique_le": "2026-11-22",
- "complet": false,
+ "fabrique_le": "2026-11-23",
+ "complet": true,
  "mention": "Voix générée par intelligence artificielle",
  "phrases": {
   "001": {
@@ -144,9 +144,9 @@
   "020": {
    "fichier": "020.mp3",
    "texte": "Je passe au client suivant.",
-   "duree_ms": 1650,
-   "bouche": "000376621654445210667766254442100",
-   "forme": "mmmeeeommaaeeeoaeeooooeeeoooaammm"
+   "duree_ms": 1850,
+   "bouche": "0001345731553345741226787542564552100",
+   "forme": "mmmaeeeoomaaeeeeoomeeooooeeeaooooammm"
   },
   "021": {
    "fichier": "021.mp3",
@@ -263,9 +263,9 @@
   "037": {
    "fichier": "037.mp3",
    "texte": "Le vendeur compte l'argent sans voir combien il devrait y avoir.",
-   "duree_ms": 7500,
-   "bouche": "000464214758888621564355553446444123100000000000000000000000000000000000000158757878841115732476545652100256678745895310377768898666556234553344210000",
-   "forme": "mmmooaeeeaaooooameeoeeeoooeeeoooomeommmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmaoooaoooooeamaaoeeeoaoeeooommmeeeeeaoaooaeemaeoooooooooooaaomeeooaoaaaeemmm"
+   "duree_ms": 4300,
+   "bouche": "00025687335666763100156313664433444100000232664257521027853788975374343225763355310000",
+   "forme": "mmmaooooaaoooooaaeamaooaeeoaooeeoaoommmmmeeeooaeoaaemmeoooaooooooooaoooeeoooaooaaeemmm"
   },
   "038": {
    "fichier": "038.mp3",
@@ -343,6 +343,20 @@
    "duree_ms": 2700,
    "bouche": "000477576662743688841100000000578633365563352664463100",
    "forme": "mmmaooooeeoeaeeeoooommmmmmmmmmoooaeeeooooeeaeaeeeoammm"
+  },
+  "049": {
+   "fichier": "049.mp3",
+   "texte": "Touchez Quitter la visite, et essayez vous-même. Le code du patron est écrit en haut.",
+   "duree_ms": 5700,
+   "bouche": "000056554466411000165257776333234210100000037885445757864478854331000000025563144324624311265210054163225788664100",
+   "forme": "mmmeaoeeeeooommmmmeeomeooooooeeeoammemmmmmmaoooeeeeooooooaoooooooammmmmmmaooooaaoooeomaoeeaoommmmooeeaeeaoooooommm"
+  },
+  "050": {
+   "fichier": "050.mp3",
+   "texte": "Pour avoir Zéro Perte dans votre boutique, écrivez-nous sur WhatsApp. Au revoir !",
+   "duree_ms": 5000,
+   "bouche": "0004656435641102345866721454103446464225343234210000000541258899965564652233100000000000553257410000",
+   "forme": "mmeeaaaoooaaeemaeeeooeoomaaaemeoaooooeeooooeeemmemmmmmmaaeeeoooooeeeooaomeeammmmmmmmmmmmaaoooaaeemmm"
   }
  }
 }
