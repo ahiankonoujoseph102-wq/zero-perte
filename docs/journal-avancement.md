@@ -1206,3 +1206,5 @@ Conception validée par le propriétaire (questions A taille et B secret réglé
   écran). Ancien `scannerQrAndroid` et `ErreurScanner` supprimés.
 - Action « test minimal (temporaire) » : le fichier n'existe plus dans aucune branche ; elle reste dans la
   liste à cause de son seul passage (21/11), à supprimer par le propriétaire (pas d'outil pour le faire ici).
+- **Publiée** le 23/11 : Release **`v0.35.2-n109`**. Signature vérifiée (SHA-1 49:27:0C:…:B1:A3), 50 voix,
+  méta-donnée `barcode_ui` présente dans l'APK, APK universel 18,88 Mo. Tests : 512 (Flutter) + relais.
