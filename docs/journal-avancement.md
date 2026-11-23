@@ -1180,3 +1180,5 @@ Conception validée par le propriétaire (questions A taille et B secret réglé
   avec le texte (020 : 1,7 s ; 037 : 4,2 s ; 049 : 5,8 s ; 050 : 5,1 s). Dossier `assets/demo/voix` repris
   de cette branche (50 phrases + `bouches.json`). Tests de la démonstration : OK.
 - « Ce qu'il faut dire au client » : la limite « 2 dernières phrases par la voix du téléphone » est retirée.
+- **Publiée** le 23/11 : Release **`v0.35.1-n107`**. Signature vérifiée (SHA-1 49:27:0C:…:B1:A3), 50 voix dans
+  l'APK (050 identique au fichier de l'action 6), APK universel 18,86 Mo.
