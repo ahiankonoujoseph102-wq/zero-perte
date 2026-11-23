@@ -29,7 +29,7 @@ chaque vendeur a son code. Ce guide sert **sur place** et **à distance** (appel
 
 ## 2. Le démarrage (0.36 : 3 étapes, sans inventaire — 10 minutes)
 Le patron tient le téléphone, l'agent guide (bouton **Écouter** pour entendre l'explication) :
-1. **Bienvenue** → **Commencer**. *(Pour montrer d'abord l'intérêt : **Voir un exemple**, voir
+1. **Bienvenue** → **Commencer**. *(Pour montrer d'abord l'intérêt : la vidéo de l'écran, voir
    `argumentaire-recruteurs.md`.)*
 2. **Vérification du téléphone** : n'apparaît que s'il y a un problème bloquant (pas de services Google,
    moins de 100 Mo libres). → voir FAQ.
@@ -105,7 +105,6 @@ Avec un vendeur, sur le vrai téléphone :
 3. Une **vente à crédit** à un client (Clients → Nouveau client).
 4. **Ma caisse → Fermer la caisse** : compter l'argent → l'écart s'affiche au patron.
 5. Montrer au patron sa carte **« Aujourd'hui »** (ventes, bénéfice, crédits) et **Chiffres**.
-6. Bouton **Visite** de la démonstration si le patron veut revoir (rien n'est gardé).
 
 ## 5. À distance (appel WhatsApp)
 - Demander au patron de passer en **appel vidéo** et de filmer l'écran avec un **autre** téléphone, ou de

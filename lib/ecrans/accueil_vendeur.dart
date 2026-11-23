@@ -265,8 +265,10 @@ class AccueilVendeur extends StatelessWidget {
                     ),
                     SizedBox(height: bas ? 8 : 12),
                   ],
+                  // « À faire » : sur les téléphones assez hauts seulement (les
+                  // gros boutons d'abord) ; sinon dans Gestion → « À faire ».
                   if (etat.voitTout &&
-                      !bas &&
+                      contraintes.maxHeight >= 680 &&
                       etat.tachesAFaire.isNotEmpty) ...[
                     MediaQuery.withClampedTextScaling(
                       maxScaleFactor: 1.2,

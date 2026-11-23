@@ -101,9 +101,10 @@ void main() {
       // Le nom du code devient le nom de la boutique.
       expect(env.etat.config.nom, 'Boutique Mama Ama');
 
+      // 0.36 : ensuite, étape 1 sur 3 (le nom, déjà rempli par le code).
       await toucher(tester, find.byKey(const Key('bouton-continuer')));
-      expect(env.etat.etape, EtapeAssistant.typeBoutique);
-      expect(find.text('Que vendez-vous ?'), findsOneWidget);
+      expect(env.etat.etape, EtapeAssistant.identite);
+      expect(find.text('Étape 1 sur 3'), findsOneWidget);
     });
 
     testWidgets('code faux : message rouge, on reste bloqué', (tester) async {

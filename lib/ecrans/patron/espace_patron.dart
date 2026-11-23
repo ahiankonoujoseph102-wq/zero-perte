@@ -5,6 +5,7 @@ import '../../theme/couleurs.dart';
 import '../vendeur_qr.dart';
 import 'ma_boutique.dart';
 import 'compter_stock.dart';
+import 'a_faire.dart';
 import '../caisse/fermeture.dart';
 import '../caisse/saisie_montant.dart';
 import '../communs.dart';
@@ -52,6 +53,13 @@ final List<EntreePatron> entreesPatron = [
     'Ajouter mon vendeur',
     CouleursZp.argentEntre,
     (etat) => PageAjouterMonVendeur(etat: etat),
+  ),
+  EntreePatron(
+    'a-faire',
+    Icons.checklist_rounded,
+    'À faire',
+    CouleursZp.credit,
+    (etat) => PageAFaire(etat: etat),
   ),
   EntreePatron(
     'compter-stock',

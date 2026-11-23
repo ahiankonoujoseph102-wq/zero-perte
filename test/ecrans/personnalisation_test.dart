@@ -45,7 +45,13 @@ void main() {
       await toucher(tester, find.byKey(const Key('bouton-continuer')));
       expect(env.etat.config.nom, 'Boutique Mama Ama');
       expect(env.etat.config.logo, isNotNull);
+      // Ensuite vient l'étape 2 sur 3 (les deux questions).
+      expect(env.etat.etape, EtapeAssistant.profil);
 
+      // 0.36 : cette étape n'est plus dans le démarrage (elle est dans
+      // Gestion → Ma boutique) ; on l'ouvre directement pour la vérifier.
+      await tester.runAsync(() => env.etat.allerA(EtapeAssistant.contact));
+      await attendre(tester);
       // 3. Contact : numéro mal tapé puis corrigé.
       await tester.enterText(
         find.byKey(const Key('champ-telephone')),
@@ -67,11 +73,19 @@ void main() {
       expect(env.etat.config.telephone, '+228 90 12 34 56');
       expect(env.etat.config.adresse, 'Bè-Kpota, Lomé');
 
+      // 0.36 : cette étape n'est plus dans le démarrage (elle est dans
+      // Gestion → Ma boutique) ; on l'ouvre directement pour la vérifier.
+      await tester.runAsync(() => env.etat.allerA(EtapeAssistant.couleur));
+      await attendre(tester);
       // 4. Couleur : prune.
       await toucher(tester, find.byKey(const Key('couleur-ff7a2e5c')));
       await toucher(tester, find.byKey(const Key('bouton-continuer')));
       expect(env.etat.config.couleur, 0xFF7A2E5C);
 
+      // 0.36 : cette étape n'est plus dans le démarrage (elle est dans
+      // Gestion → Ma boutique) ; on l'ouvre directement pour la vérifier.
+      await tester.runAsync(() => env.etat.allerA(EtapeAssistant.produits));
+      await attendre(tester);
       // 5. Produits : riz et bière (grande bouteille).
       await toucher(tester, find.byKey(const Key('produit-alimentation.riz')));
       await toucher(
@@ -85,6 +99,10 @@ void main() {
       );
       expect(env.etat.produits.every((p) => !p.aUnPrix), isTrue);
 
+      // 0.36 : cette étape n'est plus dans le démarrage (elle est dans
+      // Gestion → Ma boutique) ; on l'ouvre directement pour la vérifier.
+      await tester.runAsync(() => env.etat.allerA(EtapeAssistant.prix));
+      await attendre(tester);
       // 6. Prix : riz 600 F le kg, sac de 50 kg à 28 000 F ; bière 600 F, casier 7 000 F.
       await tester.enterText(
         find.byKey(const Key('prix-alimentation.riz')),
@@ -113,6 +131,10 @@ void main() {
         28000,
       );
 
+      // 0.36 : cette étape n'est plus dans le démarrage (elle est dans
+      // Gestion → Ma boutique) ; on l'ouvre directement pour la vérifier.
+      await tester.runAsync(() => env.etat.allerA(EtapeAssistant.recu));
+      await attendre(tester);
       // 7. Reçu : aperçu + message.
       expect(find.byKey(const Key('apercu-recu')), findsOneWidget);
       expect(find.text('Boutique Mama Ama'), findsWidgets);

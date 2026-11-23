@@ -145,7 +145,7 @@ void main() {
     expect(find.textContaining('Zéro Perte · version'), findsOneWidget);
     expect(find.text('Vendre'), findsOneWidget);
     expect(find.text('Ma caisse'), findsOneWidget);
-    expect(find.text('Clients'), findsOneWidget);
+    expect(find.text('Ce qu\'on me doit'), findsOneWidget);
     expect(find.text('Gestion'), findsOneWidget);
   });
 

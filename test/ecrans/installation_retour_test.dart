@@ -23,7 +23,7 @@ Future<Environnement> activee(WidgetTester tester) async {
 
 void main() {
   testWidgets(
-    'Retour : type de boutique → activation (toujours activée) → bienvenue',
+    'Retour : nom (étape 1) → activation (toujours activée) → bienvenue',
     (tester) async {
       final env = await activee(tester);
       expect(
@@ -31,7 +31,7 @@ void main() {
         findsOneWidget,
       );
       await toucher(tester, find.byKey(const Key('bouton-continuer')));
-      expect(env.etat.etape, EtapeAssistant.typeBoutique);
+      expect(env.etat.etape, EtapeAssistant.identite);
 
       await toucher(tester, find.byKey(const Key('bouton-etape-precedente')));
       expect(env.etat.etape, EtapeAssistant.activation);
@@ -56,7 +56,7 @@ void main() {
   testWidgets('geste « retour » d\'Android = étape précédente', (tester) async {
     final env = await activee(tester);
     await toucher(tester, find.byKey(const Key('bouton-continuer')));
-    expect(env.etat.etape, EtapeAssistant.typeBoutique);
+    expect(env.etat.etape, EtapeAssistant.identite);
     await tester.binding.handlePopRoute();
     await attendre(tester, tours: 4);
     expect(env.etat.etape, EtapeAssistant.activation);
@@ -66,7 +66,7 @@ void main() {
   testWidgets('ce qui a été rempli est gardé quand on revient', (tester) async {
     final env = await environnementDeTest(
       tester,
-      etape: EtapeAssistant.contact,
+      etape: EtapeAssistant.profil,
       preparer: (etat) => etat.enregistrerConfig(
         etat.config.copie(nom: 'Boutique Afi', types: ['alimentation']),
       ),

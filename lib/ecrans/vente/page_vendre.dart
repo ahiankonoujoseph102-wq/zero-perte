@@ -224,7 +224,9 @@ class _PageVendreState extends State<PageVendre> {
                 ?.nom ??
             'Autres';
         final large = estGrandEcran(context);
-        final filtre = categories.length > 1
+        // Filtre seulement s'il y a plusieurs VRAIES catégories (les produits
+        // créés pendant la vente sont dans « Autres » : ça ne compte pas).
+        final filtre = categories.where((c) => c != 'autres').length > 1
             ? SizedBox(
                 height: 52,
                 child: ListView(
@@ -621,21 +623,25 @@ class _TuileNouveauProduit extends StatelessWidget {
       onTap: onTap,
       child: const Padding(
         padding: EdgeInsets.all(8),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.add_circle_rounded,
-              size: 44,
-              color: CouleursZp.argentEntre,
-            ),
-            SizedBox(height: 4),
-            Text(
-              'Nouveau produit',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-            ),
-          ],
+        // Se réduit si la case est petite (texte agrandi, tablette…).
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.add_circle_rounded,
+                size: 44,
+                color: CouleursZp.argentEntre,
+              ),
+              SizedBox(height: 4),
+              Text(
+                'Nouveau produit',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
         ),
       ),
     ),

@@ -388,28 +388,6 @@ class _AssistantInstallationState extends State<AssistantInstallation> {
               ),
             ),
           ),
-        // Démonstration : une boutique d'exemple, à part (les vraies données
-        // ne sont jamais touchées), pour voir l'intérêt en une minute.
-        if (widget.onDemonstration != null) ...[
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            key: const Key('bouton-voir-exemple'),
-            onPressed: widget.onDemonstration,
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(0, 56),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
-              ),
-            ),
-            icon: const Icon(Icons.play_circle_rounded, size: 28),
-            label: const FittedBox(
-              child: Text(
-                'Voir un exemple',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-              ),
-            ),
-          ),
-        ],
         TextButton(
           key: const Key('bouton-autres-facons'),
           onPressed: _autresFacons,

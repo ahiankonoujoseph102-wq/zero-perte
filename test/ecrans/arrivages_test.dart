@@ -21,7 +21,7 @@ void main() {
       expect(find.byType(EspacePatron), findsOneWidget);
 
       await ouvrirPagePatron(tester, 'arrivages');
-      expect(find.textContaining('En stock : 0 kg'), findsOneWidget);
+      expect(find.textContaining('En stock : pas encore compté'), findsWidgets);
       await toucher(tester, find.byKey(const Key('arrivage-alimentation.riz')));
       // Par défaut : le plus grand conditionnement (sac de 50 kg).
       expect(

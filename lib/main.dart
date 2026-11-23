@@ -156,10 +156,10 @@ class Demarrage extends StatelessWidget {
       builder: (context, r) {
         if (r.hasData) {
           final etat = r.data!;
-          return ZeroPerteApp(
-            etat: etat,
-            creerDemo: () => creerDemoTelephone(etat.services),
-          );
+          // 0.36 : plus de démonstration dans l'application (décision du
+          // propriétaire : une vidéo de l'écran la remplace). Le code reste,
+          // sans aucun bouton pour l'ouvrir.
+          return ZeroPerteApp(etat: etat);
         }
         return MaterialApp(
           debugShowCheckedModeBanner: false,

@@ -1236,10 +1236,13 @@ Plan et état des lieux : `docs/refonte-commercant.md`. Argumentaire : `docs/mis
 - **Lot 4 — valeur visible** : accueil du patron (téléphone et grand écran) : **Vendu aujourd'hui**,
   **Bénéfice** (ou « Ajoutez le prix d'achat »), **Caisse : juste / il manque … / ouverte** (espèces ; un manque
   du jour reste affiché si la caisse est rouverte), ventes **par vendeur** s'il y en a plusieurs. Fermeture :
-  **Envoyer sur WhatsApp** (texte ; sans l'écart pour le vendeur). **Voir un exemple** dès le premier écran ;
-  boutique d'exemple enrichie (Lait au carton de 24, Boisson au casier de 12, sac de riz à 27 500 F, bidon
-  d'huile à 30 000 F, vendeur Kossi, caisse fermée avec 2 000 F de moins, Yawa à crédit), toujours dans une base
-  à part.
+  **Envoyer sur WhatsApp** (texte ; sans l'écart pour le vendeur).
+- **Démonstration retirée de l'application** (demande du propriétaire pendant la nuit : « ça sature, les gens ne
+  comprennent pas » ; une vidéo de l'écran la remplace) : plus aucun bouton (ni « Voir un exemple », ni
+  « Voir une démonstration » à l'activation). Le code de la démo, la visite d'Afi et les 50 voix restent dans le
+  dépôt et l'APK, sans accès (décision prudente de nuit : les supprimer touche beaucoup de fichiers ; à faire
+  dans une prochaine version si le propriétaire le confirme : APK plus léger d'environ 1 Mo). La boutique
+  d'exemple a quand même été enrichie (gros, vendeur, manque de caisse, crédit) et reste testée.
 - **Lot 5** : crédit déjà complet (renommé) ; paiements Espèces / Flooz / Mixx by Yas / Crédit ; **réserve
   (« magasin ») non faite** : plan dans `docs/refonte-commercant.md`.
 - **Lot 6** : `argumentaire-recruteurs.md` ; guides agents, aide-mémoire, « ce qu'il faut dire » mis à jour.

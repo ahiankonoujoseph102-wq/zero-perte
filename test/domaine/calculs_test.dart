@@ -198,7 +198,7 @@ void main() {
       prixVente: 28000,
     );
     test('85 kg avec des sacs de 50 kg → « 1 sac de 50 kg + 35 kg »', () {
-      expect(decrireStock(85000, 'kg', [sac]), '1 sac de 50 kg + 35 kg');
+      expect(decrireStock(85000, 'kg', [sac]), '1 sac de 50 kg et 35 kg');
     });
     test('pluriels : 2 sacs, 3 bols, 1 bol, 0,6 bol, 2 casiers, 2 bureaux', () {
       expect(decrireStock(100000, 'kg', [sac]), '2 sacs de 50 kg');

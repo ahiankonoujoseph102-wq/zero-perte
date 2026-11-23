@@ -22,7 +22,6 @@ bénéfice sur votre téléphone, même quand vous n'êtes pas là, et vous pré
   rappel WhatsApp. **« Ce que je dois »** : les dettes chez les fournisseurs.
 - **Paiements** : Espèces, Flooz, Mixx by Yas (l'ancien T-Money), Crédit. La caisse « juste » compte les espèces.
 - **Récapitulatif de la caisse sur WhatsApp** à la fermeture (le vendeur ne voit pas l'écart).
-- **« Voir un exemple »** : une boutique d'exemple pour comprendre en une minute, sans toucher à la vraie.
 - **Ses produits et ses prix** : il ajoute un produit, change un prix (l'ancien est gardé), masque un produit
   qui ne se vend plus — seul le patron peut le faire.
 - **Plusieurs vendeurs** : chacun a son code ; le patron sait qui a vendu quoi ; un vendeur ne voit jamais le
@@ -42,8 +41,7 @@ bénéfice sur votre téléphone, même quand vous n'êtes pas là, et vous pré
 - **Sur PC Windows**, au premier lancement, Windows affiche « Windows a protégé votre ordinateur » : il faut
   toucher « Informations complémentaires → Exécuter quand même » (l'application sera bientôt sur le
   Microsoft Store).
-- **La démonstration** (Afi) : voix générée par intelligence artificielle (toutes les phrases) ; elle dit
-  encore « Clients » pour « Ce qu'on me doit » et vend le riz au kilo (voix enregistrées avant la 0.36).
+- **Pas de démonstration dans l'application** (0.36) : une vidéo de l'écran l'explique.
 - **Les mises à jour** ne s'installent pas toutes seules : un message « Nouvelle version disponible »
   apparaît sur l'accueil, il suffit de le toucher.
 - **Sauvegarde** : à faire régulièrement (ou garder la synchronisation Google active) ; sans elle, un

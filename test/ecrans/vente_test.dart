@@ -121,7 +121,7 @@ void main() {
     expect(bouton.onPressed, isNull);
   });
 
-  testWidgets('Mixx (T-Money) avec référence ; « donne pour 100 F » de riz', (
+  testWidgets('Mixx by Yas avec référence ; « donne pour 100 F » de riz', (
     tester,
   ) async {
     final env = await environnementDeTest(tester, preparer: boutiqueAvecStock);
@@ -137,7 +137,7 @@ void main() {
     await tester.enterText(find.byKey(const Key('champ-reference')), '4821');
     await toucher(tester, find.byKey(const Key('bouton-valider-vente')));
     expect(find.text('Reçu n° A-000001'), findsWidgets);
-    expect(find.textContaining('Mixx (T-Money)'), findsWidgets);
+    expect(find.textContaining('Mixx by Yas'), findsWidgets);
 
     final riz = env.etat.produits.firstWhere((p) => p.nom == 'Riz');
     expect(env.etat.stock(riz.id), 100000 - 167); // 100 F ÷ 600 F = 0,167 kg

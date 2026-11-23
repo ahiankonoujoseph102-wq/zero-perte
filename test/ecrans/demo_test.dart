@@ -43,22 +43,26 @@ void main() {
         expect(d1.estDemo, isTrue);
         expect(d1.installationTerminee, isTrue);
         expect(d1.config.nom, 'Boutique Démo');
-        expect(d1.produits, hasLength(produitsDemo.length));
+        // 0.36 : les produits du catalogue + Lait et Boisson (gros et détail).
+        expect(d1.produits, hasLength(produitsDemo.length + grosDemo.length));
         final riz = d1.produits.firstWhere((p) => p.nom == 'Riz');
-        expect(d1.stock(riz.id), 100000);
+        // Kossi a déjà vendu 3 kg de riz dans la journée d'exemple.
+        expect(d1.stock(riz.id), 97000);
+        final ventesExemple = (await d1.ventesDuJour()).length;
+        expect(ventesExemple, greaterThan(0));
         final v = await d1.journal.enregistrerVente(
           lignes: [LigneDemandee.quantite(produitId: riz.id, nombre: 2)],
           mode: ModePaiement.especes,
           montantRecu: 1200,
           auteurId: d1.auteurActuel,
         );
-        expect(v.recu, 'D-000001'); // préfixe « D » : jamais confondu
+        expect(v.recu, startsWith('D-')); // préfixe « D » : jamais confondu
 
         // Deuxième ouverture : tout est effacé et recréé.
         final d2 = await demo(env, chemin);
         final riz2 = d2.produits.firstWhere((p) => p.nom == 'Riz');
-        expect(d2.stock(riz2.id), 100000);
-        expect(await d2.ventesDuJour(), isEmpty);
+        expect(d2.stock(riz2.id), 97000);
+        expect((await d2.ventesDuJour()).length, ventesExemple);
 
         // Ni sauvegarde ni restauration en démo.
         await expectLater(
@@ -129,6 +133,12 @@ void main() {
     final d = (await tester.runAsync(() => demo(env, cheminDemo())))!;
     await afficherApp(tester, d);
     await toucher(tester, find.byKey(const Key('bouton-espace-patron')));
+    // La liste est longue : on la fait défiler jusqu'en bas.
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('patron-chiffres')),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.byKey(const Key('patron-chiffres')), findsOneWidget);
     expect(find.byKey(const Key('patron-sauvegarde')), findsNothing);
   });

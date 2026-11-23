@@ -1,13 +1,10 @@
 // Captures de la refonte « commerçant » (0.36) sur les 4 tailles.
 // Lancement : flutter test test_captures/refonte_036_captures_test.dart --update-goldens
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:zero_perte/app/demo.dart';
 import 'package:zero_perte/app/etat_application.dart';
 import 'package:zero_perte/domaine/boutique.dart';
 import 'package:zero_perte/domaine/panier.dart';
@@ -102,13 +99,7 @@ void main() {
         etape: EtapeAssistant.bienvenue,
         relais: FauxRelaisInvitations(),
       );
-      await afficherApp(
-        tester,
-        env.etat,
-        taille: taille,
-        densite: densite,
-        creerDemo: () async => env.etat,
-      );
+      await afficherApp(tester, env.etat, taille: taille, densite: densite);
       await capture(tester, 'bienvenue_${e.key}');
       await tester.runAsync(() async {
         await env.etat.activer(codeLicence);
@@ -193,26 +184,6 @@ void main() {
         await capture(tester, '${nom}_${e.key}');
         await revenirAccueil(tester);
       }
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('voir un exemple ${e.key}', (tester) async {
-      final env = await environnementDeTest(
-        tester,
-        etape: EtapeAssistant.bienvenue,
-      );
-      final demo = await tester.runAsync(() async {
-        final dossier = Directory.systemTemp.createTempSync('zp-demo');
-        addTearDown(() => dossier.deleteSync(recursive: true));
-        return preparerDemo(
-          fabrique: databaseFactoryFfi,
-          chemin: '${dossier.path}/demo.db',
-          services: env.etat.services,
-        );
-      });
-      await afficherApp(tester, demo!, taille: taille, densite: densite);
-      await attendre(tester, tours: 10);
-      await capture(tester, 'exemple_accueil_${e.key}');
       expect(tester.takeException(), isNull);
     });
   }

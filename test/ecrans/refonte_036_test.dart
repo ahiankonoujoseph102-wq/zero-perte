@@ -18,6 +18,7 @@ import 'package:zero_perte/domaine/quantites.dart';
 import 'package:zero_perte/domaine/tableau.dart';
 import 'package:zero_perte/donnees/journal_local.dart';
 import 'package:zero_perte/ecrans/accueil_vendeur.dart';
+import 'package:zero_perte/ecrans/patron/ma_boutique.dart';
 
 import '../domaine/licence_test.dart' show codeLicence;
 import '../support/outils.dart';
@@ -137,7 +138,12 @@ void main() {
         etape: EtapeAssistant.identite,
         preparer: (e) => e.activer(codeLicence),
       );
-      await afficherApp(tester, env.etat, taille: const Size(360, 640));
+      await afficherApp(
+        tester,
+        env.etat,
+        taille: const Size(412, 915),
+        densite: 2.625,
+      );
       expect(find.text('Étape 1 sur 3'), findsOneWidget);
       await tester.enterText(
         find.byKey(const Key('champ-nom')),
@@ -501,8 +507,41 @@ void main() {
         expect(env.etat.produits, isEmpty);
         await demo.journal.fermer();
       });
-      await afficherApp(tester, env.etat, creerDemo: () async => demo);
-      expect(find.byKey(const Key('bouton-voir-exemple')), findsOneWidget);
+      // Plus aucun bouton de démonstration dans l'application (0.36).
+      await afficherApp(tester, env.etat);
+      expect(find.byKey(const Key('bouton-voir-exemple')), findsNothing);
+      expect(find.byKey(const Key('bouton-demonstration')), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'Gestion → Ma boutique : le téléphone se règle plus tard (Enregistrer → retour)',
+    (tester) async {
+      final env = await environnementDeTest(tester, preparer: boutiqueVide);
+      await afficherApp(tester, env.etat);
+      Navigator.of(
+        tester.element(find.byType(Scaffold).first),
+      ).push(MaterialPageRoute(builder: (_) => PageMaBoutique(etat: env.etat)));
+      await attendre(tester, tours: 6);
+      await toucher(tester, find.byKey(const Key('ma-boutique-contact')));
+      await tester.enterText(
+        find.byKey(const Key('champ-telephone')),
+        '90123456',
+      );
+      await attendre(tester);
+      await toucher(tester, find.byKey(const Key('champ-ville')));
+      await toucher(tester, find.text('Lomé').last);
+      expect(find.text('Enregistrer'), findsOneWidget);
+      await toucher(tester, find.byKey(const Key('bouton-continuer')));
+      await attendre(tester, tours: 6);
+      expect(env.etat.config.telephone, '+228 90 12 34 56');
+      // Retour sur « Ma boutique », l'installation n'a pas bougé.
+      expect(find.byKey(const Key('ma-boutique-contact')), findsOneWidget);
+      expect(env.etat.etape, EtapeAssistant.termine);
+      expect(
+        env.etat.tachesAFaire.map((t) => t.type),
+        isNot(contains(TypeTache.telephone)),
+      );
     },
   );
 }

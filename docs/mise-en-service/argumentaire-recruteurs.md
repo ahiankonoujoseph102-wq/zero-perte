@@ -28,19 +28,18 @@ ferme la caisse, il compte l'argent sans savoir ce qu'il devrait y avoir : s'il 
 prévenu tout de suite. Vous voyez aussi votre bénéfice et qui vous doit de l'argent. On paie une seule fois,
 pas chaque mois. Je vous montre en une minute ? »
 
-## La démonstration d'une minute (« Voir un exemple »)
-Sur votre téléphone, avec Zéro Perte installée **sans l'avoir activée** (premier écran) :
-1. Touchez **Voir un exemple**. Une boutique d'exemple s'ouvre (rien n'est mélangé avec une vraie boutique).
-2. Montrez l'accueil du patron : **« Vendu aujourd'hui »**, **« Bénéfice »**, et en rouge **« Caisse : il manque
-   2 000 F ❌ »**. Dites : « Kossi, le vendeur, a fermé la caisse avec 2 000 F de moins. Le patron l'a vu sans être
-   là. » Montrez la ligne des ventes **par vendeur**.
-3. Touchez **Vendre** → **Lait** : deux gros boutons **Détail** (1 boîte, 550 F) et **Gros** (1 carton de 24,
-   12 000 F). Choisissez **Gros**, puis **Encaisser** : « Le stock baisse tout seul de 24 boîtes. »
-4. Montrez **la monnaie à rendre** (l'application dit quels billets rendre).
-5. Revenez à l'accueil → **Ce qu'on me doit** : « Yawa doit 12 000 F. Un bouton lui envoie un rappel poli sur
-   WhatsApp. »
-6. Touchez **Quitter** en haut : on revient au début, rien n'est gardé.
-Si le commerçant a le temps : la **visite guidée d'Afi** (bouton **Visite**) explique tout à voix haute.
+## La démonstration d'une minute
+L'application n'a **pas** de mode démonstration (décision du propriétaire, 24/11) : montrez **la vidéo de
+l'écran** préparée par le propriétaire, ou votre téléphone d'agent avec une boutique d'essai (code « TEST »).
+Dans les deux cas, montrez ces 5 choses, dans cet ordre :
+1. L'accueil du patron : **« Vendu aujourd'hui »**, **« Bénéfice »**, et en rouge **« Caisse : il manque
+   2 000 F »**. Dites : « Votre vendeur a fermé la caisse avec 2 000 F de moins. Vous l'avez vu sans être là. »
+   Montrez la ligne des ventes **par vendeur**.
+2. **Vendre** → un produit vendu en gros : deux gros boutons **Détail** (1 boîte, 550 F) et **Gros** (1 carton
+   de 24, 12 000 F). « Le stock baisse tout seul de 24 boîtes. »
+3. **Nouveau produit** pendant la vente : « Pas besoin de tout saisir avant. »
+4. **La monnaie à rendre** (l'application dit quels billets rendre).
+5. **Ce qu'on me doit** : « Ce client vous doit 12 000 F. Un bouton lui envoie un rappel poli sur WhatsApp. »
 
 ## Les 8 objections et les réponses
 1. **« Je m'en sors déjà. »** — « Tant mieux. Mais combien vous perdez chaque mois sans le savoir ? Un seul
@@ -56,9 +55,9 @@ Si le commerçant a le temps : la **visite guidée d'Afi** (bouton **Visite**) e
    même, pas à la fin du mois. »
 5. **« C'est cher. »** — « On paie une seule fois, pas chaque mois, pour 2 appareils, avec les mises à jour.
    Comparez avec ce qui disparaît en un mois : un carton de lait, c'est déjà 12 000 F. »
-6. **« Je ne sais pas lire. »** — « Les boutons sont gros, avec des images. La voix d'Afi explique à voix
-   haute. Votre vendeur ou votre enfant peut saisir ; vous, vous regardez le gros chiffre vert et le message
-   rouge s'il manque de l'argent. »
+6. **« Je ne sais pas lire. »** — « Les boutons sont gros, avec des images ; à l'installation, le bouton « Écouter » lit
+   les explications à voix haute. Votre vendeur ou votre enfant peut saisir ; vous, vous regardez le gros
+   chiffre vert et le message rouge s'il manque de l'argent. »
 7. **« Je n'ai pas Internet. »** — « On vend sans Internet. Internet sert seulement à envoyer les ventes sur
    votre téléphone et à sauvegarder : quelques minutes de connexion par jour suffisent, les ventes partent
    quand le réseau revient. »
