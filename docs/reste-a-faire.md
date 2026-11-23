@@ -1,4 +1,4 @@
-# Ce qui reste à faire (liste complète, 22 novembre 2026)
+# Ce qui reste à faire (liste complète, 23 novembre 2026)
 
 Relu : `docs/journal-avancement.md` et `docs/etapes-proprietaire.md`. Ordre = priorité.
 
@@ -20,6 +20,9 @@ Relu : `docs/journal-avancement.md` et `docs/etapes-proprietaire.md`. Ordre = pr
 | 12 | Le paquet `flutter_tts` utilise un ancien outil Kotlin : une future version de Flutter refusera de fabriquer l'APK | À surveiller à chaque montée de Flutter |
 | 13 | Relais : à **50 boutiques**, revoir (alertes poussées par Firebase, consultations espacées) | Noté pour plus tard |
 | 14 | Fichiers d'Afi v1 et extraits de voix du site : plus utiles après la 0.31.0 | Ménage après publication |
+| 15 | ✅ (0.35.0) Ajout d'un vendeur par QR code ; (0.35.2) lecteur de QR préparé à l'avance, réessai, code d'erreur affiché | **Essai sur 2 vrais téléphones à faire** |
+| 16 | ✅ (23/11) Action « 8 - Mettre à jour le relais » (exécution #2 verte, « Relais en ligne : OK ») | Fait |
+| 17 | Supprimer l'ancien passage de l'action « test minimal (temporaire) » (le fichier n'existe plus ; seul son passage du 21/11 la garde dans la liste) | Propriétaire : 3 touchers |
 
 ## Propriétaire
 
@@ -28,6 +31,8 @@ Relu : `docs/journal-avancement.md` et `docs/etapes-proprietaire.md`. Ordre = pr
 | A | **Essai A5** : connecter le compte Google de la boutique sur un vrai téléphone, puis sur le PC (synchronisation Drive) | `etapes-proprietaire.md` partie A5 |
 | B | ✅ (22/11) **Cloudflare** : relais déployé et vérifié, `ZP_RELAIS_URL` en place. Reste : essai B5 sur 2 vrais téléphones | partie B |
 | C | ✅ (22/11) **Firebase** : branché dans `v0.34.0-n101`. Reste : essai F4 sur 2 vrais téléphones | partie F |
+| C2 | ✅ (23/11) Parties **I** (Google Web + secrets Cloudflare) et **J** (jeton de l'action 8) | faites |
+| C3 | **Essai « Ajouter mon vendeur »** sur 2 vrais téléphones avec la 0.35.2 (Pixel 6 : le lecteur ne s'ouvrait pas en 0.35.1) | guide des agents, 3 bis |
 | D | Microsoft Store (supprime l'avertissement Windows, gratuit) — facultatif | partie E |
 | E | Valider les guides de mise en service, former les agents, imprimer l'aide-mémoire | `docs/mise-en-service/` |
 | F | Essai sur vrais appareils de la 0.31.0 : voix d'Afi sur Android 8 et sur PC Windows, partage WhatsApp | après publication |

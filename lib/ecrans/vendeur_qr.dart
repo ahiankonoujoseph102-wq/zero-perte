@@ -11,9 +11,11 @@ import 'dart:async';
 import 'dart:math' show min;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:qr/qr.dart';
 
 import '../app/etat_application.dart';
+import '../services/lecteur_qr.dart';
 import '../synchro/invitation.dart';
 import '../synchro/synchro.dart' show Appareil, ErreurLicencePleine;
 import '../theme/couleurs.dart';
@@ -89,7 +91,7 @@ Widget _texte(String t, {Color? couleur}) => Text(
   style: TextStyle(fontSize: 19, color: couleur ?? CouleursZp.texteDoux),
 );
 
-Widget _cadreErreur(String t) => Container(
+Widget _cadreErreur(String t, {String? code}) => Container(
   key: const Key('erreur-vendeur-qr'),
   padding: const EdgeInsets.all(14),
   decoration: BoxDecoration(
@@ -101,10 +103,61 @@ Widget _cadreErreur(String t) => Container(
     children: [
       const Icon(Icons.error_rounded, color: CouleursZp.argentSort, size: 30),
       const SizedBox(width: 10),
-      Expanded(child: Text(t, style: const TextStyle(fontSize: 18))),
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(t, style: const TextStyle(fontSize: 18)),
+            if (code != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                code,
+                key: const Key('code-erreur-lecteur'),
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: CouleursZp.texteDoux,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     ],
   ),
 );
+
+/// Bouton pendant le téléchargement du module du lecteur.
+class _BoutonPreparation extends StatelessWidget {
+  const _BoutonPreparation();
+
+  @override
+  Widget build(BuildContext context) => FilledButton(
+    key: const Key('bouton-preparation-lecteur'),
+    onPressed: null,
+    style: FilledButton.styleFrom(
+      minimumSize: const Size(0, 64),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+    ),
+    child: const FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(strokeWidth: 3),
+          ),
+          SizedBox(width: 14),
+          Text(
+            'Préparation du lecteur…',
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+          ),
+        ],
+      ),
+    ),
+  );
+}
 
 Widget _attente(String t) => Column(
   mainAxisSize: MainAxisSize.min,
@@ -545,10 +598,14 @@ class PageJeSuisVendeur extends StatefulWidget {
     super.key,
     required this.etat,
     this.attente = const Duration(seconds: 3),
+    this.limiteLecteur = const Duration(seconds: 60),
   });
 
   final EtatApplication etat;
   final Duration attente;
+
+  /// Temps laissé au module du lecteur pour se télécharger (tests : court).
+  final Duration limiteLecteur;
 
   @override
   State<PageJeSuisVendeur> createState() => _PageJeSuisVendeurState();
@@ -567,6 +624,18 @@ class _PageJeSuisVendeurState extends State<PageJeSuisVendeur> {
   DateTime? _fin;
   bool _verification = false;
 
+  /// Le module du lecteur se télécharge (bouton « Préparation du lecteur… »).
+  bool _lecteurEnPreparation = false;
+
+  /// Code exact de la dernière erreur du lecteur (en petit, pour l'assistance).
+  String? _codeErreur;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.etat.scannerPossible) _preparerLecteur();
+  }
+
   @override
   void dispose() {
     _veille?.cancel();
@@ -574,10 +643,49 @@ class _PageJeSuisVendeurState extends State<PageJeSuisVendeur> {
     super.dispose();
   }
 
-  Future<void> _scanner() async {
-    setState(() => _erreur = null);
+  /// Dès l'ouverture : le module du lecteur est-il là ? Sinon, installation
+  /// urgente ; le bouton attend. Rien de rouge tant que ce n'est pas une vraie
+  /// panne (pas d'Internet, pas de place, Services Google Play…).
+  Future<void> _preparerLecteur() async {
+    final l = widget.etat.services.lecteurQr!;
+    setState(() => _lecteurEnPreparation = true);
     try {
-      final texte = await widget.etat.services.scannerQr!();
+      if (!await l.estPret()) {
+        await l.preparer().timeout(widget.limiteLecteur);
+      }
+    } on ErreurLecteur catch (e) {
+      if (!lecteurPasEncorePret(e) && mounted) {
+        setState(() {
+          _erreur = e.message;
+          _codeErreur = codeLecteurLisible(e);
+        });
+      }
+    } catch (_) {
+      // Trop long : le bouton s'active quand même ; le scan réessaiera.
+    } finally {
+      if (mounted) setState(() => _lecteurEnPreparation = false);
+    }
+  }
+
+  Future<void> _scanner() async {
+    setState(() {
+      _erreur = null;
+      _codeErreur = null;
+    });
+    try {
+      final texte = await scannerAvecReessai(
+        widget.etat.services.lecteurQr!,
+        limite: widget.limiteLecteur,
+        enPreparation: () {
+          if (mounted && !_lecteurEnPreparation) {
+            setState(() => _lecteurEnPreparation = true);
+          }
+        },
+      );
+      if (mounted && _lecteurEnPreparation) {
+        setState(() => _lecteurEnPreparation = false);
+      }
+      // La personne a fermé le lecteur : on revient simplement à l'écran.
       if (texte == null || !mounted) return;
       setState(() => _etape = _EtapeVendeur.chargement);
       final p = await widget.etat.entrerParQr(texte);
@@ -587,9 +695,19 @@ class _PageJeSuisVendeurState extends State<PageJeSuisVendeur> {
           _etape = _EtapeVendeur.fini;
         });
       }
+    } on ErreurLecteur catch (e) {
+      if (mounted) {
+        setState(() {
+          _lecteurEnPreparation = false;
+          _etape = _EtapeVendeur.accueil;
+          _erreur = e.message;
+          _codeErreur = codeLecteurLisible(e);
+        });
+      }
     } catch (e) {
       if (mounted) {
         setState(() {
+          _lecteurEnPreparation = false;
           _etape = _EtapeVendeur.accueil;
           _erreur = messageErreur(e);
         });
@@ -678,13 +796,16 @@ class _PageJeSuisVendeurState extends State<PageJeSuisVendeur> {
       titre: 'Je suis vendeur',
       icone: Icons.badge_rounded,
       bas: switch (_etape) {
-        _EtapeVendeur.accueil => GrosBouton(
-          key: const Key('bouton-scanner-qr'),
-          texte: 'Scanner le QR code',
-          icone: Icons.qr_code_scanner_rounded,
-          couleur: CouleursZp.argentEntre,
-          onPressed: _scanner,
-        ),
+        _EtapeVendeur.accueil =>
+          _lecteurEnPreparation
+              ? const _BoutonPreparation()
+              : GrosBouton(
+                  key: const Key('bouton-scanner-qr'),
+                  texte: 'Scanner le QR code',
+                  icone: Icons.qr_code_scanner_rounded,
+                  couleur: CouleursZp.argentEntre,
+                  onPressed: _scanner,
+                ),
         _EtapeVendeur.code => GrosBouton(
           key: const Key('bouton-valider-code-secours'),
           texte: 'Valider',
@@ -721,7 +842,7 @@ class _PageJeSuisVendeurState extends State<PageJeSuisVendeur> {
               ),
               if (_erreur != null) ...[
                 const SizedBox(height: 16),
-                _cadreErreur(_erreur!),
+                _cadreErreur(_erreur!, code: _codeErreur),
               ],
               const SizedBox(height: 10),
               TextButton(
@@ -758,13 +879,18 @@ class _PageJeSuisVendeurState extends State<PageJeSuisVendeur> {
                 controller: _code,
                 keyboardType: TextInputType.number,
                 textAlign: TextAlign.center,
-                maxLength: 9,
+                // 8 chiffres, avec ou sans espace ou tiret ; pas de compteur.
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9 \-]')),
+                  LengthLimitingTextInputFormatter(12),
+                ],
                 style: const TextStyle(
                   fontSize: 34,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 3,
                 ),
-                decoration: decorationChamp('Code à 8 chiffres'),
+                decoration: decorationChamp('Code à 8 chiffres')
+                    .copyWith(counterText: ''),
                 onSubmitted: (_) => _envoyerCode(),
               ),
               if (_erreur != null) ...[

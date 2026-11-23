@@ -178,6 +178,7 @@ Future<Environnement> environnementDeTest(
   String? chemin,
   FauxRelaisInvitations? relais,
   Future<String?> Function()? scanner,
+  FauxLecteurQr? lecteur,
   bool accordGoogle = true,
 }) async {
   // Pas d'Internet dans les tests : aucune recherche de mise à jour.
@@ -236,7 +237,8 @@ Future<Environnement> environnementDeTest(
         codeGoogleServeur: relais == null
             ? null
             : (_) async => accordGoogle ? 'code-google-ok' : null,
-        scannerQr: scanner,
+        lecteurQr:
+            lecteur ?? (scanner == null ? null : FauxLecteurQr(lire: scanner)),
         stockageParJeton: (jeton) =>
             DriveParJeton(leDrive, jeton, reseau: relais),
       ),

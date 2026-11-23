@@ -19,6 +19,7 @@ import '../domaine/tableau.dart';
 import '../domaine/utilisateurs.dart';
 import '../donnees/journal_local.dart';
 import '../services/google.dart' show ConnexionStockage;
+import '../services/lecteur_qr.dart' show LecteurQr;
 import '../services/notifications.dart' show sujetAlertes;
 import '../services/partage.dart';
 import '../synchro/drive.dart' show StockageDriveAppData;
@@ -49,7 +50,7 @@ class ServicesZp {
     this.choisirFichier,
     this.activerNotifications,
     this.codeGoogleServeur,
-    this.scannerQr,
+    this.lecteurQr,
     this.stockageParJeton,
   });
 
@@ -95,9 +96,8 @@ class ServicesZp {
   /// usage unique ; nul si la personne annule. Nul : pas possible ici.
   final Future<String?> Function(String idClientWeb)? codeGoogleServeur;
 
-  /// Lecteur de QR code (Google Play services) ; rend le texte lu, ou nul si
-  /// la personne annule. Nul : pas de lecteur sur cet appareil.
-  final Future<String?> Function()? scannerQr;
+  /// Lecteur de QR code (Google Play services). Nul : pas de lecteur ici.
+  final LecteurQr? lecteurQr;
 
   /// Dossier de la boutique pour un téléphone entré par invitation (tests ;
   /// par défaut, le vrai Google Drive).
@@ -1802,7 +1802,7 @@ class EtatApplication extends ChangeNotifier {
       relaisInvitations != null && services.codeGoogleServeur != null;
 
   /// Ce téléphone (vendeur) peut-il scanner un QR code ?
-  bool get scannerPossible => services.scannerQr != null;
+  bool get scannerPossible => services.lecteurQr != null;
 
   Future<void> _marquerRetire() async {
     _appareilRetire = true;

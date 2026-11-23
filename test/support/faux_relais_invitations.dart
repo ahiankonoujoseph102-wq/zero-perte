@@ -1,5 +1,8 @@
 // Relais simulé pour l'ajout des vendeurs : mêmes règles que relais/worker.js
 // (10 minutes, une seule lecture, liste noire, « Couper tous »).
+import 'dart:async';
+
+import 'package:zero_perte/services/lecteur_qr.dart';
 import 'package:zero_perte/synchro/invitation.dart';
 import 'package:zero_perte/synchro/synchro.dart';
 
@@ -164,5 +167,45 @@ class DriveParJeton implements StockageDistant {
   Future<void> ecrire(String nom, List<int> contenu) async {
     await _verifier();
     await drive.ecrire(nom, contenu);
+  }
+}
+
+/// Lecteur de QR code simulé : module prêt ou non, erreurs à la demande.
+class FauxLecteurQr implements LecteurQr {
+  FauxLecteurQr({this.lire, this.pret = true});
+
+  /// Ce que le lecteur lit (nul = la personne ferme le lecteur).
+  Future<String?> Function()? lire;
+  bool pret;
+
+  /// Erreurs à rendre, dans l'ordre, aux prochains `scanner()`.
+  final List<ErreurLecteur> erreursScanner = [];
+
+  /// Erreur de `preparer()` (nulle = l'installation réussit).
+  ErreurLecteur? erreurPreparer;
+
+  /// Préparation qui ne finit pas tant que ce verrou n'est pas ouvert.
+  Completer<void>? verrouPreparer;
+  int scans = 0;
+  int preparations = 0;
+
+  @override
+  Future<bool> estPret() async => pret;
+
+  @override
+  Future<void> preparer() async {
+    preparations++;
+    final v = verrouPreparer;
+    if (v != null) await v.future;
+    final e = erreurPreparer;
+    if (e != null) throw e;
+    pret = true;
+  }
+
+  @override
+  Future<String?> scanner() async {
+    scans++;
+    if (erreursScanner.isNotEmpty) throw erreursScanner.removeAt(0);
+    return lire == null ? null : await lire!();
   }
 }

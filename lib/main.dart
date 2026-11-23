@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -23,6 +25,7 @@ import 'ecrans/vendeur_qr.dart' show PageAppareilRetire;
 import 'services/mise_a_jour.dart';
 import 'services/aide.dart';
 import 'services/google.dart';
+import 'services/lecteur_qr.dart';
 import 'services/google_pc.dart' show connexionPcConfiguree;
 import 'synchro/invitation.dart' show ClientRelaisInvitations;
 import 'synchro/relais.dart';
@@ -116,9 +119,19 @@ Future<EtatApplication> chargerEtatDuTelephone() async {
       choisirFichier: choisirFichierSauvegarde,
       activerNotifications: surWindows ? null : activerNotificationsAndroid,
       codeGoogleServeur: surWindows ? null : codeGoogleServeurAndroid,
-      scannerQr: surWindows ? null : scannerQrAndroid,
+      lecteurQr: surWindows ? null : LecteurQrAndroid(),
     ),
   );
+  // Téléphone tout neuf (peut-être celui d'un vendeur) : le module du lecteur
+  // de QR code est demandé tout de suite, sans attendre ni rien afficher.
+  final lecteur = etat.services.lecteurQr;
+  if (lecteur != null && etat.etape == EtapeAssistant.bienvenue) {
+    unawaited(() async {
+      try {
+        if (!await lecteur.estPret()) await lecteur.preparer();
+      } catch (_) {}
+    }());
+  }
   // Relève des ventes des autres appareils (si le Drive est connecté).
   etat.demarrerSynchroAuto();
   // Alertes graves par le relais (si cette version en a l'adresse).

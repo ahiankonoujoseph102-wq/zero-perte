@@ -12,6 +12,12 @@ import android.os.Environment
 import android.os.StatFs
 import androidx.core.content.FileProvider
 import com.google.firebase.messaging.FirebaseMessaging
+import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.common.moduleinstall.InstallStatusListener
+import com.google.android.gms.common.moduleinstall.ModuleInstall
+import com.google.android.gms.common.moduleinstall.ModuleInstallRequest
+import com.google.android.gms.common.moduleinstall.ModuleInstallStatusUpdate
+import com.google.mlkit.common.MlKitException
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
@@ -63,6 +69,8 @@ class MainActivity : FlutterActivity() {
                     // services (aucune autorisation d'appareil photo, presque
                     // rien dans l'APK).
                     "scannerQr" -> scannerQr(resultat)
+                    "lecteurPret" -> lecteurPret(resultat)
+                    "lecteurPreparer" -> lecteurPreparer(resultat)
                     // Démonstration guidée : voix d'Afi (fichier MP3).
                     "jouerSon" -> jouerSon(appel.argument<String>("chemin"), resultat)
                     "arreterSon" -> {
@@ -75,18 +83,115 @@ class MainActivity : FlutterActivity() {
     }
 
     // --- Lecteur de QR code (Google code scanner) ---
+    // Le lecteur est un MODULE des Services Google Play, téléchargé à la
+    // demande : avant la 0.35.2, le premier appel échouait (module pas encore
+    // là) et l'application le prenait pour une panne définitive. Maintenant :
+    // « lecteurPret » vérifie, « lecteurPreparer » demande l'installation
+    // (urgente), et chaque erreur remonte avec son code exact.
+
+    private fun clientScanner() = GmsBarcodeScanning.getClient(
+        this,
+        GmsBarcodeScannerOptions.Builder()
+            .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
+            .enableAutoZoom()
+            .build(),
+    )
+
+    /** Erreur vers Dart : code exact + d'où il vient (mlkit, api, install). */
+    private fun erreurLecteur(resultat: MethodChannel.Result, e: Exception?) {
+        when (e) {
+            is MlKitException -> resultat.error(
+                "lecteur", e.message, mapOf("source" to "mlkit", "code" to e.errorCode),
+            )
+            is ApiException -> resultat.error(
+                "lecteur", e.message, mapOf("source" to "api", "code" to e.statusCode),
+            )
+            else -> resultat.error(
+                "lecteur", e?.message ?: "inconnue", mapOf("source" to "autre", "code" to -1),
+            )
+        }
+    }
+
     private fun scannerQr(resultat: MethodChannel.Result) {
         try {
-            val options = GmsBarcodeScannerOptions.Builder()
-                .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
-                .enableAutoZoom()
-                .build()
-            GmsBarcodeScanning.getClient(this, options).startScan()
+            clientScanner().startScan()
                 .addOnSuccessListener { code -> resultat.success(code.rawValue) }
+                // La personne ferme le lecteur : pas une erreur.
                 .addOnCanceledListener { resultat.success(null) }
-                .addOnFailureListener { e -> resultat.error("scanner", e.message, null) }
+                .addOnFailureListener { e ->
+                    if (e is MlKitException && e.errorCode == MlKitException.CODE_SCANNER_CANCELLED) {
+                        resultat.success(null)
+                    } else {
+                        erreurLecteur(resultat, e)
+                    }
+                }
         } catch (e: Exception) {
-            resultat.error("scanner", e.message, null)
+            erreurLecteur(resultat, e)
+        }
+    }
+
+    private fun lecteurPret(resultat: MethodChannel.Result) {
+        try {
+            ModuleInstall.getClient(this).areModulesAvailable(clientScanner())
+                .addOnSuccessListener { r -> resultat.success(r.areModulesAvailable()) }
+                .addOnFailureListener { e -> erreurLecteur(resultat, e) }
+        } catch (e: Exception) {
+            erreurLecteur(resultat, e)
+        }
+    }
+
+    /** Installation URGENTE du module ; répond quand il est prêt (ou en échec). */
+    private fun lecteurPreparer(resultat: MethodChannel.Result) {
+        try {
+            val client = ModuleInstall.getClient(this)
+            var repondu = false
+            fun repondre(action: () -> Unit) {
+                if (!repondu) {
+                    repondu = true
+                    runOnUiThread(action)
+                }
+            }
+            lateinit var ecoute: InstallStatusListener
+            ecoute = InstallStatusListener { maj ->
+                when (maj.installState) {
+                    ModuleInstallStatusUpdate.InstallState.STATE_COMPLETED -> {
+                        client.unregisterListener(ecoute)
+                        repondre { resultat.success(true) }
+                    }
+                    ModuleInstallStatusUpdate.InstallState.STATE_FAILED,
+                    ModuleInstallStatusUpdate.InstallState.STATE_CANCELED -> {
+                        client.unregisterListener(ecoute)
+                        repondre {
+                            resultat.error(
+                                "lecteur", "installation : état ${maj.installState}",
+                                mapOf(
+                                    "source" to "install",
+                                    "code" to maj.errorCode,
+                                    "etat" to maj.installState,
+                                ),
+                            )
+                        }
+                    }
+                    else -> {}
+                }
+            }
+            val demande = ModuleInstallRequest.newBuilder()
+                .addApi(clientScanner())
+                .setListener(ecoute)
+                .build()
+            client.installModules(demande)
+                .addOnSuccessListener { r ->
+                    if (r.areModulesAlreadyInstalled()) {
+                        client.unregisterListener(ecoute)
+                        repondre { resultat.success(true) }
+                    }
+                }
+                .addOnFailureListener { e ->
+                    client.unregisterListener(ecoute)
+                    repondre { erreurLecteur(resultat, e) }
+                }
+        } catch (e: Exception) {
+            erreurLecteur(resultat, e)
         }
     }
 

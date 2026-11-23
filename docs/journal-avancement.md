@@ -1182,3 +1182,27 @@ Conception validée par le propriétaire (questions A taille et B secret réglé
 - « Ce qu'il faut dire au client » : la limite « 2 dernières phrases par la voix du téléphone » est retirée.
 - **Publiée** le 23/11 : Release **`v0.35.1-n107`**. Signature vérifiée (SHA-1 49:27:0C:…:B1:A3), 50 voix dans
   l'APK (050 identique au fichier de l'action 6), APK universel 18,86 Mo.
+
+### Version 0.35.2 — lecteur de QR code réparé (23/11)
+- **Essai réel (Pixel 6, 0.35.1)** : « Scanner le QR code » → message rouge tout de suite, l'appareil photo ne
+  s'ouvre jamais.
+- **Cause trouvée dans le code** : le lecteur de Google est un MODULE des Services Google Play téléchargé à la
+  demande. `MainActivity.scannerQr` appelait `startScan()` sans jamais demander ni attendre ce module ; le
+  premier appel échoue alors (MlKitException « UNAVAILABLE » / « CODE_SCANNER_UNAVAILABLE ») et
+  `scannerQrAndroid` transformait TOUTE erreur en « ne marche pas sur ce téléphone », sans garder le code.
+  (Le code exact n'était pas affiché : il le sera désormais, ce qui confirmera la cause sur le Pixel 6.)
+- **Corrections** : `lecteurPret` (`ModuleInstallClient.areModulesAvailable`) et `lecteurPreparer`
+  (`installModules`, demande urgente, réponse à la fin de l'installation) dans `MainActivity.kt` ;
+  `play-services-base` 18.5.0 ; méta-donnée `com.google.mlkit.vision.DEPENDENCIES = barcode_ui` (Play Store) ;
+  module demandé dès le premier lancement (étape Bienvenue) et à l'ouverture de « Je suis vendeur » (bouton
+  « Préparation du lecteur… » avec une roue) ; `scannerAvecReessai` (préparation puis réessai toutes les 3 s,
+  jusqu'à 60 s) ; fermeture du lecteur (annulé, code 201) = retour sans erreur ; message selon la cause
+  (Internet, place, Services Google Play, appareil photo refusé, délai) + code exact en petit
+  (« Code : 14 / UNAVAILABLE (mlkit) ») ; code de secours : plus de compteur « 0/9 », tiret ou espace acceptés.
+  Noms et valeurs des codes vérifiés dans les bibliothèques de Google (`MlKitException` 18.11.0,
+  `CommonStatusCodes`, `ModuleInstallStatusCodes`, `ModuleInstallStatusUpdate.InstallState`).
+- Code : `lib/services/lecteur_qr.dart` (nouveau), `vendeur_qr.dart`, `main.dart`, `MainActivity.kt`.
+  Tests : `test/ecrans/lecteur_qr_test.dart` (14 : réessai, délai, vraie panne, annulation, messages, codes,
+  écran). Ancien `scannerQrAndroid` et `ErreurScanner` supprimés.
+- Action « test minimal (temporaire) » : le fichier n'existe plus dans aucune branche ; elle reste dans la
+  liste à cause de son seul passage (21/11), à supprimer par le propriétaire (pas d'outil pour le faire ici).

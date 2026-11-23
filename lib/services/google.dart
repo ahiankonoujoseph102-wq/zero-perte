@@ -4,7 +4,6 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
-import '../donnees/journal_local.dart' show ErreurZeroPerte;
 import '../synchro/drive.dart';
 import '../synchro/synchro.dart';
 
@@ -66,28 +65,6 @@ Future<String?> codeGoogleServeurAndroid(String idClientWeb) async {
   } catch (_) {}
   final compte = await google.signIn();
   return compte?.serverAuthCode;
-}
-
-/// Lecteur de QR code de Google Play services ; nul si annulé.
-/// [ErreurScanner] si le lecteur n'est pas disponible (téléphone
-/// sans services Google).
-Future<String?> scannerQrAndroid() async {
-  try {
-    return await const MethodChannel('tg.zeroperte/telephone')
-        .invokeMethod<String>('scannerQr');
-  } on PlatformException catch (e) {
-    throw ErreurScanner(e.message ?? '');
-  }
-}
-
-/// Le lecteur de QR code ne marche pas sur ce téléphone.
-class ErreurScanner extends ErreurZeroPerte {
-  const ErreurScanner(this.detail)
-    : super(
-        'Le lecteur de QR code ne marche pas sur ce téléphone. '
-        'Touchez « Pas d\'appareil photo ? » et tapez le code du patron.',
-      );
-  final String detail;
 }
 
 /// Déconnecte le compte Google (le patron change de compte).

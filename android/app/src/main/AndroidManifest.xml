@@ -7,6 +7,12 @@
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher">
+        <!-- Lecteur de QR code : demande aux Services Google Play de télécharger le
+             module dès l'installation (Play Store) ; sinon l'application le demande
+             elle-même à l'ouverture de « Je suis vendeur ». -->
+        <meta-data
+            android:name="com.google.mlkit.vision.DEPENDENCIES"
+            android:value="barcode_ui" />
         <!-- Petite icône blanche des notifications d'alerte (Firebase). -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"

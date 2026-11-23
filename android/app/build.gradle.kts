@@ -87,4 +87,6 @@ dependencies {
     // (le module de lecture est téléchargé par Play services, pas dans l'APK ;
     // aucune autorisation d'appareil photo pour l'application).
     implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
+    // Installation du module du lecteur à l'avance (ModuleInstallClient).
+    implementation("com.google.android.gms:play-services-base:18.5.0")
 }
