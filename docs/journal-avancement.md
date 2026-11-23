@@ -1249,5 +1249,5 @@ Plan et état des lieux : `docs/refonte-commercant.md`. Argumentaire : `docs/mis
 - **Données** : aucun changement de schéma. Test de mise à jour sur une base fabriquée par le VRAI code de la
   0.35.2 (`test/fixtures/mise_a_jour/v0.35.2.db`, généré par `test_perf/fabriquer_base_0352_test.dart`) : mêmes
   stocks, ventes, crédits, vendeurs, chaîne ; les anciens emballages sont la vente en gros ; pas de démarrage.
-- Tests : `test/ecrans/refonte_036_test.dart` (10) ; captures 4 tailles :
-  `test_captures/refonte_036_captures_test.dart` (60 images).
+- Tests : `test/ecrans/refonte_036_test.dart` (11) ; suite complète : 523 tests, tous verts ; captures 4 tailles :
+  `test_captures/refonte_036_captures_test.dart` (56 images).
