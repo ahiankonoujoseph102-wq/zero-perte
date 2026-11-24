@@ -1251,3 +1251,6 @@ Plan et état des lieux : `docs/refonte-commercant.md`. Argumentaire : `docs/mis
   stocks, ventes, crédits, vendeurs, chaîne ; les anciens emballages sont la vente en gros ; pas de démarrage.
 - Tests : `test/ecrans/refonte_036_test.dart` (11) ; suite complète : 523 tests, tous verts ; captures 4 tailles :
   `test_captures/refonte_036_captures_test.dart` (56 images).
+- **Publiée** le 24/11 : Release **`v0.36.0-n116`** (APK + Windows). Signature vérifiée (SHA-1 49:27:0C:…:B1:A3),
+  50 voix présentes (non accessibles : démonstration retirée), APK universel 18,85 Mo. Mise à jour par-dessus la
+  0.35.2 : testée sur la base fabriquée par la 0.35.2 (aucun changement de schéma).
