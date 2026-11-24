@@ -917,7 +917,6 @@ class _PageRemboursementFaitState extends State<PageRemboursementFait> {
   bool _enCours = false;
 
   String get _texte =>
-      '${widget.etat.estDemo ? 'DÉMONSTRATION — SANS VALEUR. ' : ''}'
       '${widget.etat.config.nom} : ${widget.client.nom} a remboursé '
       '${formatFrancs(-widget.mouvement.montant)}. Reste à payer : '
       '${formatFrancs(widget.client.solde)}. Merci !';
@@ -1045,16 +1044,6 @@ class _PageRemboursementFaitState extends State<PageRemboursementFait> {
                                     : CouleursRecu.vert,
                                 cle: 'reste-a-payer',
                               ),
-                              if (widget.etat.estDemo)
-                                const Text(
-                                  'DÉMONSTRATION — SANS VALEUR',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w700,
-                                    color: CouleursRecu.rouge,
-                                  ),
-                                ),
                               const SizedBox(height: 8),
                               Text(
                                 config.messageRecu,

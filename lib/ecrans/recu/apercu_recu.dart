@@ -26,7 +26,6 @@ class ApercuRecu extends StatelessWidget {
       LigneRecu('1 huile 1 L', 1200),
     ],
     this.paiement = 'Espèces',
-    this.demo = false,
     this.credit,
     this.titre = 'Reçu n°',
     this.libelleTotal = 'TOTAL',
@@ -46,9 +45,6 @@ class ApercuRecu extends StatelessWidget {
   final String date;
   final List<LigneRecu> lignes;
   final String paiement;
-
-  /// Reçu de la démonstration : marqué « sans valeur ».
-  final bool demo;
 
   /// Vente à crédit : « Client : Kofi — reste à payer : 1 800 F ».
   final String? credit;
@@ -219,20 +215,6 @@ class ApercuRecu extends StatelessWidget {
                       fontStyle: FontStyle.italic,
                     ),
                   ),
-                  if (demo)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 6),
-                      child: Text(
-                        'DÉMONSTRATION — SANS VALEUR',
-                        key: Key('recu-demo'),
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                          color: CouleursRecu.rouge,
-                        ),
-                      ),
-                    ),
                   if (exemple)
                     const Padding(
                       padding: EdgeInsets.only(top: 6),

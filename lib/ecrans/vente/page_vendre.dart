@@ -251,8 +251,7 @@ class _PageVendreState extends State<PageVendre> {
               )
             : null;
         // On peut vendre sans avoir tout saisi : un produit qui manque se
-        // crée ici (pas en démonstration).
-        final peutCreer = !etat.estDemo;
+        // crée ici.
         Widget boutonNouveau(String texte) => GrosBouton(
           key: const Key('bouton-nouveau-produit'),
           texte: texte,
@@ -268,18 +267,14 @@ class _PageVendreState extends State<PageVendre> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(
-                        peutCreer
-                            ? 'Pas encore de produit. Ajoutez celui que vous '
-                                  'vendez maintenant : son nom et son prix suffisent.'
-                            : 'Aucun produit.',
+                      const Text(
+                        'Pas encore de produit. Ajoutez celui que vous '
+                        'vendez maintenant : son nom et son prix suffisent.',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 20),
+                        style: TextStyle(fontSize: 20),
                       ),
-                      if (peutCreer) ...[
-                        const SizedBox(height: 16),
-                        boutonNouveau('Nouveau produit'),
-                      ],
+                      const SizedBox(height: 16),
+                      boutonNouveau('Nouveau produit'),
                     ],
                   ),
                 ),
@@ -301,10 +296,8 @@ class _PageVendreState extends State<PageVendre> {
                           color: CouleursZp.texteDoux,
                         ),
                       ),
-                      if (peutCreer) ...[
-                        const SizedBox(height: 16),
-                        boutonNouveau('Ajouter « ${_recherche.text.trim()} »'),
-                      ],
+                      const SizedBox(height: 16),
+                      boutonNouveau('Ajouter « ${_recherche.text.trim()} »'),
                     ],
                   ),
                 ),
@@ -318,7 +311,7 @@ class _PageVendreState extends State<PageVendre> {
                   mainAxisSpacing: 8,
                 ),
                 // Dernière case : « + Nouveau produit ».
-                itemCount: produits.length + (peutCreer ? 1 : 0),
+                itemCount: produits.length + 1,
                 itemBuilder: (context, i) => i == produits.length
                     ? _TuileNouveauProduit(onTap: _nouveauProduit)
                     : _TuileVente(

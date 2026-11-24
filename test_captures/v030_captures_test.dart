@@ -7,10 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zero_perte/app/etat_application.dart';
-import 'package:zero_perte/demo_guidee/voix_demo.dart';
 
 import '../test/support/outils.dart';
-import '../test/ecrans/visite_guidee_test.dart' show ouvrirDemo, visite;
 
 Future<void> _chargerPolices() async {
   final manifeste =
@@ -49,44 +47,6 @@ void main() {
       await toucher(tester, find.byKey(const Key('bouton-coller-code')));
       await attendre(tester, tours: 4);
       await capture('31_rien_copie_${e.key}');
-    });
-
-    testWidgets('visite ${e.key}', (tester) async {
-      dureeParoleVisite = (_) => const Duration(seconds: 3);
-      pauseEntrePhrasesVisite = const Duration(milliseconds: 10);
-      addTearDown(() {
-        dureeParoleVisite = dureeEstimee;
-        pauseEntrePhrasesVisite = const Duration(milliseconds: 700);
-      });
-      await ouvrirDemo(
-        tester,
-        taille: taille,
-        densite: densite,
-        heure: DateTime(2026, 11, 21, 9),
-      );
-      Future<void> jusqua(int chapitre, int etape) async {
-        for (var i = 0; i < 700; i++) {
-          final v = visite(tester);
-          if (v.chapitre == chapitre && v.etape == etape) break;
-          await attendre(tester, tours: 1);
-        }
-        // Laisse la page se charger, puis le cadre et le geste se poser.
-        await attendre(tester, tours: 3);
-        for (var i = 0; i < 6; i++) {
-          await tester.pump(const Duration(milliseconds: 100));
-        }
-      }
-
-      await jusqua(0, 3); // « Le gros bouton vert, Vendre… »
-      await capture('32_visite_accueil_${e.key}');
-      await jusqua(2, 0); // billet de 5 000 F
-      await capture('33_visite_monnaie_${e.key}');
-      await jusqua(4, 2); // fiche de Kofi
-      await capture('34_visite_credit_${e.key}');
-      await tester.tap(find.byKey(const Key('visite-quitter')));
-      await tester.pump(const Duration(seconds: 4));
-      await attendre(tester, tours: 4);
-      await capture('35_demo_libre_${e.key}');
     });
   }
 }

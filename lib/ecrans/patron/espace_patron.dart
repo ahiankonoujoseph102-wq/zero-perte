@@ -184,9 +184,7 @@ class EspacePatron extends StatelessWidget {
     };
     final entrees = [
       for (final e in entreesPatron)
-        if (!(etat.estDemo && (e.cle == 'sauvegarde' || e.cle == 'synchro')) &&
-            !(menuAGauche && dansLeMenu.contains(e.cle)))
-          e,
+        if (!(menuAGauche && dansLeMenu.contains(e.cle))) e,
     ];
     return PageZp(
       titre: 'Gestion',

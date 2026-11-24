@@ -100,12 +100,7 @@ class _RecuPartageableState extends State<RecuPartageable> {
       if (png == null) return;
       final r = await widget.etat.services.partagerImage(
         png,
-        (widget.etat.estDemo ? 'DÉMONSTRATION — SANS VALEUR. ' : '') +
-            texteRecu(
-              widget.etat.config,
-              _recu,
-              widget.donnees['total'] as int,
-            ),
+        texteRecu(widget.etat.config, _recu, widget.donnees['total'] as int),
       );
       if (r == ResultatPartage.echec && mounted) {
         annoncer(context, 'Impossible d\'envoyer le reçu.', erreur: true);
@@ -166,7 +161,6 @@ class _RecuPartageableState extends State<RecuPartageable> {
                     lignes: lignes,
                     credit: credit,
                     paiement: nomPaiement(mode),
-                    demo: widget.etat.estDemo,
                   ),
                 ),
               ),

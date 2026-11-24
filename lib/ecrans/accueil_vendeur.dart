@@ -357,7 +357,14 @@ class ResumeDuJour extends StatefulWidget {
   State<ResumeDuJour> createState() => _ResumeDuJourState();
 }
 
-class _ResumeDuJourState extends State<ResumeDuJour> {
+class _ResumeDuJourState extends State<ResumeDuJour>
+    with RechargeAMinuit<ResumeDuJour> {
+  @override
+  DateTime maintenantPourMinuit() => widget.etat.maintenant();
+
+  @override
+  void nouveauJour() => _recharger();
+
   late Future<ResumeJour?> _resume = _charger();
   Timer? _attente;
 

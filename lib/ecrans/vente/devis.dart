@@ -157,7 +157,6 @@ class _PageDevisState extends State<PageDevis> {
                 mention:
                     'Facture proforma, valable $jours jours. '
                     'Ce n\'est pas un reçu de paiement.',
-                demo: etat.estDemo,
               ),
             ),
           ],

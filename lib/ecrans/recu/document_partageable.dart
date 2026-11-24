@@ -43,11 +43,7 @@ class _DocumentPartageableState extends State<DocumentPartageable> {
     try {
       final png = await capturerPng(_cadre);
       if (png == null) return;
-      final r = await widget.etat.services.partagerImage(
-        png,
-        (widget.etat.estDemo ? 'DÉMONSTRATION — SANS VALEUR. ' : '') +
-            widget.texte,
-      );
+      final r = await widget.etat.services.partagerImage(png, widget.texte);
       if (!mounted) return;
       if (r == ResultatPartage.echec) {
         annoncer(context, 'Impossible d\'envoyer l\'image.', erreur: true);

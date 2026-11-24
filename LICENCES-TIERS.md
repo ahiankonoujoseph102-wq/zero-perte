@@ -1,22 +1,14 @@
 # Licences des éléments tiers
 
-## Voix de la démonstration guidée (voix générée par intelligence artificielle)
+## Voix de la démonstration (retirée de l'application en 0.37.0)
 
-La voix d'Afi (fichiers `assets/demo/voix/*.mp3`) est fabriquée **une seule fois** par l'action
-« 6 - Fabriquer la voix de la démonstration », avec un service d'intelligence artificielle :
-
-| Service | Utilisation | Conditions (vérifiées le 21 novembre 2026) |
-|---|---|---|
-| **Google Gemini API** (synthèse vocale), premier choix | clé `ZP_CLE_VOIX` | *Gemini API Additional Terms of Service* : Google ne revendique pas la propriété du contenu original généré ; l'utilisateur est responsable de l'usage du contenu et doit respecter la loi et la *Generative AI Prohibited Use Policy* (pas de contenu trompeur présenté comme humain). Usage commercial permis. Avec un compte de facturation actif (« Paid Services »), Google n'utilise pas les textes envoyés pour améliorer ses produits ; en gratuit, ils peuvent l'être (ici le texte est public : `docs/demo/texte-voix.md`). |
-| **OpenAI** (`gpt-4o-mini-tts`), secours | clé `ZP_CLE_VOIX_SECOURS` (ou `ZP_CLE_VOIX` commençant par `sk-`) | *Service Terms* / *Usage Policies* : le client possède les sorties ; il **doit indiquer clairement aux utilisateurs que la voix est générée par IA**. Usage commercial permis. |
-
-**Mention affichée** : dès que les fichiers de voix sont présents, la démonstration affiche sous les sous-titres
-« Voix générée par intelligence artificielle » (exigée par OpenAI, conforme aux règles de Google). La voix est
-celle d'une voix prédéfinie du service, **pas** le clone d'une personne réelle ; le personnage d'Afi est un dessin
-original de l'application. Le service utilisé, le modèle, la voix et la date sont écrits dans
-`assets/demo/voix/bouches.json`.
-
-Sans ces fichiers, la démonstration utilise la voix de synthèse installée sur l'appareil (Android ou Windows).
+Depuis la version 0.37.0, l'application **ne contient plus** de démonstration ni de voix générée par
+intelligence artificielle (décision du propriétaire, 24 novembre 2026). L'action GitHub « 6 - Fabriquer la voix
+de la démonstration » est gardée telle quelle : si elle est relancée, elle range ses fichiers dans
+`assets/demo/voix/`, qui n'est **plus** mis dans l'application (pubspec.yaml ne le déclare plus). Les conditions
+des services qu'elle utilise (Google Gemini API, OpenAI `gpt-4o-mini-tts` en secours) restent décrites dans
+l'historique de ce fichier (version 0.36.0). Le bouton « Écouter » de l'installation utilise la voix de
+synthèse de l'appareil (Android ou Windows), sans service extérieur.
 
 ## Police
 

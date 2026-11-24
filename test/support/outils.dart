@@ -315,7 +315,6 @@ Future<void> afficherApp(
   Size taille = const Size(360, 640),
   double densite = 2.0,
   double texte = 1.0,
-  Future<EtatApplication> Function()? creerDemo,
 }) async {
   tester.view.physicalSize = taille * densite;
   tester.view.devicePixelRatio = densite;
@@ -327,7 +326,6 @@ Future<void> afficherApp(
       etat: etat,
       infosPaquet: Future.value(infosDeTest),
       maintenant: DateTime(2026, 11, 21),
-      creerDemo: creerDemo,
     ),
   );
   await attendre(tester);

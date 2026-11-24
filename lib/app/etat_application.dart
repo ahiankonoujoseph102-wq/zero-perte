@@ -325,15 +325,6 @@ class EtatApplication extends ChangeNotifier {
   String get auteurActuel =>
       _utilisateurActuel?.id ?? patron?.id ?? 'installation';
 
-  /// Démonstration seulement : change de personne sans taper son code (la
-  /// boutique d'exemple est préparée en un instant).
-  void changerPersonneEnDemo(Utilisateur u) {
-    if (!estDemo) {
-      throw const ErreurZeroPerte('Réservé à la démonstration.');
-    }
-    _utilisateurActuel = u;
-  }
-
   /// Crée le patron avec son code secret (ou le remplace).
   Future<Utilisateur> definirPatron({
     required String nom,
@@ -900,7 +891,7 @@ class EtatApplication extends ChangeNotifier {
     }
     // Résumé du soir : part en notification au patron (relais et Firebase
     // branchés) ; sinon il le verra à l'ouverture de son application.
-    if (!estPatron && !estDemo && transportAlertes != null) {
+    if (!estPatron && transportAlertes != null) {
       unawaited(_envoyerResumeSoir(f));
     }
     return f;
@@ -1216,7 +1207,7 @@ class EtatApplication extends ChangeNotifier {
   /// Résumé du soir pour le patron : la dernière fermeture de caisse faite par
   /// un autre que lui, pas encore vue, de moins de 36 heures. Nul sinon.
   Future<ResumeSoir?> resumeDuSoir() async {
-    if (!estPatron || estDemo) return null;
+    if (!estPatron) return null;
     final fermetures = await journal.fermetures(limite: 20);
     final f = fermetures.firstOrNull;
     if (f == null || f.auteurId == patron?.id) return null;
@@ -1259,15 +1250,8 @@ class EtatApplication extends ChangeNotifier {
   Future<void> marquerResumeVu(ResumeSoir r) =>
       journal.ecrireParametre(_cleResumeVu, '${r.heure}');
 
-  /// Vrai pour la boutique de démonstration (voir `app/demo.dart`).
-  bool estDemo = false;
-
   /// Fichier de sauvegarde chiffré avec le code secret du patron.
-  /// Jamais en démonstration (ses données ne doivent pas en sortir).
   Future<Uint8List> creerSauvegarde(String codePatron) async {
-    if (estDemo) {
-      throw const ErreurZeroPerte('Pas de sauvegarde en démonstration.');
-    }
     return chiffrerSauvegarde(await journal.exporterJournal(), codePatron);
   }
 
@@ -1284,9 +1268,6 @@ class EtatApplication extends ChangeNotifier {
   /// Restaure une sauvegarde sur un téléphone vide, puis recharge tout.
   /// Renvoie le nombre d'opérations restaurées.
   Future<int> restaurerSauvegarde(List<int> fichier, String codePatron) async {
-    if (estDemo) {
-      throw const ErreurZeroPerte('Pas de restauration en démonstration.');
-    }
     final clair = await dechiffrerSauvegarde(fichier, codePatron);
     final n = await journal.restaurerJournal(clair);
     await rechargerTout();
@@ -1434,7 +1415,7 @@ class EtatApplication extends ChangeNotifier {
   /// « À faire quand vous avez le temps » (accueil du patron, 0.36) : ce qui
   /// n'est plus demandé au démarrage. Une tâche faite disparaît.
   List<TacheAFaire> get tachesAFaire {
-    if (!voitTout || estDemo) return const [];
+    if (!voitTout) return const [];
     final c = config;
     final total = _produits.length;
     final faits = nombreProduitsComptes;
@@ -1699,7 +1680,7 @@ class EtatApplication extends ChangeNotifier {
   /// Envoie ce qui est nouveau ici, reçoit ce qui vient des autres appareils.
   /// Les erreurs sont gardées (affichées au patron), jamais bloquantes.
   Future<ResultatSynchro?> synchroniser() async {
-    if (_synchroEnCours || estDemo || _appareilRetire) return null;
+    if (_synchroEnCours || _appareilRetire) return null;
     if (_synchro == null) {
       if (await journal.lireParametre('sync.compte') == null) return null;
       if (!await connecterSynchro(silencieux: true)) return null;
@@ -1776,9 +1757,9 @@ class EtatApplication extends ChangeNotifier {
   }
 
   /// Envoie une alerte grave au patron (jamais bloquant ; rien si c'est le
-  /// patron lui-même qui agit, ou en démonstration).
+  /// patron lui-même qui agit).
   Future<void> alerter(String type, String message) async {
-    if (estDemo || estPatron) return;
+    if (estPatron) return;
     // Pas de relais dans cette version : rien à envoyer, rien à garder.
     if (transportAlertes == null) return;
     // L'alerte est d'abord gardée sur l'appareil, puis envoyée : sans réseau,
@@ -1837,7 +1818,7 @@ class EtatApplication extends ChangeNotifier {
   /// première qui ne part pas (pas de réseau) : elle sera renvoyée plus tard.
   /// Renvoie le nombre d'alertes envoyées.
   Future<int> envoyerAlertesEnAttente() async {
-    if (_envoiAlertesEnCours || estDemo) return 0;
+    if (_envoiAlertesEnCours) return 0;
     final t = transportAlertes;
     if (t == null) return 0;
     _envoiAlertesEnCours = true;
@@ -1887,7 +1868,7 @@ class EtatApplication extends ChangeNotifier {
   Future<int> releverAlertes() async {
     final t = transportAlertes;
     final jeton = await _jetonRelais();
-    if (t == null || jeton == null || estDemo) return 0;
+    if (t == null || jeton == null) return 0;
     try {
       final depuis =
           int.tryParse(await journal.lireParametre('relais.depuis') ?? '') ?? 0;
@@ -1917,7 +1898,7 @@ class EtatApplication extends ChangeNotifier {
 
   /// Téléphone du patron : abonnement aux notifications (application fermée).
   Future<bool> activerNotificationsPatron() async {
-    if (_notificationsActivees || !estPatron || estDemo) {
+    if (_notificationsActivees || !estPatron) {
       return _notificationsActivees;
     }
     final f = services.activerNotifications;

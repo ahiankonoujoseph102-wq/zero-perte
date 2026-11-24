@@ -153,6 +153,16 @@ void main() {
         await j2.produits();
         await j2.stocks();
       }, r);
+      // 0.37 : démarrage complet de l'application (produits comptés, ventes en
+      // gros, réglages) et résumé de l'accueil du patron.
+      final e2 = await chrono(
+        'Démarrage complet de l\'application',
+        () => EtatApplication.charger(journal: j2, services: etat.services),
+        r,
+      );
+      await chrono('Résumé de l\'accueil (vendu, bénéfice, caisse)', e2.resumeJour, r);
+      await chrono('Produits à compter (les plus vendus d\'abord)', e2.produitsACompter, r);
+      await chrono('Recharger produits, stocks et ventes en gros', e2.rechargerProduits, r);
       final ps = (await j2.produits()).where((p) => !p.auMontant).toList();
       final patronId = (await j2.utilisateurs())
           .firstWhere((u) => u.role.name == 'patron')

@@ -22,7 +22,14 @@ class TableauDeBord extends StatefulWidget {
   State<TableauDeBord> createState() => _TableauDeBordState();
 }
 
-class _TableauDeBordState extends State<TableauDeBord> {
+class _TableauDeBordState extends State<TableauDeBord>
+    with RechargeAMinuit<TableauDeBord> {
+  @override
+  DateTime maintenantPourMinuit() => widget.etat.maintenant();
+
+  @override
+  void nouveauJour() => _recharger();
+
   late Future<(TableauPatron, ResumeJour)> _tableau = _charger();
 
   Future<(TableauPatron, ResumeJour)> _charger() async =>

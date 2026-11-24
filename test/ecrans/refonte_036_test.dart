@@ -9,7 +9,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:zero_perte/app/demo.dart';
 import 'package:zero_perte/app/etat_application.dart';
 import 'package:zero_perte/domaine/boutique.dart';
 import 'package:zero_perte/domaine/operation.dart';
@@ -470,49 +469,17 @@ void main() {
     },
   );
 
-  testWidgets(
-    '« Voir un exemple » : boutique d\'exemple à part, avec gros, vendeur, manque, crédit',
-    (tester) async {
-      final env = await environnementDeTest(
-        tester,
-        etape: EtapeAssistant.bienvenue,
-      );
-      final d = await tester.runAsync(() async {
-        final dossier = Directory.systemTemp.createTempSync('zp-demo');
-        addTearDown(() => dossier.deleteSync(recursive: true));
-        return preparerDemo(
-          fabrique: databaseFactoryFfi,
-          chemin: '${dossier.path}/demo.db',
-          services: env.etat.services,
-        );
-      });
-      final demo = d!;
-      await tester.runAsync(() async {
-        expect(demo.estDemo, isTrue);
-        expect(demo.estPatron, isTrue);
-        final lait = demo.produits.firstWhere((p) => p.nom == 'Lait');
-        expect(demo.grosDe(lait.id).single.nom, 'carton de 24');
-        expect(demo.vendeurs.single.nom, 'Kossi');
-        final r = await demo.resumeJour();
-        expect(r.caisse, EtatCaisseResume.manque);
-        expect(r.ecartEspeces, -2000);
-        expect(r.parVendeur.keys, containsAll(['Kossi', 'Patron démo']));
-        expect(
-          (await demo.journal.clients()).map((c) => c.nom),
-          contains('Yawa'),
-        );
-        expect(await demo.journal.totalCredits(), 12000);
-        // La vraie base n'est pas touchée.
-        expect(await env.journal.nombreOperations(), 0);
-        expect(env.etat.produits, isEmpty);
-        await demo.journal.fermer();
-      });
-      // Plus aucun bouton de démonstration dans l'application (0.36).
+  testWidgets('0.37 : plus aucune démonstration dans l\'application', (
+    tester,
+  ) async {
+    for (final etape in [EtapeAssistant.bienvenue, EtapeAssistant.activation]) {
+      final env = await environnementDeTest(tester, etape: etape);
       await afficherApp(tester, env.etat);
       expect(find.byKey(const Key('bouton-voir-exemple')), findsNothing);
       expect(find.byKey(const Key('bouton-demonstration')), findsNothing);
-    },
-  );
+      expect(find.textContaining('démonstration'), findsNothing);
+    }
+  });
 
   testWidgets(
     'Gestion → Ma boutique : le téléphone se règle plus tard (Enregistrer → retour)',

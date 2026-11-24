@@ -555,7 +555,6 @@ class PageRetourTermine extends StatelessWidget {
                       ? '${baisseDette > 0 ? 'Dette réduite de ${formatFrancs(baisseDette)}. ' : ''}'
                             'Rendu en espèces : ${formatFrancs(especes)}.'
                       : 'Déduit du crédit du client.',
-                  demo: etat.estDemo,
                 ),
               ),
             ],

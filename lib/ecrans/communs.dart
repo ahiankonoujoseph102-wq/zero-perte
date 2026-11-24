@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -337,10 +338,8 @@ String messageErreur(Object e) =>
     e is ErreurZeroPerte ? e.message : 'Une erreur est survenue.';
 
 /// Navigateur de l'application elle-même (celui de son MaterialApp), et non
-/// le plus extérieur : dans la démonstration (une application ouverte
-/// par-dessus l'installation), les fenêtres restent ainsi DANS la démo, sous
-/// le bandeau et sous la visite guidée. Hors démo, c'est le navigateur
-/// principal, comme avant.
+/// le plus extérieur. Depuis la 0.37 (démonstration retirée), c'est le
+/// navigateur principal.
 NavigatorState navigateurDeLApplication(BuildContext context) {
   NavigatorState? dernier = Navigator.maybeOf(context);
   context.visitAncestorElements((el) {
@@ -415,5 +414,42 @@ class EtatVide extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Recharge un écran du jour (vendu, bénéfice, caisse) à minuit : sans cela,
+/// un téléphone resté allumé montrait encore les chiffres de la veille (audit
+/// 0.37). Le minuteur vise minuit + 1 s à l'heure du téléphone, puis se
+/// replanifie ; il est arrêté quand l'écran disparaît.
+mixin RechargeAMinuit<T extends StatefulWidget> on State<T> {
+  Timer? _minuit;
+
+  /// Horloge de l'application (remplaçable dans les tests).
+  DateTime maintenantPourMinuit();
+
+  /// Appelé au changement de jour.
+  void nouveauJour();
+
+  void planifierMinuit() {
+    _minuit?.cancel();
+    final m = maintenantPourMinuit();
+    final demain = DateTime(m.year, m.month, m.day + 1, 0, 0, 1);
+    _minuit = Timer(demain.difference(m), () {
+      if (!mounted) return;
+      nouveauJour();
+      planifierMinuit();
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    planifierMinuit();
+  }
+
+  @override
+  void dispose() {
+    _minuit?.cancel();
+    super.dispose();
   }
 }
