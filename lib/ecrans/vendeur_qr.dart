@@ -44,7 +44,7 @@ class DessinQr extends StatelessWidget {
       padding: EdgeInsets.all(taille * 0.06),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(FormesZp.rayon),
       ),
       child: CustomPaint(painter: _PeintreQr(qr), size: Size.infinite),
     );
@@ -96,7 +96,7 @@ Widget _cadreErreur(String t, {String? code}) => Container(
   padding: const EdgeInsets.all(14),
   decoration: BoxDecoration(
     color: CouleursZp.argentSort.withValues(alpha: 0.15),
-    borderRadius: BorderRadius.circular(14),
+    borderRadius: BorderRadius.circular(FormesZp.rayon),
     border: Border.all(color: CouleursZp.argentSort),
   ),
   child: Row(
@@ -1305,10 +1305,10 @@ class BandeauAccesCoupe extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: CouleursZp.argentSort,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(FormesZp.rayon),
       child: InkWell(
         key: const Key('bandeau-acces-coupe'),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(FormesZp.rayon),
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => PageJeSuisVendeur(etat: etat)),
         ),

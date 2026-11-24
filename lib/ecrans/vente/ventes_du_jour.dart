@@ -61,11 +61,11 @@ class _PageVentesDuJourState extends State<PageVentesDuJour> {
           }
           final ventes = s.data!;
           if (ventes.isEmpty) {
-            return const Center(
-              child: Text(
-                'Aucune vente aujourd\'hui.',
-                style: TextStyle(fontSize: 20),
-              ),
+            return const EtatVide(
+              icone: Icons.receipt_long_rounded,
+              couleur: CouleursZp.argentEntre,
+              titre: 'Aucune vente aujourd\'hui.',
+              explication: 'Touchez « Vendre » pour commencer.',
             );
           }
           return ListView.separated(
@@ -77,12 +77,12 @@ class _PageVentesDuJourState extends State<PageVentesDuJour> {
               return Material(
                 color: v.annulee ? CouleursZp.fond : CouleursZp.surface,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(FormesZp.rayon),
                   side: const BorderSide(color: CouleursZp.ligne),
                 ),
                 child: InkWell(
                   key: Key('vente-${v.recu}'),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(FormesZp.rayon),
                   onTap: () async {
                     await Navigator.of(context).push(
                       MaterialPageRoute(
@@ -274,7 +274,7 @@ class PageDetailVente extends StatelessWidget {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: CouleursZp.argentSort.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(FormesZp.rayon),
               ),
               child: Text(
                 'Vente annulée : ${v.motifAnnulation}',
@@ -346,7 +346,7 @@ class _ChoixMotifState extends State<_ChoixMotif> {
                       minimumSize: const Size(0, 60),
                       alignment: Alignment.centerLeft,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(FormesZp.rayon),
                       ),
                     ),
                     child: Text(m, style: const TextStyle(fontSize: 19)),

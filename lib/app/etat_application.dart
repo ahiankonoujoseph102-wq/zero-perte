@@ -2380,6 +2380,13 @@ class EtatApplication extends ChangeNotifier {
     required int nombre,
     required int coutTotal,
   }) async {
+    // Audit 0.37 : produit vendu avant d'avoir été reçu ou compté (stock
+    // négatif, « pas encore compté ») : au premier arrivage, on repart de 0
+    // (premier comptage, sans écart) puis on ajoute l'arrivage. Sinon 10
+    // pains reçus après 3 vendus donnaient 7, alors qu'il y en a au moins 10.
+    if (!estCompte(produit.id) && stock(produit.id) < 0) {
+      await faireInventaire({produit.id: 0});
+    }
     await journal.enregistrerArrivage(
       produitId: produit.id,
       conditionnementId: conditionnement?.id,

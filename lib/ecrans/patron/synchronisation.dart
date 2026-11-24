@@ -56,8 +56,8 @@ class _PageSynchronisationState extends State<PageSynchronisation> {
     annoncer(
       context,
       r == null
-          ? 'La synchronisation n\'a pas pu se faire.'
-          : 'À jour : ${r.envoyees} envoyée(s), ${r.recues} reçue(s).',
+          ? 'L\'envoi n\'a pas pu se faire. Vérifiez Internet et réessayez.'
+          : 'C\'est à jour : ${r.envoyees} envoyée${r.envoyees > 1 ? 's' : ''}, ${r.recues} reçue${r.recues > 1 ? 's' : ''}.',
       erreur: r == null,
     );
     _recharger();
@@ -80,9 +80,9 @@ class _PageSynchronisationState extends State<PageSynchronisation> {
                 connecte ? 'bouton-synchroniser' : 'bouton-connecter-drive',
               ),
               texte: widget.etat.synchroEnCours
-                  ? 'Synchronisation…'
+                  ? 'Envoi en cours…'
                   : (connecte
-                        ? 'Synchroniser maintenant'
+                        ? 'Envoyer et recevoir maintenant'
                         : 'Connecter le compte Google'),
               icone: connecte ? Icons.sync_rounded : Icons.login_rounded,
               onPressed: widget.etat.synchroEnCours || e == null
@@ -101,7 +101,7 @@ class _PageSynchronisationState extends State<PageSynchronisation> {
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        'Les appareils de la boutique (téléphone, tablette ou PC) s\'échangent les ventes par le Google Drive de la boutique. '
+                        'Les appareils de la boutique (téléphone, tablette ou PC) s\'envoient les ventes par le compte Google de la boutique. '
                         'Vous voyez les ventes des autres appareils avec 0 à 30 minutes de retard.',
                         style: TextStyle(fontSize: 18),
                       ),

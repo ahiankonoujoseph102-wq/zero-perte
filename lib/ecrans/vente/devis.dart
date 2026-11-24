@@ -211,12 +211,12 @@ class _PageListeDevisState extends State<PageListeDevis> {
               return Material(
                 color: CouleursZp.surface,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(FormesZp.rayon),
                   side: const BorderSide(color: CouleursZp.ligne),
                 ),
                 child: InkWell(
                   key: Key('devis-$i'),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(FormesZp.rayon),
                   onTap: () async {
                     await Navigator.of(context).push(
                       MaterialPageRoute(

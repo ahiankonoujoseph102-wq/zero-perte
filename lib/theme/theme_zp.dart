@@ -61,8 +61,69 @@ ThemeData themeZeroPerte({Color couleurMarque = CouleursZp.marque}) {
       foregroundColor: CouleursZp.texte,
       surfaceTintColor: Colors.transparent,
     ),
-    cardTheme: const CardThemeData(color: CouleursZp.surface),
-    dialogTheme: const DialogThemeData(backgroundColor: CouleursZp.surface),
+    // 0.37 : boutons hauts (au moins 52 px, faciles à toucher), un seul
+    // arrondi, transitions courtes et discrètes entre les pages.
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        minimumSize: const Size(64, 52),
+        textStyle: const TextStyle(
+          fontFamily: policeZp,
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+        ),
+        shape: const RoundedRectangleBorder(borderRadius: FormesZp.arrondi),
+      ),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        minimumSize: const Size(64, 52),
+        shape: const RoundedRectangleBorder(borderRadius: FormesZp.arrondi),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(64, 52),
+        foregroundColor: CouleursZp.texte,
+        side: const BorderSide(color: CouleursZp.ligne, width: 1.5),
+        textStyle: const TextStyle(
+          fontFamily: policeZp,
+          fontSize: 17,
+          fontWeight: FontWeight.w700,
+        ),
+        shape: const RoundedRectangleBorder(borderRadius: FormesZp.arrondi),
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        minimumSize: const Size(48, 48),
+        textStyle: const TextStyle(
+          fontFamily: policeZp,
+          fontSize: 17,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    ),
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
+        TargetPlatform.windows: FadeForwardsPageTransitionsBuilder(),
+        TargetPlatform.linux: FadeForwardsPageTransitionsBuilder(),
+      },
+    ),
+    progressIndicatorTheme: const ProgressIndicatorThemeData(
+      color: CouleursZp.marque,
+    ),
+    cardTheme: const CardThemeData(
+      color: CouleursZp.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: FormesZp.arrondi,
+        side: BorderSide(color: CouleursZp.ligne),
+      ),
+    ),
+    dialogTheme: const DialogThemeData(
+      backgroundColor: CouleursZp.surface,
+      shape: RoundedRectangleBorder(borderRadius: FormesZp.arrondi),
+    ),
     bottomSheetTheme: const BottomSheetThemeData(
       backgroundColor: CouleursZp.surface,
     ),
@@ -77,6 +138,11 @@ ThemeData themeZeroPerte({Color couleurMarque = CouleursZp.marque}) {
       fillColor: CouleursZp.surface,
       labelStyle: TextStyle(color: CouleursZp.texteDoux),
       hintStyle: TextStyle(color: CouleursZp.texteDoux),
+      border: OutlineInputBorder(borderRadius: FormesZp.arrondi),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: FormesZp.arrondi,
+        borderSide: BorderSide(color: CouleursZp.ligne, width: 1.5),
+      ),
     ),
     snackBarTheme: const SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
@@ -87,7 +153,7 @@ ThemeData themeZeroPerte({Color couleurMarque = CouleursZp.marque}) {
         color: Colors.white,
       ),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(16)),
+        borderRadius: BorderRadius.all(Radius.circular(FormesZp.rayon)),
       ),
     ),
   );

@@ -192,13 +192,57 @@ class ImageProduit extends StatelessWidget {
         ),
       );
     }
+    final emoji = produit.emoji;
+    if (emoji == null || emoji.isEmpty) {
+      // Ni photo ni image (0.37) : l'initiale du produit sur une pastille de
+      // couleur (toujours lisible, même sans police d'émojis).
+      return PastilleInitiale(nom: produit.nom, taille: taille);
+    }
     return SizedBox(
       width: taille,
       height: taille,
       child: Center(
-        child: Text(
-          produit.emoji ?? '📦',
-          style: TextStyle(fontSize: taille * 0.8),
+        child: Text(emoji, style: TextStyle(fontSize: taille * 0.8)),
+      ),
+    );
+  }
+}
+
+/// Pastille arrondie avec l'initiale d'un nom ; sa couleur dépend du nom
+/// (deux produits voisins ont rarement la même).
+class PastilleInitiale extends StatelessWidget {
+  const PastilleInitiale({super.key, required this.nom, this.taille = 48});
+
+  final String nom;
+  final double taille;
+
+  static const _couleurs = [
+    CouleursZp.marque,
+    CouleursZp.ciel,
+    CouleursZp.mauve,
+    CouleursZp.argentEntreClair,
+    CouleursZp.creditTexte,
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final n = nom.trim();
+    final couleur =
+        _couleurs[n.runes.fold(0, (a, r) => a + r) % _couleurs.length];
+    return Container(
+      width: taille,
+      height: taille,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: couleur.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(taille * 0.28),
+      ),
+      child: Text(
+        n.isEmpty ? '?' : n.characters.first.toUpperCase(),
+        style: TextStyle(
+          fontSize: taille * 0.5,
+          fontWeight: FontWeight.w800,
+          color: couleur,
         ),
       ),
     );

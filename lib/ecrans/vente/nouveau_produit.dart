@@ -115,7 +115,12 @@ class _FicheNouveauProduitState extends State<_FicheNouveauProduit> {
         key: Key(cle),
         controller: c,
         keyboardType: TextInputType.number,
-        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        // 9 chiffres au plus (999 999 999 F) : un chiffre de trop tapé par
+        // erreur ne fait pas un prix absurde (audit 0.37).
+        inputFormatters: [
+          FilteringTextInputFormatter.digitsOnly,
+          LengthLimitingTextInputFormatter(9),
+        ],
         style: const TextStyle(fontSize: 22),
         decoration: decorationChamp(label),
       );

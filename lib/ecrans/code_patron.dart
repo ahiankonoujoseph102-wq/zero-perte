@@ -100,7 +100,7 @@ class _PageNouveauCodePatronState extends State<PageNouveauCodePatron> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: CouleursZp.marquePale,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(FormesZp.rayon),
               ),
               child: Text(
                 '${_patron.nom}, le code du patron passe à 6 chiffres : '

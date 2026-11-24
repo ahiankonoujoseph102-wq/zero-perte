@@ -281,7 +281,7 @@ class PageResultatInventaire extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: CouleursZp.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(FormesZp.rayon),
         border: Border.all(color: couleur, width: 1.5),
       ),
       child: Column(

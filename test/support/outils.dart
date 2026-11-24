@@ -419,6 +419,16 @@ Future<void> revenirAccueil(WidgetTester tester) async {
 /// « Gestion »).
 Future<void> ouvrirPagePatron(WidgetTester tester, String cle) async {
   final largeur = tester.view.physicalSize.width / tester.view.devicePixelRatio;
+  // 0.37 : « Mon bénéfice » est une destination principale (accueil ou menu
+  // de gauche), plus dans « Gestion ».
+  if (cle == 'chiffres') {
+    await revenirAccueil(tester);
+    await toucher(
+      tester,
+      find.byKey(Key(largeur < 840 ? 'accueil-chiffres' : 'menu-chiffres')),
+    );
+    return;
+  }
   if (largeur < 840 || find.byKey(Key('patron-$cle')).evaluate().isNotEmpty) {
     await toucher(tester, find.byKey(Key('patron-$cle')));
     return;

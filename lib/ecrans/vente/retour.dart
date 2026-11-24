@@ -385,7 +385,7 @@ class _LigneRetour extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(12, 6, 8, 6),
       decoration: BoxDecoration(
         color: CouleursZp.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(FormesZp.rayon),
         border: Border.all(
           color: rendu > 0 ? CouleursZp.argentSort : CouleursZp.ligne,
           width: rendu > 0 ? 2 : 1,
@@ -609,7 +609,7 @@ class PageRetours extends StatelessWidget {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: CouleursZp.surface,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(FormesZp.rayon),
                   border: Border.all(color: CouleursZp.ligne),
                 ),
                 child: Row(

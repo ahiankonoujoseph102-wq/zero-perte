@@ -154,7 +154,7 @@ class _PageRetrouverBoutiqueState extends State<PageRetrouverBoutique> {
             _GrandChoix(
               cle: 'retrouver-drive',
               icone: Icons.cloud_download_rounded,
-              titre: 'Depuis Google Drive',
+              titre: 'Depuis le compte Google',
               texte: 'Avec le compte Google de la boutique',
               onTap: _enCours || etat.services.connecterDrive == null
                   ? null
@@ -236,12 +236,12 @@ class _GrandChoix extends StatelessWidget {
       child: Material(
         color: CouleursZp.surface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(FormesZp.rayon),
           side: BorderSide(color: couleur, width: 2),
         ),
         child: InkWell(
           key: Key(cle),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(FormesZp.rayon),
           onTap: onTap,
           child: Padding(
             padding: const EdgeInsets.all(16),

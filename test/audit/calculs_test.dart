@@ -10,19 +10,20 @@ import 'package:zero_perte/domaine/quantites.dart';
 import 'package:zero_perte/donnees/journal_local.dart';
 
 import '../ecrans/refonte_036_test.dart' show boutiqueVide;
+import '../ecrans/vente_test.dart' show ouvrirLaCaisseSiDemande;
 import '../support/outils.dart';
 
-Panier _panier(Produit p, {Conditionnement? c, int nombre = 1}) => Panier()
-  ..ajouter(
-    LignePanier(
-      produitId: p.id,
-      nomProduit: p.nom,
-      uniteBase: p.uniteBase,
-      conditionnement: c,
-      nombre: nombre,
-      prixUnitaire: c?.prixVente ?? p.prixUnitaire,
-    ),
-  );
+Panier _panier(Produit p, {Conditionnement? c, int nombre = 1}) =>
+    Panier()..ajouter(
+      LignePanier(
+        produitId: p.id,
+        nomProduit: p.nom,
+        uniteBase: p.uniteBase,
+        conditionnement: c,
+        nombre: nombre,
+        prixUnitaire: c?.prixVente ?? p.prixUnitaire,
+      ),
+    );
 
 Future<Produit> _lait(EtatApplication etat) async {
   final p = await etat.creerProduit(
@@ -110,7 +111,11 @@ void main() {
         await etat.rembourser(await leClient(), 200, mode: ModePaiement.flooz);
         expect((await leClient()).solde, 600);
         expect(await etat.journal.totalCredits(), 600);
-        await etat.depenser(1000, motif: 'Transport', mode: ModePaiement.especes);
+        await etat.depenser(
+          1000,
+          motif: 'Transport',
+          mode: ModePaiement.especes,
+        );
         final c = await etat.etatCaisse();
         // 5 000 + 12 000 + 300 − 1 000 ; le Flooz et le crédit à part.
         expect(c.attendus[ModePaiement.especes], 16300);
@@ -190,5 +195,68 @@ void main() {
     await attendre(tester, tours: 6);
     expect(vendu(), isNot(contains(formatFrancs(1100))));
     expect(vendu(), contains(formatFrancs(0)));
+  });
+
+  testWidgets('prix tapé avec trop de chiffres : 9 chiffres au plus', (
+    tester,
+  ) async {
+    final env = await environnementDeTest(tester, preparer: boutiqueVide);
+    await afficherApp(tester, env.etat, taille: const Size(412, 915));
+    await toucher(tester, find.byKey(const Key('bouton-vendre')));
+    await ouvrirLaCaisseSiDemande(tester);
+    await toucher(tester, find.byKey(const Key('bouton-nouveau-produit')));
+    await tester.pump(const Duration(seconds: 2));
+    await tester.enterText(
+      find.byKey(const Key('nouveau-produit-prix')),
+      '123456789012345',
+    );
+    await tester.pump();
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const Key('nouveau-produit-prix')))
+          .controller!
+          .text,
+      '123456789',
+    );
+  });
+
+  testWidgets('premier arrivage d\'un produit vendu sans stock : repart de 0', (
+    tester,
+  ) async {
+    final env = await environnementDeTest(tester, preparer: boutiqueVide);
+    final etat = env.etat;
+    await tester.runAsync(() async {
+      final pain = await etat.creerProduit(
+        nom: 'Pain',
+        uniteBase: 'pièce',
+        prixVente: 150,
+      );
+      await etat.vendre(
+        _panier(pain, nombre: 3),
+        mode: ModePaiement.especes,
+        montantRecu: 450,
+      );
+      expect(etat.stockLisible(pain), 'pas encore compté');
+      await etat.enregistrerArrivage(
+        produit: pain,
+        nombre: 10,
+        coutTotal: 1000,
+      );
+      expect(etat.stock(pain.id), 10 * milliemesParUnite);
+      expect(etat.stockLisible(pain), '10 pièces');
+      // Pas d'écart d'inventaire inventé.
+      expect(
+        (await etat.ecartsParPersonne(depuis: 0)).values.every((v) => v == 0),
+        isTrue,
+      );
+      // Ensuite, un produit déjà compté garde le calcul normal.
+      await etat.vendre(
+        _panier(pain, nombre: 12),
+        mode: ModePaiement.especes,
+        montantRecu: 1800,
+      );
+      await etat.enregistrerArrivage(produit: pain, nombre: 5, coutTotal: 500);
+      expect(etat.stock(pain.id), 3 * milliemesParUnite);
+    });
   });
 }

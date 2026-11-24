@@ -9,8 +9,8 @@ Il est mis à jour **à la fin de chaque étape**.
 
 | | |
 |---|---|
-| **Dernière étape terminée** | **0.34.0** : résumé du soir, « Commander » sur WhatsApp, crédits en retard, page « Chiffres » |
-| **Version publiée** | 0.34.0 (Android et Windows, voir les Releases GitHub) |
+| **Dernière étape terminée** | **0.37.0** : audit complet, design professionnel (5 destinations, 3 grandes cartes), démonstration supprimée, guide du commerçant (voir en bas, « Version 0.37.0 ») |
+| **Version publiée** | 0.37.0 (Android et Windows, voir les Releases GitHub) |
 | **Prochaine étape** | 0.31.1 (4 phrases refaites le 23/11 après 8 h 12), puis priorités 1 et 2 (branche `claude/suite-apres-031`), 0.32, relais |
 | **Méthode** | Branche de travail, tests + captures sur 4 tailles, puis fusion dans `main` (= publication). Rien de non testé sur `main`. |
 | **Pour tout choix non décidé** | Prendre l'option la plus simple, la noter ici et la mettre dans le rapport avec une recommandation. |
@@ -1254,3 +1254,27 @@ Plan et état des lieux : `docs/refonte-commercant.md`. Argumentaire : `docs/mis
 - **Publiée** le 24/11 : Release **`v0.36.0-n116`** (APK + Windows). Signature vérifiée (SHA-1 49:27:0C:…:B1:A3),
   50 voix présentes (non accessibles : démonstration retirée), APK universel 18,85 Mo. Mise à jour par-dessus la
   0.35.2 : testée sur la base fabriquée par la 0.35.2 (aucun changement de schéma).
+
+### Version 0.37.0 — audit complet, design professionnel, guide client (24/11)
+
+- **Démonstration supprimée pour de bon** : `lib/demo_guidee/`, `lib/app/demo.dart`, les 50 voix
+  (`assets/demo/`), leurs tests ; plus aucun écran n'en parle. Action GitHub « 6 » gardée telle quelle
+  (si elle tourne, ses fichiers ne sont plus mis dans l'application).
+- **Audit** (`docs/audit-final.md`) : accueil remis à zéro à minuit (`RechargeAMinuit` dans `communs.dart`) ;
+  premier arrivage d'un produit vendu sans stock → repart de 0 (premier comptage, sans écart) ; prix limités
+  à 9 chiffres ; mots techniques remplacés (« Envoyer et recevoir maintenant », « compte Google ») ; écrans
+  vides utiles ; pastille avec l'initiale pour un produit sans image. Calculs vérifiés par tests (gros/détail,
+  bénéfice, caisse espèces, crédits partiels, gros montants). Rapidité mesurée (10 000 ventes : démarrage
+  33 ms, accueil 8 ms).
+- **Design** (`docs/design-final/`, avant/après sur 3 tailles) : `FormesZp` et `EspacesZp` dans
+  `lib/theme/couleurs.dart` (un arrondi, des espacements réguliers, couleurs `ciel` et `mauve`) ; thème :
+  boutons ≥ 52 points, champs et fenêtres arrondis, transitions en fondu. Accueil du patron : 3 grandes cartes
+  (Vendu, Bénéfice, Caisse) ; tablette/PC : carte « Ma caisse (espèces) » à la place de « Dépenses » (écrites
+  dessous). **5 destinations** : Vendre, Ma caisse, Ce qu'on me doit, Mon bénéfice, Gestion ; Gestion en
+  4 rubriques (`GroupeGestion`), « Inventaire » → « Inventaire complet ». Coche animée après une vente.
+- **Mise à jour sans perte** testée depuis la 0.35.2 et depuis la 0.36.0 (`test/fixtures/mise_a_jour/v0.36.0.db`,
+  fabriquée par le vrai code de la 0.36.0 : `test_perf/fabriquer_base_0360_test.dart`). Aucun changement de
+  schéma (version 6). Licences, codes, anti-vol, QR, code à 8 chiffres : non touchés.
+- **Guide du commerçant** : `docs/mise-en-service/guide-client-zero-perte.md` (texte simple, sans tableau).
+- Tests : `test/audit/` (calculs, minuit, premier arrivage, prix, design, mise à jour 0.36.0) ; captures
+  `test_captures/design_final_captures_test.dart`.

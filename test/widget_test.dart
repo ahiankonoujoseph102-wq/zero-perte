@@ -44,10 +44,6 @@ void main() {
                   'bouton-ma-caisse',
                   'bouton-credit',
                   'menu-chiffres',
-                  'menu-arrivages',
-                  'menu-inventaire',
-                  'menu-fournisseurs',
-                  'menu-vendeurs',
                   'bouton-espace-patron',
                 ]
               : [
@@ -55,10 +51,10 @@ void main() {
                   'bouton-ma-caisse',
                   'bouton-credit',
                   'accueil-chiffres',
-                  'accueil-arrivages',
-                  'accueil-inventaire',
                   'bouton-espace-patron',
                 ];
+          // 0.37 : 5 destinations principales, partout les mêmes.
+          expect(cles.where((c) => c != 'menu-accueil'), hasLength(5));
           for (final cle in cles) {
             final bouton = find.byKey(Key(cle));
             expect(bouton, findsOneWidget, reason: cle);

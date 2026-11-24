@@ -111,7 +111,7 @@ class _PageFournisseursState extends State<PageFournisseurs> {
                   child: Material(
                     color: CouleursZp.surface,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(FormesZp.rayon),
                       side: const BorderSide(color: CouleursZp.ligne),
                     ),
                     child: ListTile(

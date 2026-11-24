@@ -183,7 +183,7 @@ class _LigneProduit extends StatelessWidget {
     return Material(
       color: CouleursZp.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(FormesZp.rayon),
         side: const BorderSide(color: CouleursZp.ligne),
       ),
       child: ListTile(
@@ -450,6 +450,8 @@ class _PageFicheProduitState extends State<PageFicheProduit> {
       FilteringTextInputFormatter.allow(
         RegExp(virgule ? r'[0-9.,]' : r'[0-9]'),
       ),
+      // 9 chiffres au plus (audit 0.37).
+      LengthLimitingTextInputFormatter(virgule ? 12 : 9),
     ],
     style: const TextStyle(fontSize: 20),
     decoration: decorationChamp(label, aide: aide),

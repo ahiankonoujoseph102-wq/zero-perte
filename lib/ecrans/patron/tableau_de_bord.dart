@@ -7,7 +7,8 @@ import '../../theme/couleurs.dart';
 import '../communs.dart';
 import 'graphiques.dart';
 import 'tableau.dart' show texteRaison;
-import '../accueil_vendeur.dart' show LigneCaisse;
+import '../accueil_vendeur.dart' show etatCaisseAffiche;
+import '../caisse/ma_caisse.dart';
 import 'a_faire.dart';
 
 /// Tableau de bord du patron (accueil sur tablette et PC) : les chiffres du
@@ -92,11 +93,20 @@ class _TableauDeBordState extends State<TableauDeBord>
                         : null,
                   ),
                   _Chiffre(
-                    cle: 'bord-depenses',
-                    icone: Icons.payments_rounded,
-                    titre: 'Dépenses',
-                    montant: t.depenses,
-                    couleur: CouleursZp.argentSortClair,
+                    cle: 'bord-caisse',
+                    icone:
+                        etatCaisseAffiche(jour).icone ??
+                        Icons.point_of_sale_rounded,
+                    titre: 'Ma caisse (espèces)',
+                    montant: 0,
+                    texte: etatCaisseAffiche(jour).court.replaceAll('\n', ' '),
+                    couleur: etatCaisseAffiche(jour).couleur,
+                    detail: 'Dépenses : ${formatFrancs(t.depenses)}',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => PageMaCaisse(etat: widget.etat),
+                      ),
+                    ),
                   ),
                   _Chiffre(
                     cle: 'bord-credits',
@@ -183,8 +193,6 @@ class _TableauDeBordState extends State<TableauDeBord>
                         color: CouleursZp.texteDoux,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    LigneCaisse(resume: jour, taille: 20),
                     if (jour.parVendeur.length > 1)
                       Text(
                         [
@@ -246,6 +254,8 @@ class _Chiffre extends StatelessWidget {
     required this.montant,
     required this.couleur,
     this.detail,
+    this.texte,
+    this.onTap,
   });
 
   final String cle;
@@ -255,62 +265,72 @@ class _Chiffre extends StatelessWidget {
   final Color couleur;
   final String? detail;
 
+  /// Texte à la place du montant (état de la caisse).
+  final String? texte;
+  final VoidCallback? onTap;
+
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: CouleursZp.surface,
-      borderRadius: BorderRadius.circular(18),
-      border: Border.all(color: CouleursZp.ligne),
+  Widget build(BuildContext context) => Material(
+    color: CouleursZp.surface,
+    shape: const RoundedRectangleBorder(
+      borderRadius: FormesZp.arrondi,
+      side: BorderSide(color: CouleursZp.ligne, width: 1.5),
     ),
-    child: Row(
-      children: [
-        CircleAvatar(
-          radius: 26,
-          backgroundColor: couleur.withValues(alpha: 0.16),
-          child: Icon(icone, color: couleur, size: 30),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                titre,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: CouleursZp.texteDoux,
-                ),
-              ),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  formatFrancs(montant),
-                  key: Key(cle),
-                  style: TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.w700,
-                    color: couleur,
+    child: InkWell(
+      borderRadius: FormesZp.arrondi,
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(EspacesZp.l),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 26,
+              backgroundColor: couleur.withValues(alpha: 0.16),
+              child: Icon(icone, color: couleur, size: 30),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    titre,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: CouleursZp.texteDoux,
+                    ),
                   ),
-                ),
-              ),
-              if (detail != null)
-                Text(
-                  detail!,
-                  maxLines: 1,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: CouleursZp.texteDoux,
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      texte ?? formatFrancs(montant),
+                      key: Key(cle),
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w700,
+                        color: couleur,
+                      ),
+                    ),
                   ),
-                ),
-            ],
-          ),
+                  if (detail != null)
+                    Text(
+                      detail!,
+                      maxLines: 1,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: CouleursZp.texteDoux,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     ),
   );
 }

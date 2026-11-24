@@ -326,7 +326,7 @@ class _Session extends StatelessWidget {
     };
     return InkWell(
       key: Key('session-$index'),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(FormesZp.rayonPetit),
       onTap: patron
           ? () => Navigator.of(context).push(
               MaterialPageRoute(
@@ -366,7 +366,7 @@ class _Session extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: couleur.withValues(alpha: 0.16),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(FormesZp.rayon),
                 ),
                 child: Text(
                   ecart,

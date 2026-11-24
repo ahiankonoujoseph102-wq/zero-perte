@@ -116,7 +116,8 @@ void main() {
         preparer: boutiqueInstallee,
       );
       await afficherApp(tester, env.etat, taille: taille, densite: densite);
-      if (taille.width < 840) {
+      // 0.37 : « Arrivage » est dans Gestion sur toutes les tailles.
+      {
         final nav = tester.state<NavigatorState>(find.byType(Navigator).first);
         nav.push(
           MaterialPageRoute(builder: (_) => EspacePatron(etat: env.etat)),

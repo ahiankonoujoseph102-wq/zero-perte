@@ -309,12 +309,12 @@ class _ToucheCode extends StatelessWidget {
           ? (onTap == null ? CouleursZp.ligne : CouleursZp.argentEntre)
           : CouleursZp.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(FormesZp.rayon),
         side: BorderSide(color: ok ? Colors.transparent : CouleursZp.ligne),
       ),
       child: InkWell(
         key: Key('code-$texte'),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(FormesZp.rayon),
         onTap: onTap,
         child: Center(
           child: texte == '<'

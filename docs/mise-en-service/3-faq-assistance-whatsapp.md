@@ -7,7 +7,7 @@ Demander une **capture d'écran** quand la question n'est pas claire.
 |---|---|
 | « Le téléphone dit qu'il ne peut pas utiliser Zéro Perte » | Ce téléphone n'a pas les services Google (souvent Huawei récent) ou moins de 100 Mo libres. Libérez de la place (photos, vidéos WhatsApp) ou utilisez un autre téléphone Android 8+. |
 | « Le code d'activation est refusé » | Copiez tout le message du code (appui long → Copier), puis « Coller le code ». Ne tapez pas le code à la main. Toujours refusé : envoyez une capture, on vous renvoie un code. |
-| « J'ai oublié mon code de patron » | Pour votre sécurité, personne ne peut le voir. Si la boutique est sauvegardée sur Google Drive : réinstallez et choisissez « J'ai déjà une boutique : la retrouver ». Sinon, contactez-nous en appel. |
+| « J'ai oublié mon code de patron » | Pour votre sécurité, personne ne peut le voir. Si la boutique est sauvegardée sur le compte Google : réinstallez, touchez « Autres façons » puis « J'ai déjà une boutique : la retrouver ». Sinon, contactez-nous en appel. |
 | « Un vendeur a oublié son code » | Patron : Gestion → Vendeurs → le vendeur → **Changer le code** : un nouveau code est tiré au hasard. |
 | « Écran bloqué 5 minutes » | 5 codes faux de suite. Attendez 5 minutes. Le patron a reçu une alerte. |
 | « Le produit n'est pas dans la liste » | D'abord, dans Vendre, tapez son nom dans « Chercher un produit ». S'il n'existe pas : patron → **Gestion → Produits et prix → Ajouter un produit** (nom, prix de vente, prix d'achat, stock de départ). |

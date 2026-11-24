@@ -142,7 +142,7 @@ class _PageSauvegardeState extends State<PageSauvegarde> {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: CouleursZp.surface,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(FormesZp.rayon),
                   border: Border.all(color: CouleursZp.ligne),
                 ),
                 child: Text(

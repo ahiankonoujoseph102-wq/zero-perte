@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:zero_perte/app/etat_application.dart';
+import 'package:zero_perte/domaine/argent.dart';
 import 'package:zero_perte/domaine/boutique.dart';
 import 'package:zero_perte/domaine/operation.dart';
 import 'package:zero_perte/domaine/panier.dart';
@@ -429,9 +430,13 @@ void main() {
         densite: 2.625,
       );
       await attendre(tester, tours: 10);
-      expect(find.textContaining('Caisse : il manque'), findsOneWidget);
-      expect(find.byIcon(Icons.cancel_rounded), findsOneWidget);
-      expect(find.text('Vendu aujourd\'hui'), findsOneWidget);
+      // 0.37 : trois grandes cartes « Vendu », « Bénéfice », « Caisse ».
+      expect(
+        tester.widget<Text>(find.byKey(const Key('resume-caisse'))).data,
+        'Il manque\n${formatFrancs(2000)}',
+      );
+      expect(find.text('Vendu'), findsOneWidget);
+      expect(find.text('Caisse'), findsOneWidget);
     },
   );
 

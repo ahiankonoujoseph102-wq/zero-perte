@@ -457,8 +457,8 @@ void main() {
         for (final cle in [
           'menu-accueil',
           'bouton-vendre',
-          'menu-fournisseurs',
-          'menu-vendeurs',
+          'bouton-ma-caisse',
+          'menu-chiffres',
           'bouton-espace-patron',
         ]) {
           final r = tester.getRect(find.byKey(Key(cle)));

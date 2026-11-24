@@ -9,6 +9,7 @@ import '../../donnees/journal_local.dart';
 import '../../services/raccourci.dart';
 import '../../theme/couleurs.dart';
 import '../clavier_pin.dart';
+import '../communs.dart' show PastilleInitiale;
 import '../logo_boutique.dart';
 import '../recu/apercu_recu.dart';
 import 'etape_profil.dart';
@@ -152,7 +153,9 @@ InputDecoration decorationChamp(
   fillColor: CouleursZp.surface,
   labelStyle: const TextStyle(fontSize: 18),
   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+  border: OutlineInputBorder(
+    borderRadius: BorderRadius.circular(FormesZp.rayon),
+  ),
 );
 
 const _styleChamp = TextStyle(fontSize: 22);
@@ -455,7 +458,9 @@ class _BoutonSecondaire extends StatelessWidget {
     style: OutlinedButton.styleFrom(
       minimumSize: const Size(0, 56),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(FormesZp.rayon),
+      ),
     ),
     child: Row(
       mainAxisSize: MainAxisSize.min,
@@ -681,7 +686,7 @@ class _EtapeCouleurState extends State<EtapeCouleur> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: CouleursZp.fond,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(FormesZp.rayon),
               border: Border.all(color: CouleursZp.ligne),
             ),
             child: Column(
@@ -709,7 +714,7 @@ class _EtapeCouleurState extends State<EtapeCouleur> {
                   height: 56,
                   decoration: BoxDecoration(
                     color: couleur,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(FormesZp.rayon),
                   ),
                   alignment: Alignment.center,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -951,10 +956,12 @@ class _EtapePrixState extends State<EtapePrix> {
                       children: [
                         Row(
                           children: [
-                            Text(
-                              p.emoji ?? '📦',
-                              style: const TextStyle(fontSize: 34),
-                            ),
+                            p.emoji == null || p.emoji!.isEmpty
+                                ? PastilleInitiale(nom: p.nom, taille: 40)
+                                : Text(
+                                    p.emoji!,
+                                    style: const TextStyle(fontSize: 34),
+                                  ),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(

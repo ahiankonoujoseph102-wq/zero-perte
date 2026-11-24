@@ -29,10 +29,10 @@ prévenu tout de suite. Vous voyez aussi votre bénéfice et qui vous doit de l'
 pas chaque mois. Je vous montre en une minute ? »
 
 ## La démonstration d'une minute
-L'application n'a **pas** de mode démonstration (décision du propriétaire, 24/11) : montrez **la vidéo de
+L'application n'a **pas** de mode démonstration (supprimé complètement en 0.37.0, décision du propriétaire) : montrez **la vidéo de
 l'écran** préparée par le propriétaire, ou votre téléphone d'agent avec une boutique d'essai (code « TEST »).
 Dans les deux cas, montrez ces 5 choses, dans cet ordre :
-1. L'accueil du patron : **« Vendu aujourd'hui »**, **« Bénéfice »**, et en rouge **« Caisse : il manque
+1. L'accueil du patron : les grandes cartes **« Vendu »**, **« Bénéfice »**, et en rouge **« Caisse : Il manque
    2 000 F »**. Dites : « Votre vendeur a fermé la caisse avec 2 000 F de moins. Vous l'avez vu sans être là. »
    Montrez la ligne des ventes **par vendeur**.
 2. **Vendre** → un produit vendu en gros : deux gros boutons **Détail** (1 boîte, 550 F) et **Gros** (1 carton
@@ -74,8 +74,11 @@ Dans les deux cas, montrez ces 5 choses, dans cet ordre :
 5. **Étape 3** : le patron choisit SEUL son code de 6 chiffres (regardez ailleurs).
 6. **« Vous pouvez vendre ! »** → faire une vraie vente ensemble : **Vendre** → **Nouveau produit** (nom +
    prix, et le carton si besoin) → **Encaisser**.
-7. Si un vendeur a son téléphone : **Ajouter mon vendeur** → QR code → sur son téléphone **Je suis vendeur**
+7. Si un vendeur a son téléphone : **Ajouter mon vendeur** (gros bouton sur l'accueil, ou Gestion) → QR code → sur son téléphone **Je suis vendeur**
    → scanner.
 8. Montrer la carte **« À faire quand vous avez le temps »** : compter le stock petit à petit, relier le compte
    Google (sauvegarde), ajouter les prix d'achat (pour voir le bénéfice), le numéro sur les reçus.
-9. Laisser l'**aide-mémoire** et les numéros d'assistance.
+9. Montrer les 5 boutons qui ne bougent jamais : **Vendre, Ma caisse, Ce qu'on me doit, Mon bénéfice, Gestion**
+   (tout le reste est dans Gestion : Arrivage, Compter mon stock, Vendeurs…).
+10. Laisser l'**aide-mémoire**, le **guide du commerçant** (`guide-client-zero-perte.md`, à envoyer sur WhatsApp)
+   et les numéros d'assistance.

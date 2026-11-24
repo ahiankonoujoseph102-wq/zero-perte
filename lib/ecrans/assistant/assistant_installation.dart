@@ -242,7 +242,9 @@ class _AssistantInstallationState extends State<AssistantInstallation> {
                       if (_etapes.contains(e)) ...[
                         const SizedBox(height: 14),
                         ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(
+                            FormesZp.rayonPetit,
+                          ),
                           child: LinearProgressIndicator(
                             value: numero / _etapes.length,
                             minHeight: 10,
@@ -880,7 +882,7 @@ class _Activation extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: CouleursZp.marquePale,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(FormesZp.rayon),
           ),
           child: const Row(
             children: [

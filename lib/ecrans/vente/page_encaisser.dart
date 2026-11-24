@@ -162,7 +162,7 @@ class _PageEncaisserState extends State<PageEncaisser> {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
           decoration: BoxDecoration(
             color: CouleursZp.fond,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(FormesZp.rayon),
             border: Border.all(color: CouleursZp.ligne),
           ),
           child: Column(
@@ -385,7 +385,7 @@ class _PageEncaisserState extends State<PageEncaisser> {
                           width: 2,
                         ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(FormesZp.rayon),
                         ),
                       ),
                     ),
@@ -416,7 +416,7 @@ class _PageEncaisserState extends State<PageEncaisser> {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: CouleursZp.credit.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(FormesZp.rayon),
         ),
         child: Row(
           children: [
@@ -656,7 +656,7 @@ class _ChoixClientCredit extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: CouleursZp.credit.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(FormesZp.rayon),
         border: Border.all(
           color: trop ? CouleursZp.argentSort : CouleursZp.credit,
           width: 2,
@@ -721,12 +721,12 @@ class _BoutonMode extends StatelessWidget {
     return Material(
       color: choisi ? couleur : CouleursZp.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(FormesZp.rayon),
         side: BorderSide(color: choisi ? couleur : CouleursZp.ligne, width: 2),
       ),
       child: InkWell(
         key: Key('mode-${mode.code}'),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(FormesZp.rayon),
         onTap: onTap,
         child: SizedBox(
           height: 66,
@@ -772,7 +772,7 @@ class _ResultatMonnaie extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: CouleursZp.argentSort.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(FormesZp.rayon),
           border: Border.all(color: CouleursZp.argentSort, width: 2),
         ),
         child: Row(
@@ -802,7 +802,7 @@ class _ResultatMonnaie extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: CouleursZp.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(FormesZp.rayon),
         border: Border.all(color: CouleursZp.ligne, width: 2),
       ),
       child: Column(
@@ -875,10 +875,21 @@ class PageVenteTerminee extends StatelessWidget {
       corps: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          const Icon(
-            Icons.check_circle_rounded,
-            size: 96,
-            color: CouleursZp.argentEntre,
+          // Confirmation de vente : la coche grossit doucement (0,4 s).
+          TweenAnimationBuilder<double>(
+            key: const Key('coche-vente'),
+            tween: Tween(begin: 0.6, end: 1),
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeOutBack,
+            builder: (context, v, enfant) => Opacity(
+              opacity: ((v - 0.6) / 0.4).clamp(0.0, 1.0),
+              child: Transform.scale(scale: v, child: enfant),
+            ),
+            child: const Icon(
+              Icons.check_circle_rounded,
+              size: 96,
+              color: CouleursZp.argentEntre,
+            ),
           ),
           const SizedBox(height: 8),
           Text(

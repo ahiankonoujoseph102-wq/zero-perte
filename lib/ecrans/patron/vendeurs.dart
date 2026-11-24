@@ -284,7 +284,7 @@ class _PageNouveauVendeurState extends State<PageNouveauVendeur> {
               padding: const EdgeInsets.symmetric(vertical: 18),
               decoration: BoxDecoration(
                 color: CouleursZp.surface,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(FormesZp.rayon),
                 border: Border.all(color: CouleursZp.ligne, width: 2),
               ),
               child: FittedBox(

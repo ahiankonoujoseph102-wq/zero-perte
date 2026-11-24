@@ -154,15 +154,13 @@ class _PageClientsState extends State<PageClients> {
           }
           final tous = s.data!;
           if (tous.isEmpty) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Text(
-                  'Aucun client pour l\'instant.\nTouchez « Nouveau client ».',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 20),
-                ),
-              ),
+            return const EtatVide(
+              icone: Icons.menu_book_rounded,
+              couleur: CouleursZp.credit,
+              titre: 'Personne ne vous doit d\'argent.',
+              explication:
+                  'Quand un client prend à crédit, touchez « Nouveau client » '
+                  'ou choisissez « Crédit » au moment de payer.',
             );
           }
           final filtre = _recherche.text.trim().toLowerCase();
@@ -296,12 +294,12 @@ class _PageClientsState extends State<PageClients> {
                   child: Material(
                     color: CouleursZp.surface,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(FormesZp.rayon),
                       side: const BorderSide(color: CouleursZp.ligne),
                     ),
                     child: InkWell(
                       key: Key('client-${c.nom}'),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(FormesZp.rayon),
                       onTap: () => widget.choisir
                           ? (c.peutPrendreCredit || !widget.pourCredit
                                 ? Navigator.of(context).pop(c)

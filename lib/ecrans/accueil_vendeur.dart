@@ -17,17 +17,11 @@ import 'caisse/ma_caisse.dart';
 import 'caisse/saisie_montant.dart';
 import 'credit/clients.dart';
 import 'logo_boutique.dart';
-import 'patron/arrivages.dart';
 import 'patron/espace_patron.dart';
-import 'patron/fournisseurs.dart';
-import 'patron/inventaire.dart';
 import 'patron/chiffres.dart';
 import 'patron/tableau_de_bord.dart';
-import 'patron/vendeurs.dart';
 import 'logo_zero_perte.dart';
-import 'vente/devis.dart';
 import 'vente/page_vendre.dart';
-import 'vente/retour.dart';
 import 'vendeur_qr.dart';
 import 'patron/a_faire.dart';
 import '../domaine/panier.dart';
@@ -127,61 +121,6 @@ List<EntreeMenu> menuPrincipal(EtatApplication etat) => [
       couleur: CouleursZp.argentEntreClair,
       ouvrir: (c) => _ouvrir(c, PageChiffres(etat: etat)),
     ),
-    EntreeMenu(
-      cle: 'arrivages',
-      icone: Icons.local_shipping_rounded,
-      titre: 'Arrivage',
-      couleur: const Color(0xFF4FB3E8),
-      ouvrir: (c) => _ouvrir(c, PageArrivages(etat: etat)),
-    ),
-    EntreeMenu(
-      cle: 'inventaire',
-      icone: Icons.inventory_rounded,
-      titre: 'Inventaire',
-      couleur: const Color(0xFFB38CF0),
-      ouvrir: (c) => _ouvrir(c, PageInventaires(etat: etat)),
-    ),
-    EntreeMenu(
-      cle: 'devis',
-      icone: Icons.request_quote_rounded,
-      titre: 'Devis',
-      couleur: const Color(0xFF4FB3E8),
-      surTelephone: false,
-      ouvrir: (c) => _ouvrir(c, PageListeDevis(etat: etat)),
-    ),
-    EntreeMenu(
-      cle: 'retours',
-      icone: Icons.assignment_return_rounded,
-      titre: 'Retours',
-      couleur: CouleursZp.argentSortClair,
-      surTelephone: false,
-      ouvrir: (c) => _ouvrir(c, PageRetours(etat: etat)),
-    ),
-    EntreeMenu(
-      cle: 'fournisseurs',
-      icone: Icons.handshake_rounded,
-      titre: 'Ce que je dois',
-      couleur: const Color(0xFF4FB3E8),
-      surTelephone: false,
-      ouvrir: (c) => _ouvrir(c, PageFournisseurs(etat: etat)),
-    ),
-    EntreeMenu(
-      cle: 'vendeurs',
-      icone: Icons.badge_rounded,
-      titre: 'Vendeurs',
-      couleur: const Color(0xFFB38CF0),
-      surTelephone: false,
-      ouvrir: (c) => _ouvrir(c, PageVendeurs(etat: etat)),
-    ),
-    if (etat.ajoutParQrPossible)
-      EntreeMenu(
-        cle: 'ajouter-vendeur',
-        icone: Icons.qr_code_2_rounded,
-        titre: 'Ajouter mon vendeur',
-        couleur: CouleursZp.argentEntreClair,
-        surTelephone: false,
-        ouvrir: (c) => _ouvrir(c, PageAjouterMonVendeur(etat: etat)),
-      ),
     EntreeMenu(
       cle: 'espace-patron',
       icone: Icons.tune_rounded,
@@ -400,125 +339,225 @@ class _ResumeDuJourState extends State<ResumeDuJour>
     super.dispose();
   }
 
-  Widget _chiffre(String titre, Widget valeur) => Expanded(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          titre,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontSize: 14, color: CouleursZp.texteDoux),
-        ),
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerLeft,
-          child: valeur,
-        ),
-      ],
-    ),
-  );
-
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<ResumeJour?>(
       future: _resume,
       builder: (context, s) {
         final t = s.data;
-        final contenu = t == null
-            ? const SizedBox(height: 64)
-            : Column(
+        final hauteur = widget.compact ? 92.0 : 108.0;
+        if (t == null) {
+          // Chargement : la place est gardée (pas de saut de l'écran).
+          return SizedBox(key: const Key('resume-du-jour'), height: hauteur);
+        }
+        final caisse = etatCaisseAffiche(t);
+        return Column(
+          key: const Key('resume-du-jour'),
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              height: hauteur,
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Row(
-                    children: [
-                      _chiffre(
-                        'Vendu aujourd\'hui',
-                        Text(
-                          formatFrancs(t.vendu),
-                          key: const Key('resume-ventes'),
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w800,
-                            color: CouleursZp.argentEntreClair,
-                          ),
+                  Expanded(
+                    child: CarteChiffre(
+                      titre: 'Vendu',
+                      icone: Icons.shopping_basket_rounded,
+                      couleur: CouleursZp.argentEntreClair,
+                      onTap: widget.onTap,
+                      valeur: Text(
+                        formatFrancs(t.vendu),
+                        key: const Key('resume-ventes'),
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          color: CouleursZp.argentEntreClair,
                         ),
                       ),
-                      _chiffre(
-                        'Bénéfice',
-                        t.beneficeInconnu
-                            ? const Text(
-                                'Ajoutez le prix d\'achat',
-                                key: Key('resume-benefice'),
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: CouleursZp.creditTexte,
-                                ),
-                              )
-                            : Text(
-                                formatFrancs(t.benefice.benefice),
-                                key: const Key('resume-benefice'),
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w800,
-                                  color: t.benefice.benefice >= 0
-                                      ? CouleursZp.argentEntreClair
-                                      : CouleursZp.argentSortClair,
-                                ),
-                              ),
-                      ),
-                      const Icon(
-                        Icons.chevron_right_rounded,
-                        color: CouleursZp.texteDoux,
-                      ),
-                    ],
+                    ),
                   ),
-                  const SizedBox(height: 4),
-                  LigneCaisse(resume: t),
-                  if (t.parVendeur.length > 1) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      [
-                        for (final e in t.parVendeur.entries)
-                          '${e.key} ${formatFrancs(e.value)}',
-                      ].join(' · '),
-                      key: const Key('resume-vendeurs'),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: CouleursZp.texteDoux,
+                  const SizedBox(width: EspacesZp.s),
+                  Expanded(
+                    child: CarteChiffre(
+                      titre: 'Bénéfice',
+                      icone: Icons.trending_up_rounded,
+                      couleur: t.beneficeInconnu
+                          ? CouleursZp.creditTexte
+                          : t.benefice.benefice >= 0
+                          ? CouleursZp.argentEntreClair
+                          : CouleursZp.argentSortClair,
+                      onTap: widget.onTap,
+                      valeur: t.beneficeInconnu
+                          ? const Text(
+                              'Prix d\'achat ?',
+                              key: Key('resume-benefice'),
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: CouleursZp.creditTexte,
+                              ),
+                            )
+                          : Text(
+                              formatFrancs(t.benefice.benefice),
+                              key: const Key('resume-benefice'),
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w800,
+                                color: t.benefice.benefice >= 0
+                                    ? CouleursZp.argentEntreClair
+                                    : CouleursZp.argentSortClair,
+                              ),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(width: EspacesZp.s),
+                  Expanded(
+                    child: CarteChiffre(
+                      titre: 'Caisse',
+                      icone: caisse.icone ?? Icons.point_of_sale_rounded,
+                      couleur: caisse.couleur,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => PageMaCaisse(etat: widget.etat),
+                        ),
+                      ),
+                      valeur: Text(
+                        caisse.court,
+                        key: const Key('resume-caisse'),
+                        textAlign: TextAlign.left,
+                        style: TextStyle(
+                          fontSize: 20,
+                          height: 1.1,
+                          fontWeight: FontWeight.w800,
+                          color: caisse.couleur,
+                        ),
                       ),
                     ),
-                  ],
+                  ),
                 ],
-              );
-        return Material(
-          color: CouleursZp.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-            side: const BorderSide(color: CouleursZp.ligne, width: 1.5),
-          ),
-          child: InkWell(
-            key: const Key('resume-du-jour'),
-            borderRadius: BorderRadius.circular(18),
-            onTap: widget.onTap,
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: widget.compact ? 8 : 10,
               ),
-              child: contenu,
             ),
-          ),
+            if (t.parVendeur.length > 1) ...[
+              const SizedBox(height: EspacesZp.xs),
+              Text(
+                [
+                  for (final e in t.parVendeur.entries)
+                    '${e.key} ${formatFrancs(e.value)}',
+                ].join(' · '),
+                key: const Key('resume-vendeurs'),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: CouleursZp.texteDoux,
+                ),
+              ),
+            ],
+          ],
         );
       },
     );
   }
 }
+
+/// Grande carte d'un chiffre du jour (accueil du patron) : petit titre et
+/// icône en haut, gros chiffre en bas, toute la carte se touche.
+class CarteChiffre extends StatelessWidget {
+  const CarteChiffre({
+    super.key,
+    required this.titre,
+    required this.icone,
+    required this.couleur,
+    required this.valeur,
+    this.onTap,
+  });
+
+  final String titre;
+  final IconData icone;
+  final Color couleur;
+  final Widget valeur;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: CouleursZp.surface,
+    shape: const RoundedRectangleBorder(
+      borderRadius: FormesZp.arrondi,
+      side: BorderSide(color: CouleursZp.ligne, width: 1.5),
+    ),
+    child: InkWell(
+      borderRadius: FormesZp.arrondi,
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: EspacesZp.m - 2,
+          vertical: EspacesZp.m,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Le titre seul (sans icône) : « Bénéfice » tient en entier
+            // même sur un petit téléphone.
+            Text(
+              titre,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: Color.lerp(couleur, CouleursZp.texteDoux, 0.35),
+              ),
+            ),
+            const Spacer(),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.bottomLeft,
+              child: valeur,
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+/// État de la caisse en ESPÈCES, en mots courts (carte) et longs (ligne).
+({String court, String long, Color couleur, IconData? icone}) etatCaisseAffiche(
+  ResumeJour r,
+) => switch (r.caisse) {
+  EtatCaisseResume.pasOuverte => (
+    court: 'Pas ouverte',
+    long: 'Caisse : pas encore ouverte',
+    couleur: CouleursZp.texteDoux,
+    icone: null,
+  ),
+  EtatCaisseResume.ouverte => (
+    court: 'Ouverte',
+    long: 'Caisse : ouverte',
+    couleur: CouleursZp.texte,
+    icone: null,
+  ),
+  EtatCaisseResume.juste => (
+    court: 'Juste',
+    long: 'Caisse : juste',
+    couleur: CouleursZp.argentEntreClair,
+    icone: Icons.check_circle_rounded,
+  ),
+  EtatCaisseResume.manque => (
+    court: 'Il manque\n${formatFrancs(-r.ecartEspeces)}',
+    long: 'Caisse : il manque ${formatFrancs(-r.ecartEspeces)}',
+    couleur: CouleursZp.argentSortClair,
+    icone: Icons.cancel_rounded,
+  ),
+  EtatCaisseResume.enTrop => (
+    court: '${formatFrancs(r.ecartEspeces)}\nen trop',
+    long: 'Caisse : ${formatFrancs(r.ecartEspeces)} en trop',
+    couleur: CouleursZp.creditTexte,
+    icone: Icons.info_rounded,
+  ),
+};
 
 /// « Caisse : juste ✅ », « Caisse : il manque 2 000 F ❌ »… (espèces).
 class LigneCaisse extends StatelessWidget {
@@ -529,31 +568,10 @@ class LigneCaisse extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Icône (pas d'émoji : toujours lisible, quelle que soit la police).
-    final (texte, couleur, icone) = switch (resume.caisse) {
-      EtatCaisseResume.pasOuverte => (
-        'Caisse : pas encore ouverte',
-        CouleursZp.texteDoux,
-        null,
-      ),
-      EtatCaisseResume.ouverte => ('Caisse : ouverte', CouleursZp.texte, null),
-      EtatCaisseResume.juste => (
-        'Caisse : juste',
-        CouleursZp.argentEntreClair,
-        Icons.check_circle_rounded,
-      ),
-      EtatCaisseResume.manque => (
-        'Caisse : il manque ${formatFrancs(-resume.ecartEspeces)}',
-        CouleursZp.argentSortClair,
-        Icons.cancel_rounded,
-      ),
-      EtatCaisseResume.enTrop => (
-        'Caisse : ${formatFrancs(resume.ecartEspeces)} en trop',
-        CouleursZp.creditTexte,
-        Icons.info_rounded,
-      ),
-    };
+    final e = etatCaisseAffiche(resume);
+    final (texte, couleur, icone) = (e.long, e.couleur, e.icone);
     return Row(
-      key: const Key('resume-caisse'),
+      key: const Key('ligne-caisse'),
       children: [
         Flexible(
           child: Text(
@@ -652,11 +670,11 @@ class TuileMenu extends StatelessWidget {
       child: Material(
         color: CouleursZp.surface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(FormesZp.rayon),
           side: const BorderSide(color: CouleursZp.ligne, width: 1.5),
         ),
         child: InkWell(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(FormesZp.rayon),
           onTap: () => entree.ouvrir(context),
           child: Padding(
             padding: const EdgeInsets.all(10),
@@ -978,14 +996,14 @@ class _LigneMenu extends StatelessWidget {
       child: Material(
         color: choisi ? primaire.withValues(alpha: 0.22) : Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(FormesZp.rayon),
           side: choisi
               ? BorderSide(color: primaire, width: 1.5)
               : BorderSide.none,
         ),
         child: InkWell(
           key: cle,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(FormesZp.rayon),
           onTap: onTap,
           child: SizedBox(
             height: hauteur,

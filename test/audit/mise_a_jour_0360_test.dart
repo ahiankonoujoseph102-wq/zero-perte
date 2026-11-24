@@ -44,10 +44,10 @@ void main() {
             [c.nom, c.facteurMilliemes, c.prixVente],
         ], conds[p.nom]);
       }
-      expect(
-        {for (final p in etat.produits) if (etat.estCompte(p.id)) p.nom},
-        (attendu['comptes'] as List).toSet(),
-      );
+      expect({
+        for (final p in etat.produits)
+          if (etat.estCompte(p.id)) p.nom,
+      }, (attendu['comptes'] as List).toSet());
       expect(await j.totalCredits(), attendu['credits']);
       final r = await j.resumeVentes(depuis: 0);
       expect(r.total, attendu['ventes']);

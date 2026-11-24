@@ -13,8 +13,8 @@ bénéfice sur votre téléphone, même quand vous n'êtes pas là, et vous pré
   dit les billets et pièces à rendre.
 - **Savoir où va l'argent** : la caisse est ouverte le matin et fermée le soir ; le vendeur compte **sans
   voir** le montant attendu ; le patron voit l'**écart** (manque ou surplus) tout de suite.
-- **Ses chiffres du jour** sur l'accueil du patron : **Vendu aujourd'hui**, **Bénéfice**, **Caisse : juste ✅ /
-  il manque … ❌** (espèces), et les ventes de chaque vendeur ; la page **Mon bénéfice** pour la semaine et le mois, les produits qui rapportent, le **stock bas**, et le **résumé du
+- **Ses chiffres du jour** sur l'accueil du patron : 3 grandes cartes **Vendu**, **Bénéfice**, **Caisse** (« Juste » /
+  « Il manque … », espèces), et les ventes de chaque vendeur ; la page **Mon bénéfice** pour la semaine et le mois, les produits qui rapportent, le **stock bas**, et le **résumé du
   soir** quand un vendeur ferme la caisse.
 - **WhatsApp, sans rien envoyer à sa place** : commander au fournisseur avec la liste déjà écrite, rappeler
   un client en retard de paiement en un toucher, envoyer le résumé du soir. Le patron relit et envoie.
@@ -27,7 +27,7 @@ bénéfice sur votre téléphone, même quand vous n'êtes pas là, et vous pré
 - **Plusieurs vendeurs** : chacun a son code ; le patron sait qui a vendu quoi ; un vendeur ne voit jamais le
   prix d'achat ni le bénéfice.
 - **Reçus et devis sur WhatsApp**, retours et annulations tracés (motif obligatoire).
-- **Fonctionne sans Internet** pour vendre ; Internet sert à relier les appareils (Google Drive de la
+- **Fonctionne sans Internet** pour vendre ; Internet sert à relier les appareils (compte Google de la
   boutique) et à faire les sauvegardes.
 - **Téléphone, tablette ou PC Windows** : 2 appareils par licence.
 
@@ -41,7 +41,8 @@ bénéfice sur votre téléphone, même quand vous n'êtes pas là, et vous pré
 - **Sur PC Windows**, au premier lancement, Windows affiche « Windows a protégé votre ordinateur » : il faut
   toucher « Informations complémentaires → Exécuter quand même » (l'application sera bientôt sur le
   Microsoft Store).
-- **Pas de démonstration dans l'application** (0.36) : une vidéo de l'écran l'explique.
+- **Pas de démonstration dans l'application** (retirée complètement en 0.37) : une vidéo de l'écran l'explique.
+- **Le guide du commerçant** (`guide-client-zero-perte.md`, texte simple à imprimer ou envoyer) explique tout pas à pas.
 - **Les mises à jour** ne s'installent pas toutes seules : un message « Nouvelle version disponible »
   apparaît sur l'accueil, il suffit de le toucher.
 - **Sauvegarde** : à faire régulièrement (ou garder la synchronisation Google active) ; sans elle, un

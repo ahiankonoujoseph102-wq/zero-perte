@@ -270,7 +270,7 @@ class BarresClassement extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(FormesZp.rayonPetit),
                   child: LinearProgressIndicator(
                     value: montant / max,
                     minHeight: 9,

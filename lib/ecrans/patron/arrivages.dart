@@ -25,15 +25,14 @@ class PageArrivages extends StatelessWidget {
           titre: 'Arrivage',
           icone: Icons.local_shipping_rounded,
           corps: produits.isEmpty
-              ? const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Text(
-                      'Aucun produit. Ajoutez d\'abord vos produits.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 20),
-                    ),
-                  ),
+              ? const EtatVide(
+                  icone: Icons.local_shipping_rounded,
+                  couleur: CouleursZp.ciel,
+                  titre: 'Pas encore de produit.',
+                  explication:
+                      'Vendez une première fois avec « Vendre » → « Nouveau '
+                      'produit », ou ajoutez-le dans Gestion → « Produits et '
+                      'prix ». Il apparaîtra ici.',
                 )
               : ListView.separated(
                   padding: const EdgeInsets.all(16),

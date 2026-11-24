@@ -110,12 +110,12 @@ class CarteAFaire extends StatelessWidget {
     return Material(
       color: CouleursZp.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(FormesZp.rayon),
         side: const BorderSide(color: CouleursZp.ligne, width: 1.5),
       ),
       child: InkWell(
         key: const Key('carte-a-faire'),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(FormesZp.rayon),
         onTap: () => Navigator.of(context)
             .push(MaterialPageRoute(builder: (_) => PageAFaire(etat: etat))),
         child: Padding(
@@ -139,7 +139,7 @@ class CarteAFaire extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: CouleursZp.credit,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(FormesZp.rayonPetit),
                 ),
                 child: Text(
                   '$n',

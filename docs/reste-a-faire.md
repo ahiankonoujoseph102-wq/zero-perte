@@ -1,4 +1,4 @@
-# Ce qui reste à faire (liste complète, 23 novembre 2026)
+# Ce qui reste à faire (liste complète, 24 novembre 2026, après la 0.37.0)
 
 Relu : `docs/journal-avancement.md` et `docs/etapes-proprietaire.md`. Ordre = priorité.
 
@@ -19,12 +19,15 @@ Relu : `docs/journal-avancement.md` et `docs/etapes-proprietaire.md`. Ordre = pr
 | 11 | Bloc E : guides de mise en service (`docs/mise-en-service/`) | ✅ 0.32.0 (mis à jour en 0.34.0), à valider par le propriétaire |
 | 12 | Le paquet `flutter_tts` utilise un ancien outil Kotlin : une future version de Flutter refusera de fabriquer l'APK | À surveiller à chaque montée de Flutter |
 | 13 | Relais : à **50 boutiques**, revoir (alertes poussées par Firebase, consultations espacées) | Noté pour plus tard |
-| 14 | Fichiers d'Afi v1 et extraits de voix du site : plus utiles après la 0.31.0 | Ménage après publication |
+| 14 | ✅ (0.37.0) Voix et fichiers d'Afi retirés de l'application (les extraits du site `docs/site/voix` restent) | Fait |
 | 15 | ✅ (0.35.0) Ajout d'un vendeur par QR code ; (0.35.2) lecteur de QR préparé à l'avance, réessai, code d'erreur affiché | **Essai sur 2 vrais téléphones à faire** |
 | 16 | ✅ (23/11) Action « 8 - Mettre à jour le relais » (exécution #2 verte, « Relais en ligne : OK ») | Fait |
 | 18 | ✅ (0.36.0) Refonte commerçant : démarrage 3 étapes sans inventaire, gros/détail, mots du marché, accueil (bénéfice, caisse, vendeurs), WhatsApp à la fermeture, démonstration retirée, argumentaire | **Essai réel à faire** |
 | 19 | Réserve séparée (« magasin ») : plan dans `docs/refonte-commercant.md` | Prochaine version, après essai réel |
-| 20 | Démonstration (visite d'Afi, 50 voix, boutique d'exemple) : sans bouton depuis la 0.36 ; **supprimer le code et les voix** si le propriétaire le confirme (APK ≈ 1 Mo plus léger) | Décision du propriétaire |
+| 20 | ✅ (0.37.0) Démonstration et voix d'Afi supprimées du code et de l'application | Fait |
+| 22 | ✅ (0.37.0) Audit complet (`docs/audit-final.md`), design professionnel (`docs/design-final/`), guide du commerçant | **Essai réel à faire** (test de 15 minutes du rapport) |
+| 23 | Mode clair : pas fait (l'application est conçue en sombre à fort contraste) ; à faire seulement si des clients le demandent | Plus tard |
+| 24 | Guide du commerçant : le relire, puis l'envoyer aux premiers clients (WhatsApp ou imprimé) | Propriétaire |
 | 21 | Vidéo de l'écran (propriétaire) pour expliquer l'application | Propriétaire |
 | 17 | Supprimer l'ancien passage de l'action « test minimal (temporaire) » (le fichier n'existe plus ; seul son passage du 21/11 la garde dans la liste) | Propriétaire : 3 touchers |
 

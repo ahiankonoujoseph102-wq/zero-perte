@@ -179,7 +179,7 @@ class _Contenu extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: CouleursZp.surface,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(FormesZp.rayon),
               border: Border.all(
                 color: raison == RaisonStockBas.epuise
                     ? CouleursZp.argentSort

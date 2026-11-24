@@ -459,12 +459,12 @@ class PageFermetures extends StatelessWidget {
               return Material(
                 color: CouleursZp.surface,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(FormesZp.rayon),
                   side: BorderSide(color: c, width: 1.5),
                 ),
                 child: InkWell(
                   key: Key('fermeture-$i'),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(FormesZp.rayon),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (_) =>

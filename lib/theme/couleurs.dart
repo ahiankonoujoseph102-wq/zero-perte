@@ -37,6 +37,31 @@ abstract final class CouleursZp {
   static const Color texte = Color(0xFFEEF3FB);
   static const Color texteDoux = Color(0xFFA9B8D0);
   static const Color ligne = Color(0xFF263D66);
+
+  // Couleurs d'accent des icônes (jamais pour l'argent) : bleu ciel et mauve.
+  static const Color ciel = Color(0xFF4FB3E8);
+  static const Color mauve = Color(0xFFB38CF0);
+}
+
+/// Système de design (0.37) : UN seul arrondi pour les cartes et les boutons,
+/// un petit pour les éléments internes, et des espacements réguliers
+/// (multiples de 4). Partout dans l'application.
+abstract final class FormesZp {
+  /// Cartes, boutons, champs, fenêtres.
+  static const double rayon = 18;
+
+  /// Petits éléments à l'intérieur d'une carte (pastilles, vignettes).
+  static const double rayonPetit = 10;
+
+  static const BorderRadius arrondi = BorderRadius.all(Radius.circular(rayon));
+}
+
+abstract final class EspacesZp {
+  static const double xs = 4;
+  static const double s = 8;
+  static const double m = 12;
+  static const double l = 16;
+  static const double xl = 24;
 }
 
 /// Couleurs des REÇUS et DEVIS (images envoyées aux clients) : toujours sur

@@ -148,7 +148,7 @@ class _PageVendreState extends State<PageVendre> {
                 insetPadding: const EdgeInsets.all(24),
                 clipBehavior: Clip.antiAlias,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(FormesZp.rayon),
                   side: const BorderSide(color: CouleursZp.ligne, width: 1.5),
                 ),
                 child: SizedBox(
@@ -513,7 +513,7 @@ class _ActionHaut extends StatelessWidget {
     message: aide,
     child: InkWell(
       key: Key(cle),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(FormesZp.rayonPetit),
       onTap: onPressed,
       child: ConstrainedBox(
         constraints: const BoxConstraints(minWidth: 56, minHeight: 48),
@@ -920,7 +920,9 @@ class _ListePanier extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: Row(
               children: [
-                Text(l.emoji ?? '📦', style: const TextStyle(fontSize: 26)),
+                l.emoji == null || l.emoji!.isEmpty
+                    ? PastilleInitiale(nom: l.nomProduit, taille: 32)
+                    : Text(l.emoji!, style: const TextStyle(fontSize: 26)),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(

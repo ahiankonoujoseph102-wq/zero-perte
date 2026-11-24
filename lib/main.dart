@@ -329,7 +329,7 @@ class PiedDePage extends StatelessWidget {
                   if (m == null) return version;
                   return InkWell(
                     key: const Key('bouton-mise-a-jour'),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(FormesZp.rayonPetit),
                     onTap: () =>
                         launchUrl(m.lien, mode: LaunchMode.externalApplication),
                     child: Row(

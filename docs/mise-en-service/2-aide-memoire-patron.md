@@ -1,4 +1,8 @@
-# Zéro Perte — aide-mémoire du patron (1 page)
+# Zéro Perte — aide-mémoire du patron (1 page, version 0.37.0)
+
+**L'accueil** — 3 grandes cartes (**Vendu**, **Bénéfice**, **Caisse**), puis 5 boutons, toujours au même
+endroit : **Vendre**, **Ma caisse**, **Ce qu'on me doit**, **Mon bénéfice**, **Gestion**. Tout le reste est
+dans **Gestion**, rangé en 4 rubriques : Stock et produits, Argent, Vendeurs et appareils, Ma boutique.
 
 **Chaque matin** — Ma caisse → **Ouvrir la caisse** : comptez l'argent du tiroir.
 
@@ -12,7 +16,7 @@ Vendu en gros ? Deux gros boutons : **Détail** (1 boîte) ou **Gros** (1 carton
 
 **Dépense / argent pris** — Ma caisse → **Dépense** (achat payé avec la caisse) ou **Argent pris**.
 
-**Marchandise reçue** — **Arrivage** → le produit → « 10 cartons » : le stock monte tout seul.
+**Marchandise reçue** — Gestion → **Arrivage** → le produit → « 10 cartons » : le stock monte tout seul.
 **Compter mon stock** — pas besoin de tout compter le premier jour : Gestion → **Compter mon stock** → 5 produits
 à la fois, les plus vendus d'abord.
 **Produits et prix** — Gestion → **Produits et prix** : ajouter un produit, changer un prix (l'ancien prix
@@ -21,7 +25,7 @@ est gardé dans l'historique), masquer un produit qui ne se vend plus.
 **Chaque soir** — Ma caisse → **Fermer la caisse** : on compte l'argent **sans voir** le montant attendu.
 Vous voyez tout de suite **l'écart** (manque ou surplus). Bouton **Envoyer sur WhatsApp** : le récapitulatif.
 
-**Vos chiffres** — Accueil : **Vendu aujourd'hui**, **Bénéfice**, et **Caisse : juste ✅** ou **il manque … ❌**
+**Vos chiffres** — Accueil : les cartes **Vendu**, **Bénéfice**, et **Caisse** (« Juste » en vert ou « Il manque … » en rouge)
 (espèces), par vendeur s'il y en a plusieurs. Pas de bénéfice ? Ajoutez le prix d'achat. **Mon bénéfice** →
 **Résumé** : semaine, mois, produits qui rapportent, **stock bas** ; **À envoyer** : le rapport en image ou
 en Excel.
@@ -36,10 +40,10 @@ s'ouvre avec la liste déjà écrite. Ajoutez les quantités, puis envoyez.
 **Crédits en retard** — Clients → bandeau **« crédits en retard »** (rien payé depuis 14 jours) →
 **Rappeler** : WhatsApp s'ouvre avec le message poli déjà écrit. Vous envoyez.
 
-**Inventaire** — **Inventaire → Compter les produits du jour** (quelques produits chaque jour) : les écarts
+**Inventaire complet** — Gestion → **Inventaire complet** → **Compter les produits du jour** (quelques produits chaque jour) : les écarts
 montrent ce qui disparaît.
 
-**Ajouter un vendeur avec son téléphone** — Accueil → **Ajouter mon vendeur** → son prénom → Google :
+**Ajouter un vendeur avec son téléphone** — Gestion → **Ajouter mon vendeur** (au début, aussi un gros bouton sur l'accueil) → son prénom → Google :
 choisissez le compte de la boutique → **Continuer** → un **QR code** s'affiche (10 minutes, une seule fois).
 Le vendeur installe Zéro Perte → **Je suis vendeur** → il scanne. Son code à 4 chiffres s'affiche sur
 **son** téléphone. Pas d'appareil photo ? Touchez **Pas d'appareil photo ?** et dites **OUI** quand votre

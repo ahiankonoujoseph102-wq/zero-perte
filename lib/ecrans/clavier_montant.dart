@@ -113,7 +113,9 @@ class ClavierMontant extends StatelessWidget {
                                     backgroundColor: CouleursZp.surface,
                                     foregroundColor: CouleursZp.texte,
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
+                                      borderRadius: BorderRadius.circular(
+                                        FormesZp.rayon,
+                                      ),
                                     ),
                                     side: const BorderSide(
                                       color: CouleursZp.ligne,

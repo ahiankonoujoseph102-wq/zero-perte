@@ -34,12 +34,12 @@ class PageChoixDepense extends StatelessWidget {
         child: Material(
           color: CouleursZp.surface,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(FormesZp.rayon),
             side: const BorderSide(color: CouleursZp.argentSort, width: 2),
           ),
           child: InkWell(
             key: Key(cle),
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(FormesZp.rayon),
             onTap: onTap,
             child: Padding(
               padding: const EdgeInsets.all(16),

@@ -82,7 +82,7 @@ class _PageCompterStockState extends State<PageCompterStock> {
                     ),
                     const SizedBox(height: 8),
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(FormesZp.rayonPetit),
                       child: LinearProgressIndicator(
                         value: total == 0 ? 0 : faits / total,
                         minHeight: 14,
