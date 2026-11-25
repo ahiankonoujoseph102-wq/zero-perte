@@ -598,7 +598,7 @@ class PageJeSuisVendeur extends StatefulWidget {
     super.key,
     required this.etat,
     this.attente = const Duration(seconds: 3),
-    this.limiteLecteur = const Duration(seconds: 60),
+    this.limiteLecteur = const Duration(seconds: 20),
   });
 
   final EtatApplication etat;
@@ -673,7 +673,7 @@ class _PageJeSuisVendeurState extends State<PageJeSuisVendeur> {
       _codeErreur = null;
     });
     try {
-      final texte = await scannerAvecReessai(
+      final texte = await scannerAvecSecours(
         widget.etat.services.lecteurQr!,
         limite: widget.limiteLecteur,
         enPreparation: () {

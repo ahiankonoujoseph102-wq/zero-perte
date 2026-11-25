@@ -1282,3 +1282,15 @@ Plan et état des lieux : `docs/refonte-commercant.md`. Argumentaire : `docs/mis
   APK universel et arm64), plus aucun fichier de démonstration dans l'APK. APK universel **18,18 Mo** (0.36.0 :
   18,85 Mo, soit 0,67 Mo de moins), arm64 9,9 Mo, armv7 9,4 Mo, Windows 13,5 Mo. versionCode 120 (> 116) : la
   mise à jour s'installe par-dessus la 0.36.0 et la 0.35.2 sans rien perdre.
+
+### Version 0.37.1 — lecteur de QR de secours, bienvenue plus claire (25/11)
+
+- Retour du propriétaire : sur son téléphone, « Je suis vendeur » → lecteur de Google en panne
+  (« Code : -1 / INCONNU (autre) ») ; et la bienvenue disait « touchez le bouton vert » alors que le bouton vert
+  était « Je suis vendeur ».
+- **Lecteur de secours dans l'application** (ZXing, `scannerQrSecours` dans `MainActivity.kt`) : si le lecteur
+  de Google échoue (ou n'est pas prêt après 20 s), le secours s'ouvre tout seul (`scannerAvecSecours`). Le
+  détail exact de l'erreur Android est maintenant affiché sous le code (pour l'assistance).
+- **Bienvenue** : « Commencer » est le gros bouton vert ; « Je suis vendeur (employé) » est en dessous, plus
+  discret ; textes écrit et parlé corrigés.
+- Tests : `test/ecrans/lecteur_qr_test.dart` (+3).

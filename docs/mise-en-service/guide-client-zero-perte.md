@@ -1,6 +1,6 @@
 GUIDE DU COMMERÇANT — ZÉRO PERTE
 
-Version 0.37.0 de l'application. Ce guide est fait pour être lu tranquillement, sur le téléphone ou imprimé.
+Version 0.37.1 de l'application. Ce guide est fait pour être lu tranquillement, sur le téléphone ou imprimé.
 
 
 1. LE PROBLÈME
@@ -167,7 +167,7 @@ Avec le QR code, si le vendeur a son téléphone :
 2. Écrivez le prénom du vendeur.
 3. Choisissez le compte Google de la boutique, puis touchez « Continuer ».
 4. Un QR code s'affiche. Il marche 10 minutes, une seule fois.
-5. Sur le téléphone du vendeur : installez Zéro Perte, touchez « Je suis vendeur », puis « Scanner le QR code ».
+5. Sur le téléphone du vendeur : installez Zéro Perte, touchez « Je suis vendeur », puis « Scanner le QR code ». Si le lecteur de Google ne s'ouvre pas, l'application ouvre toute seule son propre lecteur : touchez « Autoriser » pour l'appareil photo, puis visez le QR code.
 6. Le code à 4 chiffres du vendeur s'affiche sur son téléphone à lui. Il le garde pour lui.
 
 Sans appareil photo :

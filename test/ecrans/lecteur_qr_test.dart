@@ -6,6 +6,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zero_perte/theme/couleurs.dart';
 import 'package:zero_perte/services/lecteur_qr.dart';
 import 'package:zero_perte/synchro/invitation.dart';
 
@@ -193,6 +194,41 @@ void main() {
     });
   });
 
+  testWidgets(
+    '0.37.1 : bienvenue — « Commencer » est le bouton vert, « Je suis vendeur » en dessous',
+    (tester) async {
+      final env = await environnementDeTest(
+        tester,
+        relais: FauxRelaisInvitations(),
+        lecteur: FauxLecteurQr(),
+      );
+      await afficherApp(tester, env.etat);
+      final commencer = find.byKey(const Key('bouton-commencer'));
+      final vendeur = find.byKey(const Key('bouton-je-suis-vendeur'));
+      expect(commencer, findsOneWidget);
+      expect(vendeur, findsOneWidget);
+      expect(
+        tester
+            .widget<FilledButton>(commencer)
+            .style!
+            .backgroundColor!
+            .resolve({}),
+        CouleursZp.argentEntre,
+      );
+      expect(tester.widget(vendeur), isA<OutlinedButton>());
+      expect(
+        tester.getRect(vendeur).top,
+        greaterThan(tester.getRect(commencer).bottom),
+      );
+      expect(find.textContaining('bouton vert « Commencer »'), findsOneWidget);
+      expect(
+        find.textContaining('bouton vert « Je suis vendeur »'),
+        findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   group('écran « Je suis vendeur »', () {
     testWidgets(
       'module absent : « Préparation du lecteur… », puis « Scanner »',
@@ -246,6 +282,77 @@ void main() {
         expect(find.byKey(const Key('erreur-vendeur-qr')), findsNothing);
         expect(find.byKey(const Key('bienvenue-vendeur')), findsOneWidget);
         expect(lecteur.scans, 2);
+      },
+    );
+
+    testWidgets(
+      '0.37.1 : lecteur de Google en panne (-1) → le lecteur de secours lit le QR',
+      (tester) async {
+        final relais = FauxRelaisInvitations();
+        final patron = await environnementDeTest(
+          tester,
+          relais: relais,
+          preparer: boutiquePatron,
+        );
+        String? qr;
+        final lecteur = FauxLecteurQr()
+          ..erreursScanner.add(
+            ErreurLecteur(
+              source: 'autre',
+              code: -1,
+              detail: 'IllegalStateException : panne',
+            ),
+          )
+          ..lireSecours = () async => qr;
+        final kossi = await environnementDeTest(
+          tester,
+          relais: relais,
+          drive: patron.drive,
+          lecteur: lecteur,
+        );
+        qr = await qrDuPatron(tester, patron.etat);
+        await afficherApp(tester, kossi.etat);
+        await toucher(tester, find.byKey(const Key('bouton-je-suis-vendeur')));
+        await toucher(tester, find.byKey(const Key('bouton-scanner-qr')));
+        await attendre(tester, tours: 30);
+        expect(lecteur.scans, 1);
+        expect(lecteur.scansSecours, 1);
+        expect(find.byKey(const Key('erreur-vendeur-qr')), findsNothing);
+        expect(find.byKey(const Key('bienvenue-vendeur')), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      '0.37.1 : les deux lecteurs échouent → message, détail exact et secours',
+      (tester) async {
+        final lecteur = FauxLecteurQr()
+          ..erreursScanner.add(
+            ErreurLecteur(
+              source: 'autre',
+              code: -1,
+              detail: 'IllegalStateException : panne',
+            ),
+          )
+          ..erreurSecours = ErreurLecteur(
+            source: 'secours',
+            code: -2,
+            detail: 'pas d\'appareil photo',
+          );
+        final env = await environnementDeTest(
+          tester,
+          relais: FauxRelaisInvitations(),
+          lecteur: lecteur,
+        );
+        await afficherApp(tester, env.etat);
+        await toucher(tester, find.byKey(const Key('bouton-je-suis-vendeur')));
+        await toucher(tester, find.byKey(const Key('bouton-scanner-qr')));
+        await attendre(tester, tours: 10);
+        expect(find.byKey(const Key('erreur-vendeur-qr')), findsOneWidget);
+        expect(find.textContaining('IllegalStateException'), findsOneWidget);
+        expect(
+          find.byKey(const Key('lien-pas-appareil-photo')),
+          findsOneWidget,
+        );
       },
     );
 

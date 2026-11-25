@@ -10,6 +10,12 @@ des services qu'elle utilise (Google Gemini API, OpenAI `gpt-4o-mini-tts` en sec
 l'historique de ce fichier (version 0.36.0). Le bouton « Écouter » de l'installation utilise la voix de
 synthèse de l'appareil (Android ou Windows), sans service extérieur.
 
+## Lecteur de QR code de secours (0.37.1)
+
+- **ZXing Android Embedded** (JourneyApps) et **ZXing core** — licence Apache 2.0. Utilisé seulement si le lecteur
+  de QR code des Services Google Play ne peut pas s'ouvrir. Il utilise l'appareil photo (autorisation demandée
+  au moment du scan).
+
 ## Police
 
 - **Atkinson Hyperlegible** (Braille Institute of America) — SIL Open Font License 1.1.

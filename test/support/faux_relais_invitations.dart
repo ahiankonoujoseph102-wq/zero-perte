@@ -202,6 +202,19 @@ class FauxLecteurQr implements LecteurQr {
     pret = true;
   }
 
+  /// Lecteur de secours : ce qu'il lit, ou l'erreur qu'il rend.
+  Future<String?> Function()? lireSecours;
+  ErreurLecteur? erreurSecours;
+  int scansSecours = 0;
+
+  @override
+  Future<String?> scannerSecours() async {
+    scansSecours++;
+    final e = erreurSecours;
+    if (e != null) throw e;
+    return lireSecours == null ? null : await lireSecours!();
+  }
+
   @override
   Future<String?> scanner() async {
     scans++;

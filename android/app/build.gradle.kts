@@ -89,4 +89,7 @@ dependencies {
     implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
     // Installation du module du lecteur à l'avance (ModuleInstallClient).
     implementation("com.google.android.gms:play-services-base:18.5.0")
+    // 0.37.1 : lecteur de QR code de SECOURS dans l'application (ZXing, licence
+    // Apache 2.0, environ 150 Ko), quand celui des Services Google Play échoue.
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
 }

@@ -108,10 +108,15 @@ String codeLecteurLisible(ErreurLecteur e) {
   final nom = switch (e.source) {
     'mlkit' => _nomsMlKit[e.code],
     'api' || 'install' => _nomsServices[e.code],
-    'delai' => 'PAS_PRET_APRES_60_S',
+    'delai' => 'PAS_PRET',
+    'secours' => 'SECOURS',
     _ => null,
   };
-  return 'Code : ${e.code} / ${nom ?? 'INCONNU'} (${e.source})';
+  final base = 'Code : ${e.code} / ${nom ?? 'INCONNU'} (${e.source})';
+  // Détail exact (type d'erreur Android) : indispensable pour l'assistance
+  // quand la cause est inconnue (« -1 / INCONNU » avant la 0.37.1).
+  final d = e.detail.trim();
+  return nom == null && d.isNotEmpty ? '$base\n$d' : base;
 }
 
 enum CauseLecteur {
@@ -199,6 +204,39 @@ abstract class LecteurQr {
 
   /// Ouvre le lecteur ; rend le texte lu, ou nul si la personne l'a fermé.
   Future<String?> scanner();
+
+  /// Lecteur de SECOURS dans l'application (0.37.1, ZXing) : il ne dépend
+  /// pas des Services Google Play. Rend le texte lu, ou nul si fermé.
+  Future<String?> scannerSecours();
+}
+
+/// Lecteur de Google d'abord (avec réessai s'il n'est pas encore prêt) ; s'il
+/// échoue pour une autre raison, ou s'il n'est toujours pas prêt, le lecteur
+/// de secours s'ouvre tout de suite. Si les deux échouent, l'erreur de Google
+/// est rendue, avec le détail des deux pour l'assistance.
+Future<String?> scannerAvecSecours(
+  LecteurQr lecteur, {
+  Duration limite = const Duration(seconds: 20),
+  void Function()? enPreparation,
+}) async {
+  try {
+    return await scannerAvecReessai(
+      lecteur,
+      limite: limite,
+      enPreparation: enPreparation,
+    );
+  } on ErreurLecteur catch (google) {
+    try {
+      return await lecteur.scannerSecours();
+    } on ErreurLecteur catch (secours) {
+      throw ErreurLecteur(
+        source: google.source,
+        code: google.code,
+        detail:
+            '${google.detail} | secours : ${secours.code} ${secours.detail}',
+      );
+    }
+  }
 }
 
 /// Ouvre le lecteur ; s'il n'est pas encore prêt, le prépare et réessaie
@@ -281,6 +319,15 @@ class LecteurQrAndroid implements LecteurQr {
   Future<String?> scanner() async {
     try {
       return await _canal.invokeMethod<String>('scannerQr');
+    } on PlatformException catch (e) {
+      throw _erreur(e);
+    }
+  }
+
+  @override
+  Future<String?> scannerSecours() async {
+    try {
+      return await _canal.invokeMethod<String>('scannerQrSecours');
     } on PlatformException catch (e) {
       throw _erreur(e);
     }

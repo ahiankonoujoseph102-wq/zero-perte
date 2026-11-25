@@ -122,7 +122,8 @@ class _AssistantInstallationState extends State<AssistantInstallation> {
   String _texteALire(EtapeAssistant e) => switch (e) {
     EtapeAssistant.bienvenue =>
       'Bienvenue dans Zéro Perte. Nous allons préparer votre boutique ensemble, '
-          'une étape à la fois. Touchez le bouton vert pour commencer.',
+          'une étape à la fois. Patron : touchez le bouton vert Commencer. '
+          'Vendeur : touchez Je suis vendeur, tout en bas.',
     EtapeAssistant.verification =>
       'Vérification du téléphone. Attendez quelques secondes. Si tout est vert, '
           'touchez Continuer. Si quelque chose est rouge, touchez Aide.',
@@ -360,29 +361,6 @@ class _AssistantInstallationState extends State<AssistantInstallation> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Expanded(child: _Bienvenue(vendeur: etat.relaisInvitations != null)),
-        // Le vendeur n'installe pas de boutique : il scanne le QR code du
-        // patron (aucun compte Google ni mot de passe sur son téléphone).
-        if (etat.relaisInvitations != null)
-          FilledButton.icon(
-            key: const Key('bouton-je-suis-vendeur'),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => PageJeSuisVendeur(etat: etat)),
-            ),
-            style: FilledButton.styleFrom(
-              backgroundColor: CouleursZp.argentEntre,
-              minimumSize: const Size(0, 64),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
-              ),
-            ),
-            icon: const Icon(Icons.qr_code_scanner_rounded, size: 30),
-            label: const FittedBox(
-              child: Text(
-                'Je suis vendeur',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-              ),
-            ),
-          ),
         TextButton(
           key: const Key('bouton-autres-facons'),
           onPressed: _autresFacons,
@@ -444,9 +422,13 @@ class _AssistantInstallationState extends State<AssistantInstallation> {
     );
     Widget principal;
     if (e == EtapeAssistant.bienvenue) {
+      // 0.37.1 : « Commencer » (le patron) est LE gros bouton vert ; « Je
+      // suis vendeur » est en dessous, plus discret (c'est le patron qui
+      // installe d'abord).
       principal = _BoutonPrincipal(
         cle: 'bouton-commencer',
         texte: 'Commencer',
+        couleur: CouleursZp.argentEntre,
         onPressed: () => etat.suivante(),
       );
     } else if (e == EtapeAssistant.activation) {
@@ -483,11 +465,38 @@ class _AssistantInstallationState extends State<AssistantInstallation> {
         },
       );
     }
-    return Row(
+    final ligne = Row(
       children: [
         ecouter,
         const SizedBox(width: 12),
         Expanded(child: principal),
+      ],
+    );
+    // Le vendeur n'installe pas de boutique : il scanne le QR code du patron
+    // (aucun compte Google ni mot de passe sur son téléphone).
+    if (e != EtapeAssistant.bienvenue || etat.relaisInvitations == null) {
+      return ligne;
+    }
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ligne,
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          key: const Key('bouton-je-suis-vendeur'),
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => PageJeSuisVendeur(etat: etat)),
+          ),
+          style: OutlinedButton.styleFrom(minimumSize: const Size(0, 52)),
+          icon: const Icon(Icons.qr_code_scanner_rounded, size: 24),
+          label: const FittedBox(
+            child: Text(
+              'Je suis vendeur (employé)',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -569,8 +578,8 @@ class _Bienvenue extends StatelessWidget {
       couleur: CouleursZp.marque,
       titre: 'Bienvenue dans Zéro Perte',
       texte: vendeur
-          ? 'Patron : touchez « Commencer » pour préparer votre boutique.\n\n'
-                'Vendeur : touchez le bouton vert « Je suis vendeur ».'
+          ? 'Patron : touchez le bouton vert « Commencer ».\n\n'
+                'Vendeur ou employé : touchez « Je suis vendeur », en bas.'
           : 'Nous allons préparer votre boutique ensemble, une étape à la fois.\n\n'
                 'Touchez « Écouter » pour entendre les explications.',
     );

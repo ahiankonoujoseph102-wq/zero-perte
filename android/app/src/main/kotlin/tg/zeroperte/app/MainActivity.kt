@@ -18,6 +18,7 @@ import com.google.android.gms.common.moduleinstall.ModuleInstall
 import com.google.android.gms.common.moduleinstall.ModuleInstallRequest
 import com.google.android.gms.common.moduleinstall.ModuleInstallStatusUpdate
 import com.google.mlkit.common.MlKitException
+import com.google.zxing.integration.android.IntentIntegrator
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
@@ -69,6 +70,9 @@ class MainActivity : FlutterActivity() {
                     // services (aucune autorisation d'appareil photo, presque
                     // rien dans l'APK).
                     "scannerQr" -> scannerQr(resultat)
+                    // 0.37.1 : lecteur de secours DANS l'application (ZXing),
+                    // si celui des Services Google Play ne s'ouvre pas.
+                    "scannerQrSecours" -> scannerQrSecours(resultat)
                     "lecteurPret" -> lecteurPret(resultat)
                     "lecteurPreparer" -> lecteurPreparer(resultat)
                     // Démonstration guidée : voix d'Afi (fichier MP3).
@@ -107,7 +111,9 @@ class MainActivity : FlutterActivity() {
                 "lecteur", e.message, mapOf("source" to "api", "code" to e.statusCode),
             )
             else -> resultat.error(
-                "lecteur", e?.message ?: "inconnue", mapOf("source" to "autre", "code" to -1),
+                "lecteur",
+                "${e?.javaClass?.simpleName ?: "Erreur"} : ${e?.message ?: "inconnue"}",
+                mapOf("source" to "autre", "code" to -1),
             )
         }
     }
@@ -128,6 +134,45 @@ class MainActivity : FlutterActivity() {
         } catch (e: Exception) {
             erreurLecteur(resultat, e)
         }
+    }
+
+    // --- Lecteur de secours (ZXing, dans l'application) ---
+    // Certains téléphones (Services Google Play modifiés ou incomplets) ne
+    // peuvent pas ouvrir le lecteur de Google (« Code : -1 / INCONNU »). Ce
+    // lecteur-ci ne dépend de rien : il utilise l'appareil photo directement
+    // et demande lui-même l'autorisation.
+    private var resultatSecours: MethodChannel.Result? = null
+
+    private fun scannerQrSecours(resultat: MethodChannel.Result) {
+        try {
+            resultatSecours?.success(null)
+            resultatSecours = resultat
+            IntentIntegrator(this)
+                .setDesiredBarcodeFormats(IntentIntegrator.QR_CODE)
+                .setPrompt("Visez le QR code sur le téléphone du patron")
+                .setOrientationLocked(false)
+                .setBeepEnabled(false)
+                .initiateScan()
+        } catch (e: Exception) {
+            resultatSecours = null
+            resultat.error(
+                "lecteur",
+                "${e.javaClass.simpleName} : ${e.message ?: "inconnue"}",
+                mapOf("source" to "secours", "code" to -2),
+            )
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        val lu = IntentIntegrator.parseActivityResult(requestCode, resultCode, data)
+        val r = resultatSecours
+        if (lu != null && r != null) {
+            resultatSecours = null
+            // Fermé sans lire : contents nul (pas une erreur).
+            r.success(lu.contents)
+            return
+        }
+        super.onActivityResult(requestCode, resultCode, data)
     }
 
     private fun lecteurPret(resultat: MethodChannel.Result) {
