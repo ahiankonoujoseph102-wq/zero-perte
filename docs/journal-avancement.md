@@ -1301,3 +1301,4 @@ Plan et état des lieux : `docs/refonte-commercant.md`. Argumentaire : `docs/mis
 
 - Demande du propriétaire : fiche produit (« Nouveau produit » de Gestion → Produits et prix) et fiche client :
   bouton **Galerie** à côté de **Photo** (la photo peut venir du téléphone). Test : `test/audit/photo_galerie_test.dart`.
+- **Publiée** le 25/11 : Release **`v0.37.2-n124`**, signature vérifiée (SHA-1 49:27:0C:…:B1:A3), APK universel 18,32 Mo.
