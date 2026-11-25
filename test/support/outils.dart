@@ -166,6 +166,9 @@ final String _catalogue = File('assets/catalogues/catalogues.json')
 
 /// Crée un environnement complet avec une VRAIE base SQLite en mémoire.
 /// À appeler dans un testWidgets : l'ouverture de la base se fait hors du temps simulé.
+/// Sources de photo demandées (appareil ou galerie), dans l'ordre.
+final List<SourcePhoto> sourcesPhotoDemandees = [];
+
 Future<Environnement> environnementDeTest(
   WidgetTester tester, {
   EtapeAssistant? etape,
@@ -215,7 +218,10 @@ Future<Environnement> environnementDeTest(
         lirePressePapiers: () async => presse.texte,
         clePublique: () async => lireClePublique(clePublique),
         lireCatalogue: () async => _catalogue,
-        prendrePhoto: (_) async => photoDeTest,
+        prendrePhoto: (source) async {
+          sourcesPhotoDemandees.add(source);
+          return photoDeTest;
+        },
         creerRaccourci: (nom, png) async {
           raccourcis.add(nom);
           return true;

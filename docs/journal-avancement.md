@@ -1296,3 +1296,8 @@ Plan et état des lieux : `docs/refonte-commercant.md`. Argumentaire : `docs/mis
 - Tests : `test/ecrans/lecteur_qr_test.dart` (+3).
 - **Publiée** le 25/11 : Release **`v0.37.1-n122`**. Signature vérifiée (SHA-1 49:27:0C:…:B1:A3), lecteur de
   secours (CaptureActivity ZXing) présent dans l'APK, APK universel 18,32 Mo (+0,14 Mo).
+
+### Version 0.37.2 — photo depuis la galerie (25/11)
+
+- Demande du propriétaire : fiche produit (« Nouveau produit » de Gestion → Produits et prix) et fiche client :
+  bouton **Galerie** à côté de **Photo** (la photo peut venir du téléphone). Test : `test/audit/photo_galerie_test.dart`.

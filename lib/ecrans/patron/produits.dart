@@ -315,10 +315,10 @@ class _PageFicheProduitState extends State<PageFicheProduit> {
   int? _entier(TextEditingController c) =>
       int.tryParse(c.text.replaceAll(RegExp(r'[^0-9]'), ''));
 
-  Future<void> _photographier() async {
-    final octets = await widget.etat.services.prendrePhoto(
-      SourcePhoto.appareil,
-    );
+  Future<void> _photographier([
+    SourcePhoto source = SourcePhoto.appareil,
+  ]) async {
+    final octets = await widget.etat.services.prendrePhoto(source);
     if (octets != null && mounted) {
       setState(() {
         _photo = base64.encode(octets);
@@ -496,6 +496,13 @@ class _PageFicheProduitState extends State<PageFicheProduit> {
                       onPressed: _photographier,
                       icon: const Icon(Icons.photo_camera_rounded),
                       label: const Text('Photo'),
+                    ),
+                    // 0.37.2 : une photo déjà dans le téléphone (galerie).
+                    OutlinedButton.icon(
+                      key: const Key('bouton-galerie-produit'),
+                      onPressed: () => _photographier(SourcePhoto.galerie),
+                      icon: const Icon(Icons.photo_library_rounded),
+                      label: const Text('Galerie'),
                     ),
                     if (_photo != null && !_photoEffacee)
                       TextButton(

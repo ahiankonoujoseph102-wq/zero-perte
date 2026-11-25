@@ -404,10 +404,10 @@ class _PageFicheEditionState extends State<PageFicheEdition> {
     super.dispose();
   }
 
-  Future<void> _prendrePhoto() async {
-    final octets = await widget.etat.services.prendrePhoto(
-      SourcePhoto.appareil,
-    );
+  Future<void> _prendrePhoto([
+    SourcePhoto source = SourcePhoto.appareil,
+  ]) async {
+    final octets = await widget.etat.services.prendrePhoto(source);
     if (octets != null && mounted) {
       setState(() => _photo = base64.encode(octets));
     }
@@ -468,6 +468,24 @@ class _PageFicheEditionState extends State<PageFicheEdition> {
             ),
           ),
           const SizedBox(height: 4),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            children: [
+              TextButton.icon(
+                key: const Key('bouton-appareil-client'),
+                onPressed: _prendrePhoto,
+                icon: const Icon(Icons.photo_camera_rounded),
+                label: const Text('Photo'),
+              ),
+              TextButton.icon(
+                key: const Key('bouton-galerie-client'),
+                onPressed: () => _prendrePhoto(SourcePhoto.galerie),
+                icon: const Icon(Icons.photo_library_rounded),
+                label: const Text('Galerie'),
+              ),
+            ],
+          ),
           const Text(
             'Photo (pour reconnaître le client)',
             textAlign: TextAlign.center,
