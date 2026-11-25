@@ -1278,3 +1278,7 @@ Plan et état des lieux : `docs/refonte-commercant.md`. Argumentaire : `docs/mis
 - **Guide du commerçant** : `docs/mise-en-service/guide-client-zero-perte.md` (texte simple, sans tableau).
 - Tests : `test/audit/` (calculs, minuit, premier arrivage, prix, design, mise à jour 0.36.0) ; captures
   `test_captures/design_final_captures_test.dart`.
+- **Publiée** le 24/11 : Release **`v0.37.0-n120`** (APK + Windows). Signature vérifiée (SHA-1 49:27:0C:…:B1:A3,
+  APK universel et arm64), plus aucun fichier de démonstration dans l'APK. APK universel **18,18 Mo** (0.36.0 :
+  18,85 Mo, soit 0,67 Mo de moins), arm64 9,9 Mo, armv7 9,4 Mo, Windows 13,5 Mo. versionCode 120 (> 116) : la
+  mise à jour s'installe par-dessus la 0.36.0 et la 0.35.2 sans rien perdre.
