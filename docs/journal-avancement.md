@@ -1294,3 +1294,5 @@ Plan et état des lieux : `docs/refonte-commercant.md`. Argumentaire : `docs/mis
 - **Bienvenue** : « Commencer » est le gros bouton vert ; « Je suis vendeur (employé) » est en dessous, plus
   discret ; textes écrit et parlé corrigés.
 - Tests : `test/ecrans/lecteur_qr_test.dart` (+3).
+- **Publiée** le 25/11 : Release **`v0.37.1-n122`**. Signature vérifiée (SHA-1 49:27:0C:…:B1:A3), lecteur de
+  secours (CaptureActivity ZXing) présent dans l'APK, APK universel 18,32 Mo (+0,14 Mo).
